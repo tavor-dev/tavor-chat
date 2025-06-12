@@ -31,7 +31,7 @@ export function Chat({ threadId }: { threadId: string }) {
   // const messageErrors = (messages.results ?? []).map((m) => m.error);
 
   return (
-    <div className="w-full max-w-2xl mx-auto bg-white rounded-xl shadow-lg p-6 flex flex-col gap-6">
+    <div className="w-full max-w-2xl mx-auto rounded-xl shadow-lg p-6 flex flex-col gap-6">
       {messages.results?.length > 0 && (
         <div className="flex flex-col gap-4 overflow-y-auto mb-4 h-[60vh]">
           {toUIMessages(messages.results ?? []).map((m) => (
@@ -50,7 +50,7 @@ export function Chat({ threadId }: { threadId: string }) {
           type="text"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          className="flex-1 px-4 py-2 rounded-lg border border-gray-300 focus:outline-none focus:ring-2 focus:ring-blue-400 bg-gray-50"
+          className="flex-1 px-4 py-2 rounded-lg"
           placeholder="Type your message..."
         />
         <button

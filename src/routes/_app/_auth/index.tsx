@@ -176,13 +176,13 @@ function NewChatComponent() {
             )}
           </div>
 
-          {/* Message input */}
-          <div className="relative">
+          {/* Message input - Morphic style */}
+          <div className="relative flex flex-col w-full gap-2 bg-muted rounded-3xl border border-input">
             <Textarea
               placeholder="Ask a question..."
               value={message}
               onChange={(e) => setMessage(e.target.value)}
-              className="w-full bg-ui-bg-field border-ui-border-base text-ui-fg-base placeholder-ui-fg-muted resize-none min-h-[120px] pr-12 hover:bg-ui-bg-field-hover focus:border-ui-border-interactive"
+              className="resize-none w-full min-h-24 bg-transparent border-0 p-4 text-sm placeholder:text-muted-foreground focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50"
               onKeyDown={(e) => {
                 if (e.key === "Enter" && !e.shiftKey) {
                   e.preventDefault();
@@ -193,26 +193,20 @@ function NewChatComponent() {
               }}
             />
 
-            {/* Send button */}
-            <Button
-              onClick={handleNewChat}
-              disabled={!message.trim() || !selectedModel}
-              className="absolute bottom-3 right-3 w-8 h-8 p-0 bg-ui-button-neutral hover:bg-ui-button-neutral-hover disabled:bg-ui-bg-disabled disabled:cursor-not-allowed text-ui-fg-base"
-            >
-              <svg
-                className="w-4 h-4"
-                fill="none"
-                stroke="currentColor"
-                viewBox="0 0 24 24"
-              >
-                <path
-                  strokeLinecap="round"
-                  strokeLinejoin="round"
-                  strokeWidth={2}
-                  d="M5 10l7-7m0 0l7 7m-7-7v18"
-                />
-              </svg>
-            </Button>
+            <div className="flex items-center justify-between p-3">
+              <div className="flex items-center gap-2">
+                {/* Model selector would go here if needed */}
+              </div>
+              <div className="flex items-center gap-2">
+                <Button
+                  onClick={handleNewChat}
+                  disabled={!message.trim() || !selectedModel}
+                  className="rounded-full w-8 h-8 p-0 bg-blue-600 hover:bg-blue-700 disabled:bg-gray-300 disabled:cursor-not-allowed text-white"
+                >
+                  ↑
+                </Button>
+              </div>
+            </div>
           </div>
 
           {/* Model info */}
