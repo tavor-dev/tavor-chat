@@ -29,6 +29,8 @@ import { useEffect } from "react";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { Logo } from "@/components/logo";
 
+const THREADS_PAGE_SIZE = 20;
+
 export const Route = createFileRoute("/_app/_auth")({
   component: AuthLayout,
 });
@@ -74,10 +76,16 @@ function AppSidebar() {
   const navigate = useNavigate();
   const { signOut } = useAuthActions();
 
-  const { results: threads } = useConvexPaginatedQuery(
+  // unfortunately can't go through tanstack yet:
+  // https://github.com/get-convex/convex-react-query/issues/1
+  const {
+    results: threads,
+    status: threadsPaginationStatus,
+    loadMore: loadMoreThreads,
+  } = useConvexPaginatedQuery(
     api.threads.list,
     {},
-    { initialNumItems: 20 },
+    { initialNumItems: THREADS_PAGE_SIZE },
   );
 
   async function handleNewChat() {
@@ -121,6 +129,21 @@ function AppSidebar() {
               </Button>
             </SidebarMenuItem>
           ))}
+          {threadsPaginationStatus !== "Exhausted" &&
+            threadsPaginationStatus !== "LoadingFirstPage" && (
+              <SidebarMenuItem>
+                <Button
+                  variant="secondary"
+                  className="w-full justify-center h-6 px-2 text-sm truncate mx-0"
+                  disabled={threadsPaginationStatus === "LoadingMore"}
+                  onClick={() => loadMoreThreads(THREADS_PAGE_SIZE)}
+                >
+                  {threadsPaginationStatus === "LoadingMore"
+                    ? "Loading"
+                    : "Load more"}
+                </Button>
+              </SidebarMenuItem>
+            )}
         </SidebarMenu>
       </SidebarContent>
       <SidebarFooter>
