@@ -1,17 +1,17 @@
-import { vStreamArgs } from "@convex-dev/agent";
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
 import { api } from "./_generated/api";
 import { mutation, query } from "./_generated/server";
 import { chatAgent } from "./chat";
 import { authorizeThreadAccess } from "./account";
+import { vStreamArgs } from "./chat_engine/validators";
 
 /**
  * Get messages by thread ID with pagination and streaming support
  */
 export const getByThreadId = query({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
     paginationOpts: paginationOptsValidator,
     streamArgs: vStreamArgs,
   },
@@ -37,7 +37,7 @@ export const getByThreadId = query({
  */
 export const stopGeneration = mutation({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
   },
   returns: v.null(),
   handler: async (ctx, { threadId }) => {
@@ -68,7 +68,7 @@ export const stopGeneration = mutation({
  */
 export const sendMessage = mutation({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
     content: v.string(),
   },
   handler: async (ctx, { content, threadId }) => {

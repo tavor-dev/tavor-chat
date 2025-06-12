@@ -22,6 +22,7 @@ export default tseslint.config(
       "@typescript-eslint/no-empty-interface": "off",
       "@typescript-eslint/no-unused-vars": "off",
       "@typescript-eslint/consistent-type-definitions": "off",
+      "@typescript-eslint/no-non-null-assertion": "off",
     },
   },
   eslintConfigPrettier,

@@ -1,5 +1,4 @@
 import { v } from "convex/values";
-import { components } from "./_generated/api";
 import {
   QueryCtx,
   MutationCtx,
@@ -7,6 +6,9 @@ import {
   mutation,
 } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
+import { api } from "./_generated/api";
+import { Id } from "./_generated/dataModel";
+import { ThreadDoc } from "./schema";
 
 /**
  * Get the current user ID from the authenticated session
@@ -24,11 +26,11 @@ export async function getUserId(ctx: QueryCtx | MutationCtx | ActionCtx) {
  */
 export async function authorizeThreadAccess(
   ctx: QueryCtx | MutationCtx | ActionCtx,
-  threadId: string,
-) {
+  threadId: Id<"threads">,
+): Promise<ThreadDoc | Error> {
   const userId = await getUserId(ctx);
 
-  const thread = await ctx.runQuery(components.agent.threads.getThread, {
+  const thread = await ctx.runQuery(api.chat_engine.threads.getThread, {
     threadId,
   });
 

@@ -1,13 +1,13 @@
 import { paginationOptsValidator } from "convex/server";
 import { v } from "convex/values";
-import { api, components } from "./_generated/api";
+import { api } from "./_generated/api";
 import { action, internalAction, mutation, query } from "./_generated/server";
 import { chatAgent } from "./chat";
 import { authorizeThreadAccess, getUserId } from "./account";
 
 export const getThreadData = query({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
   },
   handler: async (ctx, { threadId }) => {
     return await ctx.db
@@ -19,7 +19,7 @@ export const getThreadData = query({
 
 export const upsertThreadData = mutation({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
     model: v.optional(v.string()),
     pinned: v.optional(v.boolean()),
   },
@@ -47,7 +47,7 @@ export const upsertThreadData = mutation({
 
 export const deleteThreadData = mutation({
   args: {
-    threadId: v.string(),
+    threadId: v.id("threads"),
   },
   handler: async (ctx, { threadId }) => {
     const existingThreadData = await ctx.runQuery(api.threads.getThreadData, {
@@ -69,11 +69,11 @@ export const list = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { paginationOpts }) => {
+  handler: async (ctx, { paginationOpts }): Promise<object> => {
     const userId = await getUserId(ctx);
 
     const threads = await ctx.runQuery(
-      components.agent.threads.listThreadsByUserId,
+      api.chat_engine.threads.listThreadsByUserId,
       { userId, paginationOpts },
     );
 
@@ -129,7 +129,7 @@ export const getById = query({
 //     const userid = await getuserid(ctx);
 //
 //     const messages = await ctx.runaction(
-//       components.agent.messages.searchmessages,
+//       api.chat_engine.messages.searchmessages,
 //       { searchallmessagesforuserid: userid },
 //     );
 //
@@ -209,7 +209,7 @@ export const deleteThread = action({
   handler: async (ctx, { threadId }) => {
     await authorizeThreadAccess(ctx, threadId);
 
-    await ctx.runAction(components.agent.threads.deleteAllForThreadIdSync, {
+    await ctx.runAction(api.chat_engine.threads.deleteAllForThreadIdSync, {
       threadId,
     });
     await ctx.runMutation(api.threads.deleteThreadData, { threadId });
@@ -219,7 +219,7 @@ export const deleteThread = action({
 });
 
 export const maybeUpdateThreadTitle = internalAction({
-  args: { threadId: v.string() },
+  args: { threadId: v.id("threads") },
   handler: async (ctx, { threadId }) => {
     const { thread } = await chatAgent.continueThread(ctx, { threadId });
     const metadata = await thread.getMetadata();

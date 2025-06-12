@@ -1,9 +1,9 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
-import { Agent } from "@convex-dev/agent";
+import { Agent } from "@cvx/chat_engine/client";
 import { v } from "convex/values";
-import { api, components, internal } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { internalAction, mutation } from "./_generated/server";
 import { authorizeThreadAccess } from "./account";
 
@@ -31,7 +31,7 @@ const newAgent = ({
 }: {
   chatModel: (typeof models)[keyof typeof models];
 }) => {
-  return new Agent(components.agent, {
+  return new Agent({
     name: "Agent",
     chat: chatModel,
     textEmbedding: textEmbedding,
@@ -45,10 +45,10 @@ export const chatAgent = newAgent({ chatModel: defaultChat });
 export const streamAsynchronously = mutation({
   args: {
     prompt: v.string(),
-    threadId: v.string(),
+    threadId: v.id("threads"),
     model: v.optional(v.string()),
   },
-  returns: v.object({ messageId: v.string() }),
+  returns: v.object({ messageId: v.id("messages") }),
   handler: async (ctx, { prompt, threadId, model }) => {
     await authorizeThreadAccess(ctx, threadId);
     const { messageId } = await chatAgent.saveMessage(ctx, {
@@ -69,8 +69,8 @@ export const streamAsynchronously = mutation({
 
 export const stream = internalAction({
   args: {
-    promptMessageId: v.string(),
-    threadId: v.string(),
+    promptMessageId: v.id("messages"),
+    threadId: v.id("threads"),
     model: v.optional(v.string()),
   },
   handler: async (ctx, { promptMessageId, threadId, model }) => {
