@@ -21,18 +21,25 @@ export const upsertThreadData = mutation({
   args: {
     threadId: v.string(),
     model: v.optional(v.string()),
+    pinned: v.optional(v.boolean()),
   },
-  handler: async (ctx, { threadId, ...args }) => {
+  handler: async (ctx, { threadId, model, pinned }) => {
     const existingThreadData = await ctx.runQuery(api.threads.getThreadData, {
       threadId,
     });
 
+    const mergedArgs = {
+      model,
+      pinned: pinned ?? existingThreadData?.pinned ?? false,
+    };
+
     if (existingThreadData) {
-      await ctx.db.patch(existingThreadData._id, args);
+      await ctx.db.patch(existingThreadData._id, mergedArgs);
     } else {
       await ctx.db.insert("threadData", {
         threadId,
-        ...args,
+        model,
+        pinned: pinned ?? false,
       });
     }
   },

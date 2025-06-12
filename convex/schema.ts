@@ -90,6 +90,7 @@ const schema = defineSchema({
 
   threadData: defineTable({
     threadId: v.string(),
+    pinned: v.boolean(),
     model: v.optional(v.string()),
   }).index("threadId", ["threadId"]),
 });
