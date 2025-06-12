@@ -8,6 +8,7 @@ import {
   type UIMessage,
 } from "@convex-dev/agent/react";
 import { useState } from "react";
+import { Button } from "@medusajs/ui";
 
 export function Chat({ threadId }: { threadId: string }) {
   const messages = useThreadMessages(
@@ -65,16 +66,18 @@ export function Chat({ threadId }: { threadId: string }) {
 }
 
 function Message({ message }: { message: UIMessage }) {
-  const isUser = message.role === "user";
   const [visibleText] = useSmoothText(message.content);
+
   return (
-    <div className={`flex ${isUser ? "justify-end" : "justify-start"}`}>
-      <div
-        className={`rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap shadow-sm ${
-          isUser ? "bg-blue-100 text-blue-900" : "bg-gray-200 text-gray-800"
-        }`}
-      >
-        {visibleText}
+    <div className="group/message" data-role={message.role}>
+      <div className="flex justify-start group-data-[role=user]/message:justify-end">
+        <div className="rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap shadow-sm bg-gray-200 text-gray-800 group-data-[role=user]/message:bg-blue-100 group-data-[role=user]/message:text-blue-900">
+          {visibleText}
+        </div>
+      </div>
+      <div className="transition-opacity opacity-0 group-hover/message:opacity-100 pt-2 flex gap-2 justify-start group-data-[role=user]/message:justify-end">
+        <Button size="small">Copy</Button>
+        <Button size="small">Fork</Button>
       </div>
     </div>
   );
