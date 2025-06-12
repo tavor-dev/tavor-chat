@@ -1,5 +1,5 @@
 import { createFileRoute } from "@tanstack/react-router";
-import { Chat } from "@/components/chat";
+import { Chat } from "@/components/chat/Chat";
 
 export const Route = createFileRoute("/_app/_auth/chat/$threadId")({
   component: ChatComponent,
@@ -7,10 +7,5 @@ export const Route = createFileRoute("/_app/_auth/chat/$threadId")({
 
 function ChatComponent() {
   const { threadId } = Route.useParams();
-
-  return (
-    <div className="p-8">
-      <Chat threadId={threadId} />
-    </div>
-  );
+  return <Chat threadId={threadId} />;
 }
