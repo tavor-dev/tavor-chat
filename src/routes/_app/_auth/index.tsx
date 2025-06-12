@@ -12,7 +12,7 @@ import { Button, Select, Textarea } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 
 export const Route = createFileRoute("/_app/_auth/")({
   component: NewChatComponent,
@@ -25,13 +25,18 @@ function NewChatComponent() {
   const createThread = useMutation(api.threads.create);
   const sendMessage = useMutation(api.chat.streamAsynchronously);
 
-  const [selectedModel, setSelectedModel] = useState<ModelId | "">("");
+  const updateUserPreferences = useMutation(api.account.updateUserPreferences);
+
+  const selectedModel = user?.selectedModel ?? getDefaultModel("Free").id;
+  const setSelectedModel = useCallback((selectedModel: ModelId) => {
+    updateUserPreferences({ selectedModel });
+  }, []);
+
   const [enabledFeatures, setEnabledFeatures] = useState<ModelFeature[]>([]);
   const [message, setMessage] = useState<string>("");
 
   // Get available models based on user plan (assuming free plan for now)
   const availableModels = getAvailableModels("Free");
-  const defaultModel = getDefaultModel("Free");
 
   // Group models by provider
   const modelsByProvider = availableModels.reduce(

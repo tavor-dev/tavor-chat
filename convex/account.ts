@@ -1,5 +1,11 @@
+import { v } from "convex/values";
 import { components } from "./_generated/api";
-import { QueryCtx, MutationCtx, ActionCtx } from "./_generated/server";
+import {
+  QueryCtx,
+  MutationCtx,
+  ActionCtx,
+  mutation,
+} from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
 
 /**
@@ -32,3 +38,16 @@ export async function authorizeThreadAccess(
 
   return thread;
 }
+
+export const updateUserPreferences = mutation({
+  args: {
+    selectedModel: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      return;
+    }
+    ctx.db.patch(userId, args);
+  },
+});

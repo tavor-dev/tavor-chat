@@ -26,8 +26,9 @@ export const Route = createRootRouteWithContext<{
     const router = useRouter();
     const matchWithTitle = [...router.state.matches]
       .reverse()
-      .find((d) => d.routeContext?.title);
-    const title = matchWithTitle?.routeContext.title || "Convex SaaS";
+      .find((d) => d.__routeContext?.title);
+    const title = (matchWithTitle?.__routeContext.title ||
+      "Tavor chat") as string;
 
     return (
       <>

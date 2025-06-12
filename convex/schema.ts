@@ -100,10 +100,5 @@ export default schema;
 const user = schema.tables.users.validator;
 const threadData = schema.tables.threadData.validator;
 
-export const updateUserPreferencesSchema = v.object({
-  // favoriteModels: v.optional(v.array(v.string())),
-  selectedModel: v.optional(v.string()),
-});
-
 export type User = Infer<typeof user>;
 export type ThreadData = Infer<typeof threadData>;
