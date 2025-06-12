@@ -4,6 +4,9 @@ import { TanStackRouterVite } from "@tanstack/router-plugin/vite";
 import path from "path";
 
 export default defineConfig({
+  server: {
+    port: 9055,
+  },
   plugins: [TanStackRouterVite(), viteReact()],
   resolve: {
     alias: {

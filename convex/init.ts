@@ -58,7 +58,9 @@ export const insertSeedPlan = internalMutation({
   },
 });
 
-export default internalAction(async (ctx) => {
+export default internalAction(async (_ctx) => {});
+
+export const testInit = internalAction(async (ctx) => {
   /**
    * Stripe Products.
    */

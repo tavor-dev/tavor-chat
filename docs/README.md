@@ -64,6 +64,7 @@ npx @convex-dev/auth
 
 1. Get your API Key by visiting the [Resend Dashboard](https://resend.com/api-keys).
 2. Add to your Convex dev deployment:
+
    ```sh
    npx convex env set AUTH_RESEND_KEY re_...
    ```
@@ -76,6 +77,7 @@ In order to use Stripe Subscriptions and seed our database, we'll require to get
 2. Set to test mode if desired.
 3. Visit the [API Keys](https://dashboard.stripe.com/test/apikeys) section and copy `Secret` key.
 4. Add to your Convex dev deployment:
+
    ```sh
    npx convex env set STRIPE_SECRET_KEY sk_test_...
    ```
@@ -95,6 +97,7 @@ stripe listen --forward-to localhost:5173/api/webhook
    authenticating, rerun the command.
 5. The CLI will print a webhook secret key and begin listening for events.
 6. Add the webhook secret key to your Convex dev deployment:
+
    ```sh
    npx convex env set STRIPE_WEBHOOK_SECRET whsec_...
    ```
@@ -130,7 +133,7 @@ Done! Now we can start receiving Stripe Events to your deployed app.
 
 ## Netlify Deployment
 
-Follow the Convex guide for Netlify deployment: https://docs.convex.dev/production/hosting/netlify
+Follow the Convex guide for Netlify deployment: <https://docs.convex.dev/production/hosting/netlify>
 
 ## Done! 🎉
 

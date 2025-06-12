@@ -1,6 +1,6 @@
+import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "@cvx/_generated/api";
 import { mutation, query } from "@cvx/_generated/server";
-import { auth } from "@cvx/auth";
 import { currencyValidator, PLANS } from "@cvx/schema";
 import { asyncMap } from "convex-helpers";
 import { v } from "convex/values";
@@ -9,7 +9,7 @@ import { User } from "~/types";
 export const getCurrentUser = query({
   args: {},
   handler: async (ctx): Promise<User | undefined> => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
@@ -48,7 +48,7 @@ export const updateUsername = mutation({
     username: v.string(),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
@@ -62,7 +62,7 @@ export const completeOnboarding = mutation({
     currency: currencyValidator,
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
@@ -88,7 +88,7 @@ export const completeOnboarding = mutation({
 export const generateUploadUrl = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       throw new Error("User not found");
     }
@@ -101,7 +101,7 @@ export const updateUserImage = mutation({
     imageId: v.id("_storage"),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
@@ -112,7 +112,7 @@ export const updateUserImage = mutation({
 export const removeUserImage = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
@@ -123,7 +123,7 @@ export const removeUserImage = mutation({
 export const getActivePlans = query({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
@@ -145,7 +145,7 @@ export const getActivePlans = query({
 export const deleteCurrentUserAccount = mutation({
   args: {},
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
@@ -167,7 +167,7 @@ export const deleteCurrentUserAccount = mutation({
       );
     }
     await ctx.db.delete(userId);
-    await asyncMap(["resend-otp", "github"], async (provider) => {
+    await asyncMap(["google"], async (provider) => {
       const authAccount = await ctx.db
         .query("authAccounts")
         .withIndex("userIdAndProvider", (q) =>

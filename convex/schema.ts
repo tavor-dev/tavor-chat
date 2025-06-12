@@ -43,6 +43,7 @@ const pricesValidator = v.object({
 
 const schema = defineSchema({
   ...authTables,
+
   users: defineTable({
     name: v.optional(v.string()),
     username: v.optional(v.string()),
@@ -54,9 +55,11 @@ const schema = defineSchema({
     phoneVerificationTime: v.optional(v.number()),
     isAnonymous: v.optional(v.boolean()),
     customerId: v.optional(v.string()),
+    selectedModel: v.optional(v.string()),
   })
     .index("email", ["email"])
     .index("customerId", ["customerId"]),
+
   plans: defineTable({
     key: planKeyValidator,
     stripeId: v.string(),
@@ -69,6 +72,7 @@ const schema = defineSchema({
   })
     .index("key", ["key"])
     .index("stripeId", ["stripeId"]),
+
   subscriptions: defineTable({
     userId: v.id("users"),
     planId: v.id("plans"),
@@ -83,6 +87,22 @@ const schema = defineSchema({
   })
     .index("userId", ["userId"])
     .index("stripeId", ["stripeId"]),
+
+  threadData: defineTable({
+    threadId: v.string(),
+    model: v.optional(v.string()),
+  }).index("threadId", ["threadId"]),
 });
 
 export default schema;
+
+const user = schema.tables.users.validator;
+const threadData = schema.tables.threadData.validator;
+
+export const updateUserPreferencesSchema = v.object({
+  // favoriteModels: v.optional(v.array(v.string())),
+  selectedModel: v.optional(v.string()),
+});
+
+export type User = Infer<typeof user>;
+export type ThreadData = Infer<typeof threadData>;
