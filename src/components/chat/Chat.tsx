@@ -6,7 +6,7 @@ import {
   type UIMessage,
 } from "@convex-dev/agent/react";
 import { useThreadMessages } from "@convex-dev/agent/react";
-import { useCallback, useMemo, useRef, useState } from "react";
+import { useEffect, useCallback, useMemo, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 import { ChatMessages } from "./ChatMessages";
 import { ChatPanel } from "./ChatPanel";
@@ -28,6 +28,20 @@ export function Chat({ threadId }: { threadId: string }) {
     { threadId },
     { initialNumItems: 50, stream: true },
   );
+
+  const scrollToBottom = () => {
+    const scrollContainer = scrollContainerRef.current;
+    if (scrollContainer) {
+      scrollContainer.scrollTop =
+        scrollContainer.scrollHeight - scrollContainer.clientHeight;
+    }
+  };
+
+  useEffect(() => {
+    if (messages.results?.length > 0) {
+      scrollToBottom();
+    }
+  }, [messages.results]);
 
   const sendMessage = useMutation(
     api.chat.streamAsynchronously,
@@ -106,4 +120,3 @@ export function Chat({ threadId }: { threadId: string }) {
     </div>
   );
 }
-

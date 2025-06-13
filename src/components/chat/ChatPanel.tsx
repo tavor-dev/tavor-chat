@@ -32,6 +32,7 @@ interface ChatPanelProps {
   isLoading: boolean;
   showScrollToBottomButton: boolean;
   scrollContainerRef: React.RefObject<HTMLDivElement>;
+  onScrollToBottom?: () => void; // Added this prop
 }
 
 export function ChatPanel({
@@ -41,6 +42,7 @@ export function ChatPanel({
   isLoading,
   showScrollToBottomButton,
   scrollContainerRef,
+  onScrollToBottom, // Added this prop
 }: ChatPanelProps) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLTextAreaElement>(null);
@@ -96,12 +98,17 @@ export function ChatPanel({
   };
 
   const handleScrollToBottom = () => {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.scrollTo({
-        top: scrollContainer.scrollHeight,
-        behavior: "smooth",
-      });
+    if (onScrollToBottom) {
+      onScrollToBottom();
+    } else {
+      // Fallback to direct scrolling if handler not provided
+      const scrollContainer = scrollContainerRef.current;
+      if (scrollContainer) {
+        scrollContainer.scrollTo({
+          top: scrollContainer.scrollHeight,
+          behavior: "smooth",
+        });
+      }
     }
   };
 
@@ -120,7 +127,7 @@ export function ChatPanel({
             type="button"
             variant="transparent"
             size="small"
-            className="absolute -top-10 right-4 z-20 size-8 rounded-full shadow-md"
+            className="absolute -top-10 right-4 z-20 size-8 rounded-full shadow-md hover:bg-ui-bg-component-hover"
             onClick={handleScrollToBottom}
             title="Scroll to bottom"
           >
@@ -186,46 +193,6 @@ export function ChatPanel({
                   </Select.Content>
                 </Select>
               </div>
-
-              {/* Feature toggles */}
-              {/* {selectedModel && ( */}
-              {/*   <div className="flex gap-2"> */}
-              {/*     {getSelectedModelCapabilities().map((feature) => { */}
-              {/*       const config = FEATURE_CONFIGS[feature]; */}
-              {/*       const iconMap: Record<ModelFeature, React.ComponentType> = { */}
-              {/*         reasoning: AiAssistent, */}
-              {/*         search: GlobeEurope, */}
-              {/*         images: Photo, */}
-              {/*         pdfs: DocumentText, */}
-              {/*         imageGeneration: Sparkles, */}
-              {/*         parameters: CogSixTooth, */}
-              {/*         reasoningEffort: LightBulb, */}
-              {/*         fast: Bolt, */}
-              {/*       }; */}
-              {/*       const IconComponent = iconMap[feature]; */}
-              {/*       return ( */}
-              {/*         <Button */}
-              {/*           key={feature} */}
-              {/*           variant={ */}
-              {/*             enabledFeatures.includes(feature) */}
-              {/*               ? "primary" */}
-              {/*               : "secondary" */}
-              {/*           } */}
-              {/*           size="small" */}
-              {/*           onClick={() => toggleFeature(feature)} */}
-              {/*           className={`${ */}
-              {/*             enabledFeatures.includes(feature) */}
-              {/*               ? "bg-ui-bg-interactive hover:bg-ui-bg-highlight-hover text-ui-fg-on-color" */}
-              {/*               : "bg-ui-button-neutral hover:bg-ui-button-neutral-hover text-ui-fg-base" */}
-              {/*           } flex items-center gap-1`} */}
-              {/*           title={config.description} */}
-              {/*         > */}
-              {/*           <IconComponent /> {config.name} */}
-              {/*         </Button> */}
-              {/*       ); */}
-              {/*     })} */}
-              {/*   </div> */}
-              {/* )} */}
             </div>
             <div className="flex items-center gap-2">
               <Button

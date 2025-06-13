@@ -31,7 +31,7 @@ export const Route = createRootRouteWithContext<{
       "Tavor chat") as string;
 
     return (
-      <>
+      <div className="min-h-screen flex flex-col">
         <Outlet />
         <Helmet>
           <title>{title}</title>
@@ -39,7 +39,7 @@ export const Route = createRootRouteWithContext<{
         <Suspense>
           <TanStackRouterDevtools />
         </Suspense>
-      </>
+      </div>
     );
   },
 });

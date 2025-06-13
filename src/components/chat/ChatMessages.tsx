@@ -27,35 +27,30 @@ export function ChatMessages({
       role="list"
       aria-roledescription="chat messages"
       className={cn(
-        "relative size-full pt-14",
-        sections.length > 0 ? "flex-1 overflow-y-auto" : "",
+        "relative w-full max-w-3xl mx-auto flex-1 overflow-y-auto pt-14 h-[calc(100vh-200px)]",
+        sections.length > 0 ? "flex-1" : "",
       )}
     >
-      <div className="relative mx-auto w-full max-w-3xl px-4 h-full">
-        {sections.map((section) => (
-          <div
-            key={section.id}
-            id={`section-${section.id}`}
-            className="chat-section mb-8"
-          >
-            {/* User message */}
-            <div className="flex flex-col gap-4 mb-4">
-              <UserMessage message={section.userMessage} />
-            </div>
-
-            {/* Assistant messages */}
-            {section.assistantMessages.map((assistantMessage) => (
-              <div key={assistantMessage.key} className="flex flex-col gap-4">
-                <AnswerSection
-                  content={assistantMessage.content}
-                  isOpen={true}
-                  onOpenChange={() => {}}
-                />
-              </div>
-            ))}
+      {sections.map((section) => (
+        <div
+          key={section.id}
+          id={`section-${section.id}`}
+          className="chat-section mb-8 px-4"
+        >
+          <div className="flex flex-col gap-4 mb-4">
+            <UserMessage message={section.userMessage} />
           </div>
-        ))}
-      </div>
+          {section.assistantMessages.map((assistantMessage) => (
+            <div key={assistantMessage.key} className="flex flex-col gap-4">
+              <AnswerSection
+                content={assistantMessage.content}
+                isOpen={true}
+                onOpenChange={() => {}}
+              />
+            </div>
+          ))}
+        </div>
+      ))}
     </div>
   );
 }

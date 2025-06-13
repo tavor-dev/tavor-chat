@@ -21,7 +21,15 @@ import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
 import { ThreadDoc } from "@cvx/schema";
 import { Trash } from "@medusajs/icons";
-import { Button, DropdownMenu, IconButton } from "@medusajs/ui";
+import {
+  Button,
+  DropdownMenu,
+  IconButton,
+  Toaster,
+  toast,
+  Tooltip,
+  TooltipProvider,
+} from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
   createFileRoute,
@@ -33,7 +41,6 @@ import {
 import { useAction, useMutation } from "convex/react";
 import { Pin, PinOff } from "lucide-react";
 import React, { useEffect, useMemo } from "react";
-import { toast, Toaster } from "react-hot-toast";
 
 const THREADS_PAGE_SIZE = 20;
 
@@ -205,32 +212,41 @@ function AppSidebar() {
         >
           {thread.title || "New chat"}
         </Button>
-        <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 bg-ui-bg-base rounded opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0">
-          <IconButton
-            size="small"
-            variant="transparent"
-            onClick={(e) => {
-              e.stopPropagation();
-              handlePinThread(thread._id, thread.pinned || false);
-            }}
-          >
-            {thread.pinned ? (
-              <PinOff className="h-4 w-4" />
-            ) : (
-              <Pin className="h-4 w-4" />
-            )}
-          </IconButton>
-          <IconButton
-            size="small"
-            variant="transparent"
-            onClick={(e) => {
-              e.stopPropagation();
-              handleDeleteThread(thread._id);
-            }}
-            className="text-ui-fg-error hover:text-ui-fg-error"
-          >
-            <Trash className="h-4 w-4" />
-          </IconButton>
+        <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0">
+          <TooltipProvider>
+            <Tooltip
+              content={thread.pinned ? "Unpin thread" : "Pin thread"}
+              className="z-[9999]"
+            >
+              <IconButton
+                size="small"
+                variant="transparent"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handlePinThread(thread._id, thread.pinned || false);
+                }}
+              >
+                {thread.pinned ? (
+                  <PinOff className="h-4 w-4" />
+                ) : (
+                  <Pin className="h-4 w-4" />
+                )}
+              </IconButton>
+            </Tooltip>
+            <Tooltip content="Delete thread" className="z-[9999]">
+              <IconButton
+                size="small"
+                variant="transparent"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  handleDeleteThread(thread._id);
+                }}
+                className="text-ui-fg-error hover:text-ui-fg-error"
+              >
+                <Trash className="h-4 w-4" />
+              </IconButton>
+            </Tooltip>
+          </TooltipProvider>
         </div>
       </div>
     </SidebarMenuItem>
