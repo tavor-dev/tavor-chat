@@ -1,9 +1,11 @@
-import { paginationOptsValidator } from "convex/server";
-import { v } from "convex/values";
+import { paginationOptsValidator, PaginationResult } from "convex/server";
+import { ThreadDoc, v } from "./schema";
 import { api } from "./_generated/api";
 import { action, internalAction, mutation, query } from "./_generated/server";
 import { chatAgent } from "./chat";
 import { authorizeThreadAccess, getUserId } from "./account";
+import { partial } from "convex-helpers/validators";
+import { assert, pick } from "convex-helpers";
 
 /**
  * List all threads for the current user with pagination
@@ -12,7 +14,10 @@ export const list = query({
   args: {
     paginationOpts: paginationOptsValidator,
   },
-  handler: async (ctx, { paginationOpts }): Promise<object> => {
+  handler: async (
+    ctx,
+    { paginationOpts },
+  ): Promise<PaginationResult<ThreadDoc>> => {
     const userId = await getUserId(ctx);
 
     const threads = await ctx.runQuery(
@@ -139,6 +144,29 @@ export const create = mutation({
       model,
     });
     return threadId;
+  },
+});
+
+export const update = mutation({
+  args: {
+    threadId: v.id("threads"),
+    patch: v.object(
+      partial(
+        pick(v.doc("threads").fields, [
+          "title",
+          "summary",
+          "status",
+          "model",
+          "pinned",
+        ]),
+      ),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const thread = await ctx.db.get(args.threadId);
+    assert(thread, `Thread ${args.threadId} not found`);
+    await ctx.db.patch(args.threadId, args.patch);
+    return (await ctx.db.get(args.threadId))!;
   },
 });
 

@@ -342,7 +342,7 @@ export class Agent<AgentTools extends ToolSet> {
           threadId: args.threadId,
         }),
         updateMetadata: (patch: Partial<WithoutSystemFields<ThreadDoc>>) =>
-          ctx.runMutation(api.chat_engine.threads.updateThread, {
+          ctx.runMutation(api.threads.update, {
             threadId: args.threadId,
             patch,
           }),
@@ -1153,10 +1153,7 @@ export class Agent<AgentTools extends ToolSet> {
       patch: Partial<WithoutSystemFields<ThreadDoc>>;
     },
   ): Promise<ThreadDoc> {
-    const thread = await ctx.runMutation(
-      api.chat_engine.threads.updateThread,
-      args,
-    );
+    const thread = await ctx.runMutation(api.threads.update, args);
     return thread;
   }
 

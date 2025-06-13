@@ -27,10 +27,6 @@ import {
 } from "@cvx/_generated/server";
 import type { MessageDoc } from "@cvx/schema";
 import schema, { v, vMessageDoc } from "@cvx/schema";
-import {
-  listThreadsByUserId as _listThreadsByUserId,
-  updateThread as _updateThread,
-} from "./threads";
 import { insertVector, searchVectors } from "./vector/index";
 import {
   type VectorDimension,
@@ -38,12 +34,6 @@ import {
   type VectorTableId,
   vVectorId,
 } from "./vector/tables";
-
-/** @deprecated Use *.threads.listMessagesByThreadId instead. */
-export const listThreadsByUserId = _listThreadsByUserId;
-
-/** @deprecated Use *.threads.updateThread instead */
-export const updateThread = _updateThread;
 
 function publicMessage(message: Doc<"messages">): MessageDoc {
   return omit(message, ["parentMessageId", "stepId", "files"]);

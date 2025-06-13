@@ -45,7 +45,7 @@ export const createThread = mutation({
       ...args,
       status: "active",
     });
-    return await ctx.db.get(threadId);
+    return (await ctx.db.get(threadId))!;
   },
 });
 
