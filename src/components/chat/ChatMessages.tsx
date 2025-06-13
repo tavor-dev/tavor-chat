@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 import { AnswerSection } from "./AnswerSection";
 import { UserMessage } from "./UserMessage";
+import type { UIMessage } from "@convex-dev/agent/react";
 
 interface ChatSection {
   id: string;
-  userMessage: any;
-  assistantMessages: any[];
+  userMessage: UIMessage;
+  assistantMessages: UIMessage[];
 }
 
 interface ChatMessagesProps {
@@ -39,7 +40,7 @@ export function ChatMessages({
           >
             {/* User message */}
             <div className="flex flex-col gap-4 mb-4">
-              <UserMessage message={section.userMessage.content} />
+              <UserMessage message={section.userMessage} />
             </div>
 
             {/* Assistant messages */}
