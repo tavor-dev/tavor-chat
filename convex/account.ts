@@ -27,12 +27,10 @@ export async function getUserId(ctx: QueryCtx | MutationCtx | ActionCtx) {
 export async function authorizeThreadAccess(
   ctx: QueryCtx | MutationCtx | ActionCtx,
   threadId: Id<"threads">,
-): Promise<ThreadDoc | Error> {
+): Promise<ThreadDoc> {
   const userId = await getUserId(ctx);
 
-  const thread = await ctx.runQuery(api.chat_engine.threads.getThread, {
-    threadId,
-  });
+  const thread = await ctx.runQuery(api.threads.getById, { threadId });
 
   if (!thread || thread.userId !== userId) {
     throw new Error("Unauthorized");

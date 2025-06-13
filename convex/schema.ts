@@ -104,21 +104,13 @@ const schema = defineSchema({
     .index("userId", ["userId"])
     .index("stripeId", ["stripeId"]),
 
-  threadData: defineTable({
-    threadId: v.id("threads"),
-    pinned: v.boolean(),
-    model: v.optional(v.string()),
-  }).index("threadId", ["threadId"]),
-
   threads: defineTable({
     userId: v.optional(v.id("users")), // Unset for anonymous
     title: v.optional(v.string()),
     summary: v.optional(v.string()),
     status: vThreadStatus,
-    // DEPRECATED
-    defaultSystemPrompt: v.optional(v.string()),
-    parentThreadIds: v.optional(v.array(v.id("threads"))),
-    order: /*DEPRECATED*/ v.optional(v.number()),
+    pinned: v.boolean(),
+    model: v.optional(v.string()),
   }).index("userId", ["userId"]),
 
   messages: defineTable({
@@ -255,18 +247,14 @@ export const vv = typedV(schema);
 export { vv as v };
 
 const user = schema.tables.users.validator;
-const threadData = schema.tables.threadData.validator;
+const thread = schema.tables.threads.validator;
 
 export type User = Infer<typeof user>;
-export type ThreadData = Infer<typeof threadData>;
 
 export const vThreadDoc = v.object({
+  ...thread.fields,
   _id: v.id("threads"),
   _creationTime: v.number(),
-  userId: v.optional(v.id("users")), // Unset for anonymous
-  title: v.optional(v.string()),
-  summary: v.optional(v.string()),
-  status: vThreadStatus,
 });
 export type ThreadDoc = Infer<typeof vThreadDoc>;
 

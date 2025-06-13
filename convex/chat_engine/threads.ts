@@ -3,10 +3,9 @@ import { paginator } from "convex-helpers/server/pagination";
 import { partial } from "convex-helpers/validators";
 import { paginationOptsValidator } from "convex/server";
 import type { ObjectType } from "convex/values";
-import { type ThreadDoc, vThreadDoc } from "@cvx/schema";
+import { vThreadDoc } from "@cvx/schema";
 import { vPaginationResult } from "./validators";
 import { api, internal } from "@cvx/_generated/api";
-import type { Doc } from "@cvx/_generated/dataModel";
 import {
   action,
   internalMutation,
@@ -16,25 +15,6 @@ import {
 } from "@cvx/_generated/server";
 import { deleteMessage } from "./messages";
 import schema, { v } from "@cvx/schema";
-
-function publicThreadOrNull(thread: Doc<"threads"> | null): ThreadDoc | null {
-  if (thread === null) {
-    return null;
-  }
-  return publicThread(thread);
-}
-
-function publicThread(thread: Doc<"threads">): ThreadDoc {
-  return omit(thread, ["defaultSystemPrompt", "parentThreadIds", "order"]);
-}
-
-export const getThread = query({
-  args: { threadId: v.id("threads") },
-  handler: async (ctx, args) => {
-    return publicThreadOrNull(await ctx.db.get(args.threadId));
-  },
-  returns: v.union(vThreadDoc, v.null()),
-});
 
 export const listThreadsByUserId = query({
   args: {
@@ -50,7 +30,7 @@ export const listThreadsByUserId = query({
       .paginate(args.paginationOpts ?? { cursor: null, numItems: 100 });
     return {
       ...threads,
-      page: threads.page.map(publicThread),
+      page: threads.page,
     };
   },
   returns: vPaginationResult(vThreadDoc),
@@ -59,15 +39,14 @@ export const listThreadsByUserId = query({
 const vThread = schema.tables.threads.validator;
 
 export const createThread = mutation({
-  args: omit(vThread.fields, ["order", "status"]),
+  args: omit(vThread.fields, ["status"]),
   handler: async (ctx, args) => {
     const threadId = await ctx.db.insert("threads", {
       ...args,
       status: "active",
     });
-    return publicThread((await ctx.db.get(threadId))!);
+    return await ctx.db.get(threadId);
   },
-  returns: vThreadDoc,
 });
 
 export const updateThread = mutation({
@@ -81,7 +60,7 @@ export const updateThread = mutation({
     const thread = await ctx.db.get(args.threadId);
     assert(thread, `Thread ${args.threadId} not found`);
     await ctx.db.patch(args.threadId, args.patch);
-    return publicThread((await ctx.db.get(args.threadId))!);
+    return (await ctx.db.get(args.threadId))!;
   },
   returns: vThreadDoc,
 });
@@ -93,7 +72,7 @@ export const updateThread = mutation({
 //     const thread = await ctx.db.get(args.threadId);
 //     assert(thread, `Thread ${args.threadId} not found`);
 //     await ctx.db.patch(args.threadId, { status: "archived" });
-//     return publicThread((await ctx.db.get(args.threadId))!);
+//     return (await ctx.db.get(args.threadId))!;
 //   },
 //   returns: vThreadDoc,
 // });

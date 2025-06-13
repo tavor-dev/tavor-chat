@@ -74,10 +74,10 @@ export const stream = internalAction({
     model: v.optional(v.string()),
   },
   handler: async (ctx, { promptMessageId, threadId, model }) => {
-    const threadData = await ctx.runQuery(api.threads.getThreadData, {
+    const tempThread = await ctx.runQuery(api.threads.getById, {
       threadId,
     });
-    const effectiveModelId = model || threadData?.model;
+    const effectiveModelId = model || tempThread?.model;
 
     // Create a custom agent with the selected model if provided
     let agent = chatAgent;

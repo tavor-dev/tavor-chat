@@ -5,63 +5,6 @@ import { action, internalAction, mutation, query } from "./_generated/server";
 import { chatAgent } from "./chat";
 import { authorizeThreadAccess, getUserId } from "./account";
 
-export const getThreadData = query({
-  args: {
-    threadId: v.id("threads"),
-  },
-  handler: async (ctx, { threadId }) => {
-    return await ctx.db
-      .query("threadData")
-      .withIndex("threadId", (q) => q.eq("threadId", threadId))
-      .first();
-  },
-});
-
-export const upsertThreadData = mutation({
-  args: {
-    threadId: v.id("threads"),
-    model: v.optional(v.string()),
-    pinned: v.optional(v.boolean()),
-  },
-  handler: async (ctx, { threadId, model, pinned }) => {
-    const existingThreadData = await ctx.runQuery(api.threads.getThreadData, {
-      threadId,
-    });
-
-    const mergedArgs = {
-      model,
-      pinned: pinned ?? existingThreadData?.pinned ?? false,
-    };
-
-    if (existingThreadData) {
-      await ctx.db.patch(existingThreadData._id, mergedArgs);
-    } else {
-      await ctx.db.insert("threadData", {
-        threadId,
-        model,
-        pinned: pinned ?? false,
-      });
-    }
-  },
-});
-
-export const deleteThreadData = mutation({
-  args: {
-    threadId: v.id("threads"),
-  },
-  handler: async (ctx, { threadId }) => {
-    const existingThreadData = await ctx.runQuery(api.threads.getThreadData, {
-      threadId,
-    });
-
-    if (!existingThreadData) {
-      return null;
-    }
-
-    await ctx.db.delete(existingThreadData._id);
-  },
-});
-
 /**
  * List all threads for the current user with pagination
  */
@@ -193,8 +136,8 @@ export const create = mutation({
     const { threadId } = await chatAgent.createThread(ctx, {
       userId,
       title,
+      model,
     });
-    await ctx.runMutation(api.threads.upsertThreadData, { threadId, model });
     return threadId;
   },
 });
@@ -212,7 +155,6 @@ export const deleteThread = action({
     await ctx.runAction(api.chat_engine.threads.deleteAllForThreadIdSync, {
       threadId,
     });
-    await ctx.runMutation(api.threads.deleteThreadData, { threadId });
 
     return null;
   },

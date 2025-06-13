@@ -206,6 +206,7 @@ export class Agent<AgentTools extends ToolSet> {
        * The summary of the thread. Not currently used for anything.
        */
       summary?: string;
+      model?: string;
       /**
        * The usage handler to use for this thread. Overrides any handler
        * set in the agent constructor.
@@ -246,6 +247,7 @@ export class Agent<AgentTools extends ToolSet> {
        * The summary of the thread. Not currently used for anything.
        */
       summary?: string;
+      model?: string;
       /**
        * The usage handler to use for this thread. Overrides any handler
        * set in the agent constructor.
@@ -266,6 +268,7 @@ export class Agent<AgentTools extends ToolSet> {
       userId: Id<"users">;
       title?: string;
       summary?: string;
+      model?: string;
       usageHandler?: UsageHandler;
       tools?: ThreadTools;
     },
@@ -279,6 +282,8 @@ export class Agent<AgentTools extends ToolSet> {
         userId: args?.userId,
         title: args?.title,
         summary: args?.summary,
+        model: args?.model,
+        pinned: false,
       },
     );
     if (!("runAction" in ctx)) {
@@ -1086,7 +1091,7 @@ export class Agent<AgentTools extends ToolSet> {
             ? (args.userId ??
               (args.threadId &&
                 (
-                  await ctx.runQuery(api.chat_engine.threads.getThread, {
+                  await ctx.runQuery(api.threads.getById, {
                     threadId: args.threadId,
                   })
                 )?.userId))
@@ -1125,7 +1130,7 @@ export class Agent<AgentTools extends ToolSet> {
     ctx: RunQueryCtx,
     args: { threadId: Id<"threads"> },
   ): Promise<ThreadDoc> {
-    const thread = await ctx.runQuery(api.chat_engine.threads.getThread, {
+    const thread = await ctx.runQuery(api.threads.getById, {
       threadId: args.threadId,
     });
     if (!thread) {
@@ -1447,7 +1452,7 @@ export class Agent<AgentTools extends ToolSet> {
       argsUserId ??
       (threadId &&
         (
-          await ctx.runQuery(api.chat_engine.threads.getThread, {
+          await ctx.runQuery(api.threads.getById, {
             threadId,
           })
         )?.userId);

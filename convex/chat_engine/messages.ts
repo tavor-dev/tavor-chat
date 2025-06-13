@@ -28,7 +28,6 @@ import {
 import type { MessageDoc } from "@cvx/schema";
 import schema, { v, vMessageDoc } from "@cvx/schema";
 import {
-  getThread as _getThread,
   listThreadsByUserId as _listThreadsByUserId,
   updateThread as _updateThread,
 } from "./threads";
@@ -42,9 +41,6 @@ import {
 
 /** @deprecated Use *.threads.listMessagesByThreadId instead. */
 export const listThreadsByUserId = _listThreadsByUserId;
-
-/** @deprecated Use *.threads.getThread */
-export const getThread = _getThread;
 
 /** @deprecated Use *.threads.updateThread instead */
 export const updateThread = _updateThread;
