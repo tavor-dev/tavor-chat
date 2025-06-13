@@ -25,7 +25,7 @@ export const listThreadsByUserId = query({
   handler: async (ctx, args) => {
     const threads = await paginator(ctx.db, schema)
       .query("threads")
-      .withIndex("userId", (q) => q.eq("userId", args.userId))
+      .withIndex("userId_pinned", (q) => q.eq("userId", args.userId))
       .order(args.order ?? "desc")
       .paginate(args.paginationOpts ?? { cursor: null, numItems: 100 });
     return {

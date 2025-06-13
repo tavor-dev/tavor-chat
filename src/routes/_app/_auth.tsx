@@ -19,6 +19,7 @@ import {
 } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
+import { ThreadDoc } from "@cvx/schema";
 import { Trash } from "@medusajs/icons";
 import { Button, DropdownMenu, IconButton } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
@@ -31,7 +32,7 @@ import {
 } from "@tanstack/react-router";
 import { useAction, useMutation } from "convex/react";
 import { Pin, PinOff } from "lucide-react";
-import { useEffect } from "react";
+import React, { useEffect, useMemo } from "react";
 import { toast, Toaster } from "react-hot-toast";
 
 const THREADS_PAGE_SIZE = 20;
@@ -138,6 +139,103 @@ function AppSidebar() {
     }
   };
 
+  const groupedThreads = useMemo(() => {
+    if (!threads) return { pinned: [], groups: [] };
+
+    const now = new Date();
+    const today = new Date(now.getFullYear(), now.getMonth(), now.getDate());
+    const yesterday = new Date(today);
+    yesterday.setDate(yesterday.getDate() - 1);
+    const lastWeek = new Date(today);
+    lastWeek.setDate(lastWeek.getDate() - 7);
+    const lastMonth = new Date(today);
+    lastMonth.setMonth(lastMonth.getMonth() - 1);
+
+    const pinned = threads.filter((thread) => thread.pinned);
+    const unpinned = threads.filter((thread) => !thread.pinned);
+
+    const groups: Array<{ label: string; threads: typeof threads }> = [];
+
+    const todayThreads = unpinned.filter((thread) => {
+      const threadDate = new Date(thread._creationTime);
+      return threadDate >= today;
+    });
+
+    const yesterdayThreads = unpinned.filter((thread) => {
+      const threadDate = new Date(thread._creationTime);
+      return threadDate >= yesterday && threadDate < today;
+    });
+
+    const lastWeekThreads = unpinned.filter((thread) => {
+      const threadDate = new Date(thread._creationTime);
+      return threadDate >= lastWeek && threadDate < yesterday;
+    });
+
+    const lastMonthThreads = unpinned.filter((thread) => {
+      const threadDate = new Date(thread._creationTime);
+      return threadDate >= lastMonth && threadDate < lastWeek;
+    });
+
+    const olderThreads = unpinned.filter((thread) => {
+      const threadDate = new Date(thread._creationTime);
+      return threadDate < lastMonth;
+    });
+
+    if (todayThreads.length > 0)
+      groups.push({ label: "Today", threads: todayThreads });
+    if (yesterdayThreads.length > 0)
+      groups.push({ label: "Yesterday", threads: yesterdayThreads });
+    if (lastWeekThreads.length > 0)
+      groups.push({ label: "Previous 7 days", threads: lastWeekThreads });
+    if (lastMonthThreads.length > 0)
+      groups.push({ label: "Previous 30 days", threads: lastMonthThreads });
+    if (olderThreads.length > 0)
+      groups.push({ label: "Older", threads: olderThreads });
+
+    return { pinned, groups };
+  }, [threads]);
+
+  const ThreadItem = ({ thread }: { thread: (typeof threads)[0] }) => (
+    <SidebarMenuItem className="group/thread">
+      <div className="relative flex items-center group">
+        <Button
+          variant="transparent"
+          className="w-full justify-start h-8 px-2 text-sm truncate mx-0"
+          onClick={() => handleNavigation(thread._id)}
+        >
+          {thread.title || "New chat"}
+        </Button>
+        <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 bg-ui-bg-base rounded opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0">
+          <IconButton
+            size="small"
+            variant="transparent"
+            onClick={(e) => {
+              e.stopPropagation();
+              handlePinThread(thread._id, thread.pinned || false);
+            }}
+          >
+            {thread.pinned ? (
+              <PinOff className="h-4 w-4" />
+            ) : (
+              <Pin className="h-4 w-4" />
+            )}
+          </IconButton>
+          <IconButton
+            size="small"
+            variant="transparent"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleDeleteThread(thread._id);
+            }}
+            className="text-ui-fg-error hover:text-ui-fg-error"
+          >
+            <Trash className="h-4 w-4" />
+          </IconButton>
+        </div>
+      </div>
+    </SidebarMenuItem>
+  );
+
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
@@ -152,50 +250,37 @@ function AppSidebar() {
         </Button>
       </SidebarHeader>
       <SidebarContent className="overflow-x-hidden">
-        <p className="text-xs font-semibold text-ui-fg-muted px-2">Recents</p>
-        <SidebarMenu>
-          {threads.map((thread) => (
-            <SidebarMenuItem key={thread._id} className="group/thread">
-              <div className="relative flex items-center group">
-                <Button
-                  variant="transparent"
-                  className="w-full justify-start h-8 px-2 text-sm truncate mx-0"
-                  onClick={() => handleNavigation(thread._id)}
-                >
-                  {thread.title || "New chat"}
-                </Button>
-                <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 bg-ui-bg-base rounded opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0">
-                  <IconButton
-                    size="small"
-                    variant="transparent"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handlePinThread(thread._id, thread.pinned || false);
-                    }}
-                  >
-                    {thread.pinned ? (
-                      <PinOff className="h-4 w-4" />
-                    ) : (
-                      <Pin className="h-4 w-4" />
-                    )}
-                  </IconButton>
-                  <IconButton
-                    size="small"
-                    variant="transparent"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      handleDeleteThread(thread._id);
-                    }}
-                    className="text-ui-fg-error hover:text-ui-fg-error"
-                  >
-                    <Trash className="h-4 w-4" />
-                  </IconButton>
-                </div>
-              </div>
-            </SidebarMenuItem>
-          ))}
-          {threadsPaginationStatus !== "Exhausted" &&
-            threadsPaginationStatus !== "LoadingFirstPage" && (
+        {/* Pinned threads */}
+        {groupedThreads.pinned.length > 0 && (
+          <>
+            <p className="text-xs font-semibold text-ui-fg-muted px-2 mt-2">
+              Pinned
+            </p>
+            <SidebarMenu>
+              {groupedThreads.pinned.map((thread) => (
+                <ThreadItem key={thread._id} thread={thread} />
+              ))}
+            </SidebarMenu>
+          </>
+        )}
+
+        {/* Time-grouped threads */}
+        {groupedThreads.groups.map((group) => (
+          <React.Fragment key={group.label}>
+            <p className="text-xs font-semibold text-ui-fg-muted px-2 mt-4 first:mt-2">
+              {group.label}
+            </p>
+            <SidebarMenu>
+              {group.threads.map((thread) => (
+                <ThreadItem key={thread._id} thread={thread} />
+              ))}
+            </SidebarMenu>
+          </React.Fragment>
+        ))}
+
+        {threadsPaginationStatus !== "Exhausted" &&
+          threadsPaginationStatus !== "LoadingFirstPage" && (
+            <SidebarMenu className="mt-2">
               <SidebarMenuItem>
                 <Button
                   variant="secondary"
@@ -208,8 +293,8 @@ function AppSidebar() {
                     : "Load more"}
                 </Button>
               </SidebarMenuItem>
-            )}
-        </SidebarMenu>
+            </SidebarMenu>
+          )}
       </SidebarContent>
       <SidebarFooter>
         {user && (

@@ -111,7 +111,9 @@ const schema = defineSchema({
     status: vThreadStatus,
     pinned: v.boolean(),
     model: v.optional(v.string()),
-  }).index("userId", ["userId"]),
+  })
+    .index("userId", ["userId"])
+    .index("userId_pinned", ["userId", "pinned"]),
 
   messages: defineTable({
     id: v.optional(v.string()), // external id, e.g. from Vercel AI SDK

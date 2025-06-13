@@ -37,6 +37,15 @@ export const getById = query({
     threadId: v.id("threads"),
   },
   handler: async (ctx, args) => {
+    return await ctx.db.get(args.threadId);
+  },
+});
+
+export const getByIdForCurrentUser = query({
+  args: {
+    threadId: v.id("threads"),
+  },
+  handler: async (ctx, args) => {
     const thread = await authorizeThreadAccess(ctx, args.threadId);
 
     return thread;
