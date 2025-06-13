@@ -1,5 +1,6 @@
 import { Copy } from "lucide-react";
 import { Button } from "@medusajs/ui";
+import { ChannelsSolid } from "@medusajs/icons";
 
 interface MessageActionsProps {
   content: string;
@@ -8,6 +9,11 @@ interface MessageActionsProps {
 export function MessageActions({ content }: MessageActionsProps) {
   async function handleCopy() {
     await navigator.clipboard.writeText(content);
+  }
+
+  function handleFork() {
+    // TODO: Implement fork functionality
+    console.log("Fork clicked");
   }
 
   return (
@@ -19,6 +25,14 @@ export function MessageActions({ content }: MessageActionsProps) {
         className=""
       >
         <Copy size={14} />
+      </Button>
+      <Button
+        variant="transparent"
+        size="small"
+        onClick={handleFork}
+        className=""
+      >
+        <ChannelsSolid />
       </Button>
     </div>
   );

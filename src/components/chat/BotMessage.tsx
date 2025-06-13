@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { Text } from "@medusajs/ui";
 
 export function BotMessage({
   message,
@@ -7,15 +8,5 @@ export function BotMessage({
   message: string;
   className?: string;
 }) {
-  return (
-    <div
-      className={cn(
-        "prose-sm prose-neutral prose-a:text-accent-foreground/50",
-        className,
-      )}
-    >
-      {message}
-    </div>
-  );
+  return <Text className={cn("", "", "", className)}>{message}</Text>;
 }
-
