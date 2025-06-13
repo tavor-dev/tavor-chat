@@ -26,7 +26,7 @@ export function Chat({ threadId }: { threadId: string }) {
   const messages = useThreadMessages(
     api.messages.getByThreadId,
     { threadId },
-    { initialNumItems: 10, stream: true },
+    { initialNumItems: 50, stream: true },
   );
 
   const sendMessage = useMutation(
@@ -60,10 +60,15 @@ export function Chat({ threadId }: { threadId: string }) {
     return result;
   }, [messages.results]);
 
+  const handleScrollPositionChange = useCallback((atBottom: boolean) => {
+    setIsAtBottom(atBottom);
+  }, []);
+
   const handleSubmit = useCallback(
     (e: React.FormEvent) => {
       e.preventDefault();
       if (input.trim() === "") return;
+
       sendMessage({ threadId, prompt: input });
       setInput("");
     },
