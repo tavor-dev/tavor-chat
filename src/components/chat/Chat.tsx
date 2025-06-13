@@ -26,11 +26,11 @@ export function Chat({ threadId }: { threadId: string }) {
   const messages = useThreadMessages(
     api.messages.getByThreadId,
     { threadId },
-    { initialNumItems: 10, stream: true }
+    { initialNumItems: 10, stream: true },
   );
 
   const sendMessage = useMutation(
-    api.chat.streamAsynchronously
+    api.chat.streamAsynchronously,
   ).withOptimisticUpdate(optimisticallySendMessage(api.messages.getByThreadId));
 
   // Convert messages to sections
@@ -67,21 +67,21 @@ export function Chat({ threadId }: { threadId: string }) {
       sendMessage({ threadId, prompt: input });
       setInput("");
     },
-    [input, sendMessage, threadId]
+    [input, sendMessage, threadId],
   );
 
   const handleInputChange = useCallback(
     (e: React.ChangeEvent<HTMLTextAreaElement>) => {
       setInput(e.target.value);
     },
-    []
+    [],
   );
 
   return (
     <div
       className={cn(
         "relative flex h-full min-w-0 flex-1 flex-col",
-        sections.length === 0 ? "items-center justify-center" : ""
+        sections.length === 0 ? "items-center justify-end" : "",
       )}
       data-testid="full-chat"
     >
@@ -89,7 +89,7 @@ export function Chat({ threadId }: { threadId: string }) {
         sections={sections}
         scrollContainerRef={scrollContainerRef}
       />
-      
+
       <ChatPanel
         input={input}
         handleInputChange={handleInputChange}
@@ -101,3 +101,4 @@ export function Chat({ threadId }: { threadId: string }) {
     </div>
   );
 }
+

@@ -53,12 +53,12 @@ function NewChatComponent() {
       <div className="flex-1 flex flex-col justify-center p-8">
         <div className="w-full flex justify-center flex-col items-center mb-8 gap-4">
           <Logo />
-          <h1 className="text-2xl font-semibold text-ui-fg-base">
+          <h1 className="text-2xl font-semibold text-ui-fg-base mt-4">
             Hello, {user?.name || "there"}!
           </h1>
         </div>
       </div>
-      
+
       <ChatPanel
         input={input}
         handleInputChange={handleInputChange}
