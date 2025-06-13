@@ -7,5 +7,9 @@ export const Route = createFileRoute("/_app/_auth/chat/$threadId")({
 
 function ChatComponent() {
   const { threadId } = Route.useParams();
-  return <Chat threadId={threadId} />;
+  return (
+    <div className="h-full flex flex-col">
+      <Chat threadId={threadId} />
+    </div>
+  );
 }

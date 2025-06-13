@@ -1,11 +1,12 @@
 import { cn } from "@/lib/utils";
 import { AnswerSection } from "./AnswerSection";
 import { UserMessage } from "./UserMessage";
+import type { UIMessage } from "@convex-dev/agent/react";
 
 interface ChatSection {
   id: string;
-  userMessage: any;
-  assistantMessages: any[];
+  userMessage: UIMessage;
+  assistantMessages: UIMessage[];
 }
 
 interface ChatMessagesProps {
@@ -13,7 +14,10 @@ interface ChatMessagesProps {
   scrollContainerRef: React.RefObject<HTMLDivElement>;
 }
 
-export function ChatMessages({ sections, scrollContainerRef }: ChatMessagesProps) {
+export function ChatMessages({
+  sections,
+  scrollContainerRef,
+}: ChatMessagesProps) {
   if (!sections.length) return null;
 
   return (
@@ -24,24 +28,19 @@ export function ChatMessages({ sections, scrollContainerRef }: ChatMessagesProps
       aria-roledescription="chat messages"
       className={cn(
         "relative size-full pt-14",
-        sections.length > 0 ? "flex-1 overflow-y-auto" : ""
+        sections.length > 0 ? "flex-1 overflow-y-auto" : "",
       )}
     >
-      <div className="relative mx-auto w-full max-w-3xl px-4">
-        {sections.map((section, sectionIndex) => (
+      <div className="relative mx-auto w-full max-w-3xl px-4 h-full">
+        {sections.map((section) => (
           <div
             key={section.id}
             id={`section-${section.id}`}
             className="chat-section mb-8"
-            style={
-              sectionIndex === sections.length - 1
-                ? { minHeight: "calc(-228px + 100dvh)" }
-                : {}
-            }
           >
             {/* User message */}
             <div className="flex flex-col gap-4 mb-4">
-              <UserMessage message={section.userMessage.content} />
+              <UserMessage message={section.userMessage} />
             </div>
 
             {/* Assistant messages */}

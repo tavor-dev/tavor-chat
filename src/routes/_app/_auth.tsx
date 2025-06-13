@@ -240,7 +240,7 @@ function AppSidebar() {
     <Sidebar variant="inset">
       <SidebarHeader>
         <div className="flex items-center mb-2 ml-10">
-          <div className="flex gap-2 items-center">
+          <div className="flex mt-1.5 gap-2 items-center">
             <Logo className="h-6 w-6" />
             <h1 className="font-semibold">Tavor</h1>
           </div>

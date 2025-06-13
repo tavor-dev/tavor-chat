@@ -108,7 +108,7 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        "w-full group/form-container shrink-0 sticky bottom-0 px-2 pb-4",
+        "w-full group/form-container shrink-0 sticky bottom-0 px-2 pb-4 bg-ui-bg-component",
       )}
     >
       <form
@@ -188,44 +188,44 @@ export function ChatPanel({
               </div>
 
               {/* Feature toggles */}
-              {selectedModel && (
-                <div className="flex gap-2">
-                  {getSelectedModelCapabilities().map((feature) => {
-                    const config = FEATURE_CONFIGS[feature];
-                    const iconMap: Record<ModelFeature, React.ComponentType> = {
-                      reasoning: AiAssistent,
-                      search: GlobeEurope,
-                      images: Photo,
-                      pdfs: DocumentText,
-                      imageGeneration: Sparkles,
-                      parameters: CogSixTooth,
-                      reasoningEffort: LightBulb,
-                      fast: Bolt,
-                    };
-                    const IconComponent = iconMap[feature];
-                    return (
-                      <Button
-                        key={feature}
-                        variant={
-                          enabledFeatures.includes(feature)
-                            ? "primary"
-                            : "secondary"
-                        }
-                        size="small"
-                        onClick={() => toggleFeature(feature)}
-                        className={`${
-                          enabledFeatures.includes(feature)
-                            ? "bg-ui-bg-interactive hover:bg-ui-bg-highlight-hover text-ui-fg-on-color"
-                            : "bg-ui-button-neutral hover:bg-ui-button-neutral-hover text-ui-fg-base"
-                        } flex items-center gap-1`}
-                        title={config.description}
-                      >
-                        <IconComponent /> {config.name}
-                      </Button>
-                    );
-                  })}
-                </div>
-              )}
+              {/* {selectedModel && ( */}
+              {/*   <div className="flex gap-2"> */}
+              {/*     {getSelectedModelCapabilities().map((feature) => { */}
+              {/*       const config = FEATURE_CONFIGS[feature]; */}
+              {/*       const iconMap: Record<ModelFeature, React.ComponentType> = { */}
+              {/*         reasoning: AiAssistent, */}
+              {/*         search: GlobeEurope, */}
+              {/*         images: Photo, */}
+              {/*         pdfs: DocumentText, */}
+              {/*         imageGeneration: Sparkles, */}
+              {/*         parameters: CogSixTooth, */}
+              {/*         reasoningEffort: LightBulb, */}
+              {/*         fast: Bolt, */}
+              {/*       }; */}
+              {/*       const IconComponent = iconMap[feature]; */}
+              {/*       return ( */}
+              {/*         <Button */}
+              {/*           key={feature} */}
+              {/*           variant={ */}
+              {/*             enabledFeatures.includes(feature) */}
+              {/*               ? "primary" */}
+              {/*               : "secondary" */}
+              {/*           } */}
+              {/*           size="small" */}
+              {/*           onClick={() => toggleFeature(feature)} */}
+              {/*           className={`${ */}
+              {/*             enabledFeatures.includes(feature) */}
+              {/*               ? "bg-ui-bg-interactive hover:bg-ui-bg-highlight-hover text-ui-fg-on-color" */}
+              {/*               : "bg-ui-button-neutral hover:bg-ui-button-neutral-hover text-ui-fg-base" */}
+              {/*           } flex items-center gap-1`} */}
+              {/*           title={config.description} */}
+              {/*         > */}
+              {/*           <IconComponent /> {config.name} */}
+              {/*         </Button> */}
+              {/*       ); */}
+              {/*     })} */}
+              {/*   </div> */}
+              {/* )} */}
             </div>
             <div className="flex items-center gap-2">
               <Button

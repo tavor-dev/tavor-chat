@@ -51,6 +51,8 @@
     "react-helmet-async": "^2.0.5",
     "react-hot-toast": "^2.5.2",
     "react-i18next": "^15.5.2",
+    "react-markdown": "^10.1.0",
+    "remark-gfm": "^4.0.1",
     "resend": "^3.5.0",
     "stripe": "^16.12.0",
     "tailwind-merge": "^2.6.0",
