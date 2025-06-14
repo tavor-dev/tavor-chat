@@ -1,12 +1,13 @@
 import { Copy } from "@medusajs/ui";
-import { Button, Tooltip, TooltipProvider } from "@medusajs/ui";
-import { ChannelsSolid, ArrowPath } from "@medusajs/icons";
+import { Tooltip, TooltipProvider } from "@medusajs/ui";
+import { ChannelsSolid, ArrowPath, Pencil } from "@medusajs/icons";
 
 interface MessageActionsProps {
   content: string;
+  onEdit?: () => void;
 }
 
-export function MessageActions({ content }: MessageActionsProps) {
+export function MessageActions({ content, onEdit }: MessageActionsProps) {
   function handleFork() {
     // TODO: Implement fork functionality
     console.log("Fork clicked");
@@ -18,15 +19,20 @@ export function MessageActions({ content }: MessageActionsProps) {
   }
 
   return (
-    <div className="flex items-center gap-4 self-end mt-4">
+    <div className="flex items-center gap-4 self-end mt-4 mr-2 transition-opacity opacity-0 group-hover/message:opacity-100">
       <TooltipProvider>
         <Copy content={content} />
-        <Tooltip content="Regenerate">
+
+        <Tooltip content="Edit" onClick={onEdit}>
+          <Pencil className="text-ui-fg-subtle cursor-pointer hidden group-data-[role=user]/message:block" />
+        </Tooltip>
+
+        <Tooltip content="Retry">
           <ArrowPath className="text-ui-fg-subtle cursor-pointer" />
         </Tooltip>
 
         <Tooltip content="Fork">
-          <ChannelsSolid className="text-ui-fg-subtle cursor-pointer" />
+          <ChannelsSolid className="text-ui-fg-subtle cursor-pointer group-data-[role=user]/message:hidden" />
         </Tooltip>
       </TooltipProvider>
     </div>

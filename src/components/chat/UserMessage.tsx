@@ -2,6 +2,7 @@ import { useSmoothText, type UIMessage } from "@convex-dev/agent/react";
 import { Button, Textarea, Tooltip, TooltipProvider } from "@medusajs/ui";
 import { Pencil } from "@medusajs/icons";
 import { useState } from "react";
+import { MessageActions } from "./MessageActions";
 // To make editing functional, you'll need to create and import a Convex mutation for updating messages.
 // import { useMutation } from "convex/react";
 // import { api } from "@cvx/_generated/api";
@@ -61,11 +62,10 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
         <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap">
           {visibleText}
         </div>
-        <div className="mt-4 mr-2">
-          <Tooltip content="Edit" onClick={() => setIsEditing(true)}>
-            <Pencil className="text-ui-fg-subtle cursor-pointer" />
-          </Tooltip>
-        </div>
+        <MessageActions
+          content={visibleText}
+          onEdit={() => setIsEditing(true)}
+        />
       </div>
     </div>
   );

@@ -84,16 +84,13 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
           toUIMessages(messages.results ?? []).map((m) => (
             <div
               key={m.id}
-              className="chat-section max-w-3xl mx-auto mb-8 px-4"
+              data-role={m.role}
+              className="group/message chat-section max-w-3xl mx-auto mb-8 px-4 flex flex-col gap-4"
             >
               {m.role === "user" ? (
-                <div className="flex flex-col gap-4 mb-4">
-                  <UserMessage message={m} />
-                </div>
+                <UserMessage message={m} />
               ) : (
-                <div className="flex flex-col gap-4">
-                  <AnswerSection message={m} />
-                </div>
+                <AnswerSection message={m} />
               )}
             </div>
           ))}
