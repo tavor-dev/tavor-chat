@@ -15,7 +15,6 @@ import { UserMessage } from "./UserMessage";
 export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
-  const [input, setInput] = useState("");
   const [inputHeight, setInputHeight] = useState(0);
 
   const messages = useThreadMessages(
@@ -48,21 +47,11 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   }, []);
 
   const handleSubmit = useCallback(
-    (e: React.FormEvent) => {
-      e.preventDefault();
-      if (input.trim() === "") return;
-
-      sendMessage({ threadId, prompt: input });
-      setInput("");
+    (prompt: string) => {
+      if (prompt.trim() === "") return;
+      sendMessage({ threadId, prompt });
     },
-    [input, sendMessage, threadId],
-  );
-
-  const handleInputChange = useCallback(
-    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-      setInput(e.target.value);
-    },
-    [],
+    [sendMessage, threadId],
   );
 
   return (
@@ -96,8 +85,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
           ))}
       </div>
       <ChatPanel
-        input={input}
-        handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
         isLoading={messages.isLoading}
         onInputHeightChange={setInputHeight}

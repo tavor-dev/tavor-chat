@@ -1,7 +1,7 @@
 import { cn } from "@/lib/utils";
 import { ArrowUp, Square } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
-import { useRef, useCallback, useState } from "react";
+import { useRef, useCallback, useState, type FormEvent } from "react";
 import { Button, Select } from "@medusajs/ui";
 import TextareaAutosize, {
   type TextareaHeightChangeMeta,
@@ -29,9 +29,7 @@ import { useQuery } from "@tanstack/react-query";
 import { useMutation } from "convex/react";
 
 interface ChatPanelProps {
-  input: string;
-  handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
-  handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  handleSubmit: (prompt: string) => void;
   onInputHeightChange: (height: number, meta: TextareaHeightChangeMeta) => void;
   isLoading: boolean;
   showScrollToBottomButton: boolean;
@@ -39,8 +37,6 @@ interface ChatPanelProps {
 }
 
 export function ChatPanel({
-  input,
-  handleInputChange,
   handleSubmit,
   isLoading,
   onInputHeightChange,
@@ -49,6 +45,21 @@ export function ChatPanel({
 }: ChatPanelProps) {
   const navigate = useNavigate();
   const inputRef = useRef<HTMLTextAreaElement>(null);
+  const [input, setInput] = useState("");
+
+  const handleInputChange = useCallback(
+    (e: React.ChangeEvent<HTMLTextAreaElement>) => {
+      setInput(e.target.value);
+    },
+    [],
+  );
+
+  const formSubmit = (e: FormEvent<HTMLFormElement>) => {
+    e.preventDefault();
+    if (input.trim() === "") return;
+    handleSubmit(input);
+    setInput("");
+  };
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
@@ -113,7 +124,7 @@ export function ChatPanel({
       )}
     >
       <form
-        onSubmit={handleSubmit}
+        onSubmit={formSubmit}
         className={cn("max-w-3xl w-full mx-auto relative")}
       >
         {showScrollToBottomButton && (

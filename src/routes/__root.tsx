@@ -51,7 +51,7 @@ export const Route = createRootRouteWithContext<{
 
     return (
       <div className="min-h-screen flex flex-col">
-        {process.env.NODE_ENV === "development" && <GridOverlay />}
+        {/* {process.env.NODE_ENV === "development" && <GridOverlay />} */}
         <Outlet />
         <Helmet>
           <title>{title}</title>
