@@ -5,7 +5,7 @@ import { api } from "@cvx/_generated/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useState, useRef } from "react";
+import { useState } from "react";
 
 export const Route = createFileRoute("/_app/_auth/")({
   component: NewChatComponent,
@@ -18,17 +18,10 @@ function NewChatComponent() {
   const createThread = useMutation(api.threads.create);
   const sendMessage = useMutation(api.chat.streamAsynchronously);
 
-  const [input, setInput] = useState<string>("");
   const [isLoading, setIsLoading] = useState(false);
-  const scrollContainerRef = useRef<HTMLDivElement>(null);
 
-  const handleInputChange = (e: React.ChangeEvent<HTMLTextAreaElement>) => {
-    setInput(e.target.value);
-  };
-
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!input.trim() || isLoading) return;
+  const handleSubmit = async (prompt: string) => {
+    if (!prompt.trim() || isLoading) return;
 
     setIsLoading(true);
     try {
@@ -37,7 +30,7 @@ function NewChatComponent() {
       });
       await sendMessage({
         threadId,
-        prompt: input,
+        prompt,
         model: user?.selectedModel || undefined,
       });
       navigate({ to: "/chat/$threadId", params: { threadId } });
@@ -60,12 +53,10 @@ function NewChatComponent() {
       </div>
 
       <ChatPanel
-        input={input}
-        handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
         isLoading={isLoading}
         showScrollToBottomButton={false}
-        scrollContainerRef={scrollContainerRef}
+        onInputHeightChange={() => {}}
       />
     </div>
   );

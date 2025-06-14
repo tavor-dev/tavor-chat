@@ -4,18 +4,43 @@ import {
   toUIMessages,
   useThreadMessages,
 } from "@convex-dev/agent/react";
-import { Id } from "@cvx/_generated/dataModel";
-import { useMutation } from "convex/react";
+import { Doc, Id } from "@cvx/_generated/dataModel";
+import { useMutation, useConvex } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
+import {
+  cacheThreadMessages,
+  getCachedThreadMessages,
+  initThreadCache,
+} from "@/lib/threadCache";
 import { AnswerSection } from "./AnswerSection";
 import { ChatPanel } from "./ChatPanel";
 import { UserMessage } from "./UserMessage";
+
+// This component triggers the background cache initialization once per session.
+function CacheInitializer() {
+  const convex = useConvex();
+  useEffect(() => {
+    // The function has internal logic to run only once per session.
+    void initThreadCache(convex);
+  }, [convex]);
+  return null;
+}
 
 export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [inputHeight, setInputHeight] = useState(0);
+
+  // Load initial messages from cache to show something immediately.
+  const [cachedMessages, setCachedMessages] = useState<Doc<"messages">[] | null>(
+    () => getCachedThreadMessages(threadId),
+  );
+
+  // Refetch from cache if threadId changes (when navigating between chats).
+  useEffect(() => {
+    setCachedMessages(getCachedThreadMessages(threadId));
+  }, [threadId]);
 
   const messages = useThreadMessages(
     api.messages.getByThreadId,
@@ -23,7 +48,19 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     { initialNumItems: 50, stream: true },
   );
 
-  const messagesCount = messages.results?.length || 0;
+  // When server data arrives, update the cache.
+  useEffect(() => {
+    if (!messages.isLoading && messages.results) {
+      cacheThreadMessages(threadId, messages.results);
+    }
+  }, [messages.isLoading, messages.results, threadId]);
+
+  const messagesToRender = toUIMessages(
+    // If loading and we have a cache, use it. Otherwise, use server results.
+    messages.isLoading && cachedMessages ? cachedMessages : messages.results ?? [],
+  );
+
+  const messagesCount = messagesToRender.length;
 
   const scrollToBottom = useCallback(() => {
     if (scrollContainerRef.current) {
@@ -32,11 +69,11 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         behavior: "instant",
       });
     }
-  }, [scrollContainerRef]);
+  }, []);
 
   useEffect(() => {
     scrollToBottom();
-  }, [messagesCount]);
+  }, [messagesCount, scrollToBottom]);
 
   const sendMessage = useMutation(
     api.chat.streamAsynchronously,
@@ -56,6 +93,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
 
   return (
     <>
+      <CacheInitializer />
       <div
         id="scroll-container"
         ref={scrollContainerRef}
@@ -70,7 +108,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         }}
       >
         {messagesCount > 0 &&
-          toUIMessages(messages.results ?? []).map((m) => (
+          messagesToRender.map((m) => (
             <div
               key={m.id}
               data-role={m.role}
