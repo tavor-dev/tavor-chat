@@ -120,7 +120,7 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        "w-full group/form-container absolute bottom-0 z-0 px-2 pb-2",
+        "bg-ui-bg-field-component-hover w-full group/form-container absolute bottom-0 z-0 px-2 pb-2",
       )}
     >
       <form
@@ -140,78 +140,82 @@ export function ChatPanel({
           </Button>
         )}
 
-        <div className="relative flex flex-col w-full gap-2 bg-ui-bg-field-component rounded-xl border border-ui-border-base z-50">
-          <TextareaAutosize
-            onHeightChange={onInputHeightChange}
-            ref={inputRef}
-            name="input"
-            rows={2}
-            tabIndex={0}
-            placeholder="Ask a question..."
-            spellCheck={false}
-            value={input}
-            disabled={isLoading}
-            className="resize-none w-full min-h-12 bg-transparent border-0 p-4 text-sm placeholder:text-ui-fg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-ui-fg-base max-h-64"
-            onChange={handleInputChange}
-            onKeyDown={(e) => {
-              if (e.key === "Enter" && !e.shiftKey) {
-                if (input.trim().length === 0) {
+        <div className="flex p-1 rounded-2xl bg-ui-bg-field-component-hover border border-ui-border-base">
+          <div className="relative flex flex-col w-full gap-2 bg-ui-bg-field-component rounded-xl border border-ui-border-base z-50">
+            <TextareaAutosize
+              onHeightChange={onInputHeightChange}
+              ref={inputRef}
+              name="input"
+              rows={2}
+              tabIndex={0}
+              placeholder="Ask a question..."
+              spellCheck={false}
+              value={input}
+              disabled={isLoading}
+              className="resize-none w-full min-h-12 bg-transparent border-0 p-4 text-sm placeholder:text-ui-fg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-ui-fg-base max-h-64"
+              onChange={handleInputChange}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && !e.shiftKey) {
+                  if (input.trim().length === 0) {
+                    e.preventDefault();
+                    return;
+                  }
                   e.preventDefault();
-                  return;
+                  const textarea = e.target as HTMLTextAreaElement;
+                  textarea.form?.requestSubmit();
                 }
-                e.preventDefault();
-                const textarea = e.target as HTMLTextAreaElement;
-                textarea.form?.requestSubmit();
-              }
-            }}
-          />
+              }}
+            />
 
-          <div className="flex items-center justify-between p-3">
-            <div className="flex items-center gap-2">
-              {/* Model selector */}
+            <div className="flex items-center justify-between p-3">
               <div className="flex items-center gap-2">
-                <Select
-                  value={selectedModel}
-                  onValueChange={(value) => setSelectedModel(value as ModelId)}
-                >
-                  <Select.Trigger className="w-48 bg-ui-bg-field border-ui-border-base">
-                    <Select.Value placeholder="Select a model" />
-                  </Select.Trigger>
-                  <Select.Content className="bg-ui-bg-component border-ui-border-base">
-                    {Object.entries(modelsByProvider).map(
-                      ([provider, models]) => (
-                        <Select.Group key={provider}>
-                          <Select.Label className="text-ui-fg-muted">
-                            {provider}
-                          </Select.Label>
-                          {models.map((model) => (
-                            <Select.Item
-                              key={model.id}
-                              value={model.id}
-                              className="text-ui-fg-base hover:bg-ui-bg-component-hover"
-                            >
-                              {model.name}
-                            </Select.Item>
-                          ))}
-                        </Select.Group>
-                      ),
-                    )}
-                  </Select.Content>
-                </Select>
+                {/* Model selector */}
+                <div className="flex items-center gap-2">
+                  <Select
+                    value={selectedModel}
+                    onValueChange={(value) =>
+                      setSelectedModel(value as ModelId)
+                    }
+                  >
+                    <Select.Trigger className="w-48 bg-ui-bg-field border-ui-border-base">
+                      <Select.Value placeholder="Select a model" />
+                    </Select.Trigger>
+                    <Select.Content className="bg-ui-bg-component border-ui-border-base">
+                      {Object.entries(modelsByProvider).map(
+                        ([provider, models]) => (
+                          <Select.Group key={provider}>
+                            <Select.Label className="text-ui-fg-muted">
+                              {provider}
+                            </Select.Label>
+                            {models.map((model) => (
+                              <Select.Item
+                                key={model.id}
+                                value={model.id}
+                                className="text-ui-fg-base hover:bg-ui-bg-component-hover"
+                              >
+                                {model.name}
+                              </Select.Item>
+                            ))}
+                          </Select.Group>
+                        ),
+                      )}
+                    </Select.Content>
+                  </Select>
+                </div>
               </div>
-            </div>
-            <div className="flex items-center gap-2">
-              <IconButton
-                type={isLoading ? "button" : "submit"}
-                className={cn(
-                  isLoading && "animate-pulse",
-                  "",
-                  input.length === 0 && !isLoading && "",
-                )}
-                disabled={input.length === 0 && !isLoading}
-              >
-                {isLoading ? <SquareRedSolid /> : <ArrowUpMini />}
-              </IconButton>
+              <div className="flex items-center gap-2">
+                <IconButton
+                  type={isLoading ? "button" : "submit"}
+                  className={cn(
+                    isLoading && "animate-pulse",
+                    "",
+                    input.length === 0 && !isLoading && "",
+                  )}
+                  disabled={input.length === 0 && !isLoading}
+                >
+                  {isLoading ? <SquareRedSolid /> : <ArrowUpMini />}
+                </IconButton>
+              </div>
             </div>
           </div>
         </div>

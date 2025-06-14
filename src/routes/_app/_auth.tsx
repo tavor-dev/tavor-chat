@@ -20,7 +20,7 @@ import {
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
 // import { ThreadDoc } from "@cvx/schema";
-import { Trash } from "@medusajs/icons";
+import { PlusMini, Trash } from "@medusajs/icons";
 import {
   Button,
   DropdownMenu,
@@ -223,7 +223,9 @@ function AppSidebar() {
           className="w-full justify-start h-8 px-2 text-sm truncate mx-0"
           onClick={() => handleNavigation(thread._id)}
         >
-          {thread.title || "New chat"}
+          {thread.title && thread.title.length > 30
+            ? thread.title.slice(0, 30) + "..."
+            : thread.title || "New chat"}
         </Button>
         <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0 bg-ui-bg-component rounded-lg">
           <TooltipProvider>
@@ -276,7 +278,14 @@ function AppSidebar() {
             </Heading>
           </div>
         </div>
-        <Button className="w-full my-4" onClick={handleNewChat}>
+        <Button
+          variant="transparent"
+          className="w-full my-4 flex justify-start items-center"
+          onClick={handleNewChat}
+        >
+          <div className="flex items-center justify-center rounded-md bg-ui-tag-purple-border p-1 mr-1">
+            <PlusMini />
+          </div>
           New chat
         </Button>
       </SidebarHeader>
