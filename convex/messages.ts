@@ -13,6 +13,7 @@ import { authorizeThreadAccess } from "./account";
 import { vStreamArgs } from "./chat_engine/validators";
 import { Id } from "./_generated/dataModel";
 import { vFullMessageDoc } from "./schema";
+import { deleteMessage } from "./chat_engine/messages";
 
 /**
  * Get messages by thread ID with pagination and streaming support
@@ -152,6 +153,79 @@ export const sendMessage = mutation({
     await ctx.runMutation(api.chat.streamAsynchronously, {
       threadId,
       prompt: content,
+    });
+  },
+});
+
+/**
+ * Edit a message in a thread
+ */
+export const editMessage = mutation({
+  args: {
+    messageId: v.id("messages"),
+    content: v.string(),
+    model: v.optional(v.string()),
+  },
+  handler: async (ctx, { content, messageId, model }) => {
+    const message = await ctx.db.get(messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    await authorizeThreadAccess(ctx, message.threadId);
+
+    if (message.message?.role !== "user") {
+      throw new Error("only user messages can be edited");
+    }
+
+    await ctx.runMutation(internal.messages.deleteMessagesFrom, {
+      threadId: message.threadId,
+      order: message.order,
+    });
+
+    await ctx.runMutation(api.chat.streamAsynchronously, {
+      threadId: message.threadId,
+      prompt: content,
+      model,
+    });
+  },
+});
+
+/**
+ * Regenerate a message in a thread
+ */
+export const regenerate = mutation({
+  args: {
+    messageId: v.id("messages"),
+    model: v.optional(v.string()),
+  },
+  handler: async (ctx, { messageId, model }) => {
+    let message = await ctx.db.get(messageId);
+    if (!message) {
+      throw new Error("Message not found");
+    }
+
+    await authorizeThreadAccess(ctx, message.threadId);
+
+    if (message.message?.role !== "user") {
+      // find parent to ensure we only re-gen based on the user message
+      message = await ctx.db
+        .query("messages")
+        .withIndex("threadId_status_tool_order_stepOrder", (q) =>
+          q.eq("threadId", message!.threadId),
+        )
+        .filter((q) => q.eq(q.field("order"), message!.order))
+        .first();
+    }
+
+    if (!message) {
+      throw new Error("couldn't find user message, unexpected error");
+    }
+
+    await ctx.runMutation(api.messages.editMessage, {
+      messageId: message._id,
+      content: message.text!,
+      model,
     });
   },
 });
@@ -305,6 +379,29 @@ export const copyMessage = internalMutation({
       ...messageToCopy,
       threadId: newThreadId,
     });
+  },
+});
+
+/**
+ * Internal mutation to delete all messages after a specific order/stepOrder
+ */
+export const deleteMessagesFrom = internalMutation({
+  args: {
+    threadId: v.id("threads"),
+    order: v.number(),
+  },
+  handler: async (ctx, { threadId, order }) => {
+    const messagesToDelete = await ctx.db
+      .query("messages")
+      .withIndex("threadId_status_tool_order_stepOrder", (q) =>
+        q.eq("threadId", threadId),
+      )
+      .filter((q) => q.gte(q.field("order"), order))
+      .collect();
+
+    for (const message of messagesToDelete) {
+      await deleteMessage(ctx, message);
+    }
   },
 });
 

@@ -1,8 +1,11 @@
 import { useSmoothText, type UIMessage } from "@convex-dev/agent/react";
 import { Button, Textarea, Tooltip, TooltipProvider } from "@medusajs/ui";
 import { Pencil } from "@medusajs/icons";
-import { useState } from "react";
+import { useCallback, useState } from "react";
 import { MessageActions } from "./MessageActions";
+import { useMutation } from "convex/react";
+import { api } from "@cvx/_generated/api";
+import { Id } from "@cvx/_generated/dataModel";
 // To make editing functional, you'll need to create and import a Convex mutation for updating messages.
 // import { useMutation } from "convex/react";
 // import { api } from "@cvx/_generated/api";
@@ -15,18 +18,17 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
   const [visibleText] = useSmoothText(message.content);
+  const editMessage = useMutation(api.messages.editMessage);
 
   // const updateMessage = useMutation(api.messages.update); // Example mutation
 
-  const handleSave = () => {
-    // When you implement the mutation, you'll call it here:
-    // updateMessage({ messageId: message.key, content: editedContent });
-    console.log("Saving message (not implemented):", {
-      messageId: message.key,
+  const handleSave = useCallback(() => {
+    editMessage({
+      messageId: message.id as Id<"messages">,
       content: editedContent,
     });
     setIsEditing(false);
-  };
+  }, [editedContent]);
 
   const handleCancel = () => {
     setIsEditing(false);

@@ -16,6 +16,7 @@ interface MessageActionsProps {
 export function MessageActions({ message, onEdit }: MessageActionsProps) {
   const navigate = useNavigate();
   const forkAt = useMutation(api.messages.forkAt);
+  const regenerate = useMutation(api.messages.regenerate);
 
   const handleFork = useCallback(async () => {
     const newThreadId = await forkAt({
@@ -25,10 +26,9 @@ export function MessageActions({ message, onEdit }: MessageActionsProps) {
     navigate({ to: "/chat/$threadId", params: { threadId: newThreadId } });
   }, [message.id]);
 
-  function handleRegenerate() {
-    // TODO: Implement regenerate functionality
-    console.log("Regenerate clicked");
-  }
+  const handleRegenerate = useCallback(() => {
+    regenerate({ messageId: message.id });
+  }, [message.id]);
 
   return (
     <div className="flex items-center gap-4 self-end mt-4 mr-2 transition-opacity opacity-0 group-hover/message:opacity-100">
@@ -39,7 +39,7 @@ export function MessageActions({ message, onEdit }: MessageActionsProps) {
           <Pencil className="text-ui-fg-subtle cursor-pointer hidden group-data-[role=user]/message:block" />
         </Tooltip>
 
-        <Tooltip content="Retry">
+        <Tooltip content="Retry" onClick={handleRegenerate}>
           <ArrowPath className="text-ui-fg-subtle cursor-pointer" />
         </Tooltip>
 
