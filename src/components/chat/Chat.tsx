@@ -1,21 +1,16 @@
+import { cn } from "@/lib/utils";
 import {
   optimisticallySendMessage,
   toUIMessages,
   useThreadMessages,
-  type UIMessage,
 } from "@convex-dev/agent/react";
-import { useMutation } from "convex/react";
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { api } from "../../../convex/_generated/api";
-import { ChatMessages } from "./ChatMessages";
-import { ChatPanel } from "./ChatPanel";
 import { Id } from "@cvx/_generated/dataModel";
-
-interface ChatSection {
-  id: string;
-  userMessage: UIMessage;
-  assistantMessages: UIMessage[];
-}
+import { useMutation } from "convex/react";
+import { useCallback, useEffect, useRef, useState } from "react";
+import { api } from "../../../convex/_generated/api";
+import { AnswerSection } from "./AnswerSection";
+import { ChatPanel } from "./ChatPanel";
+import { UserMessage } from "./UserMessage";
 
 export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -48,33 +43,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     api.chat.streamAsynchronously,
   ).withOptimisticUpdate(optimisticallySendMessage(api.messages.getByThreadId));
 
-  // Convert messages to sections
-  const sections = useMemo<ChatSection[]>(() => {
-    const result: ChatSection[] = [];
-    let currentSection: ChatSection | null = null;
-
-    for (const message of toUIMessages(messages.results ?? [])) {
-      if (message.role === "user") {
-        if (currentSection) {
-          result.push(currentSection);
-        }
-        currentSection = {
-          id: message.key,
-          userMessage: message,
-          assistantMessages: [],
-        };
-      } else if (currentSection && message.role === "assistant") {
-        currentSection.assistantMessages.push(message);
-      }
-    }
-
-    if (currentSection) {
-      result.push(currentSection);
-    }
-
-    return result;
-  }, [messages.results]);
-
   const handleScrollPositionChange = useCallback((atBottom: boolean) => {
     setIsAtBottom(atBottom);
   }, []);
@@ -99,11 +67,37 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
 
   return (
     <>
-      <ChatMessages
-        inputHeight={inputHeight}
-        sections={sections}
-        scrollContainerRef={scrollContainerRef}
-      />
+      <div
+        id="scroll-container"
+        ref={scrollContainerRef}
+        role="list"
+        aria-roledescription="chat messages"
+        className={cn(
+          "w-full pt-14 absolute overflow-y-scroll h-screen inset-0",
+          messagesCount > 0 ? "flex-1" : "",
+        )}
+        style={{
+          paddingBottom: inputHeight + 56,
+        }}
+      >
+        {messagesCount > 0 &&
+          toUIMessages(messages.results ?? []).map((m) => (
+            <div
+              key={m.id}
+              className="chat-section max-w-3xl mx-auto mb-8 px-4"
+            >
+              {m.role === "user" ? (
+                <div className="flex flex-col gap-4 mb-4">
+                  <UserMessage message={m} />
+                </div>
+              ) : (
+                <div className="flex flex-col gap-4">
+                  <AnswerSection message={m} />
+                </div>
+              )}
+            </div>
+          ))}
+      </div>
       <ChatPanel
         input={input}
         handleInputChange={handleInputChange}

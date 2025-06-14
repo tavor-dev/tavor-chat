@@ -1,4 +1,5 @@
 import { cn } from "@/lib/utils";
+import { UIMessage, useSmoothText } from "@convex-dev/agent/react";
 import { Text, CodeBlock, Heading } from "@medusajs/ui";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -7,9 +8,11 @@ export function BotMessage({
   message,
   className,
 }: {
-  message: string;
+  message: UIMessage;
   className?: string;
 }) {
+  const [visibleText] = useSmoothText(message.content);
+
   return (
     <div className={cn("text-ui-fg-base", className)}>
       <ReactMarkdown
@@ -81,7 +84,7 @@ export function BotMessage({
           },
         }}
       >
-        {message}
+        {visibleText}
       </ReactMarkdown>
     </div>
   );

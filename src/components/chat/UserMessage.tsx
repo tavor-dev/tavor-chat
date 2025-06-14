@@ -1,4 +1,4 @@
-import { type UIMessage } from "@convex-dev/agent/react";
+import { useSmoothText, type UIMessage } from "@convex-dev/agent/react";
 import { Button, Textarea, Tooltip, TooltipProvider } from "@medusajs/ui";
 import { Pencil } from "@medusajs/icons";
 import { useState } from "react";
@@ -13,6 +13,7 @@ type UserMessageProps = {
 export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const [isEditing, setIsEditing] = useState(false);
   const [editedContent, setEditedContent] = useState(message.content);
+  const [visibleText] = useSmoothText(message.content);
 
   // const updateMessage = useMutation(api.messages.update); // Example mutation
 
@@ -58,7 +59,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
     <div className="flex justify-end">
       <div className="flex flex-col items-end">
         <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap">
-          {message.content}
+          {visibleText}
         </div>
         <div className="mt-4 mr-2">
           <Tooltip content="Edit" onClick={() => setIsEditing(true)}>
@@ -69,4 +70,3 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
     </div>
   );
 };
-
