@@ -5,27 +5,16 @@ import {
   useThreadMessages,
 } from "@convex-dev/agent/react";
 import { Doc, Id } from "@cvx/_generated/dataModel";
-import { useMutation, useConvex } from "convex/react";
+import { useMutation } from "convex/react";
 import { useCallback, useEffect, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import {
   cacheThreadMessages,
   getCachedThreadMessages,
-  initThreadCache,
 } from "@/lib/threadCache";
 import { AnswerSection } from "./AnswerSection";
 import { ChatPanel } from "./ChatPanel";
 import { UserMessage } from "./UserMessage";
-
-// This component triggers the background cache initialization once per session.
-function CacheInitializer() {
-  const convex = useConvex();
-  useEffect(() => {
-    // The function has internal logic to run only once per session.
-    void initThreadCache(convex);
-  }, [convex]);
-  return null;
-}
 
 export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
@@ -33,9 +22,9 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const [inputHeight, setInputHeight] = useState(0);
 
   // Load initial messages from cache to show something immediately.
-  const [cachedMessages, setCachedMessages] = useState<Doc<"messages">[] | null>(
-    () => getCachedThreadMessages(threadId),
-  );
+  const [cachedMessages, setCachedMessages] = useState<
+    Doc<"messages">[] | null
+  >(() => getCachedThreadMessages(threadId));
 
   // Refetch from cache if threadId changes (when navigating between chats).
   useEffect(() => {
@@ -57,7 +46,9 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
 
   const messagesToRender = toUIMessages(
     // If loading and we have a cache, use it. Otherwise, use server results.
-    messages.isLoading && cachedMessages ? cachedMessages : messages.results ?? [],
+    messages.isLoading && cachedMessages
+      ? cachedMessages
+      : (messages.results ?? []),
   );
 
   const messagesCount = messagesToRender.length;
@@ -93,7 +84,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
 
   return (
     <>
-      <CacheInitializer />
       <div
         id="scroll-container"
         ref={scrollContainerRef}

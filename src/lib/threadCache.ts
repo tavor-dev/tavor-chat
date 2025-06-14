@@ -45,7 +45,10 @@ export function getCachedThreadMessages(
     const cached = localStorage.getItem(getThreadCacheKey(threadId));
     return cached ? JSON.parse(cached) : null;
   } catch (error) {
-    console.error(`Error getting cached messages for thread ${threadId}:`, error);
+    console.error(
+      `Error getting cached messages for thread ${threadId}:`,
+      error,
+    );
     return null;
   }
 }
@@ -87,7 +90,9 @@ export function cacheThreadMessages(
  * Initializes the chat history cache in the background on login.
  * Fetches the last 10 threads and their recent messages.
  */
-export async function initThreadCache(convex: ConvexReactClient): Promise<void> {
+export async function initThreadCache(
+  convex: ConvexReactClient,
+): Promise<void> {
   const initialized = sessionStorage.getItem(CACHE_INITIALIZED_KEY);
   if (initialized) {
     return;
@@ -100,8 +105,8 @@ export async function initThreadCache(convex: ConvexReactClient): Promise<void> 
     // 1. Fetch the 10 most recent threads for the user
     const recentThreads = await convex.query(api.threads.list, {
       paginationOpts: {
-          numItems: MAX_CACHED_THREADS,
-          cursor: null
+        numItems: MAX_CACHED_THREADS,
+        cursor: null,
       },
     });
 
@@ -116,23 +121,43 @@ export async function initThreadCache(convex: ConvexReactClient): Promise<void> 
         const messages = await convex.query(api.messages.getByThreadId, {
           threadId: thread._id,
           paginationOpts: {
-              numItems: 50,
-              cursor: null
+            numItems: 50,
+            cursor: null,
           }, // Cache last 50 messages
           streamArgs: { kind: "list" }, // Not interested in streaming data for cache
         });
-        
+
         if (messages.page.length > 0) {
-           cacheThreadMessages(thread._id, messages.page);
+          cacheThreadMessages(thread._id, messages.page);
         }
       } catch (e) {
         console.error(`Failed to cache messages for thread ${thread._id}`, e);
       }
     }
-    
+
     console.log(`Successfully cached ${recentThreads.page.length} threads.`);
   } catch (error) {
     console.error("Error initializing thread cache:", error);
     sessionStorage.removeItem(CACHE_INITIALIZED_KEY);
+  }
+}
+
+export function clearThreadCache(): void {
+  try {
+    // Clear individual thread message caches
+    const threadIds = getCachedThreadIds();
+    for (const threadId of threadIds) {
+      localStorage.removeItem(getThreadCacheKey(threadId));
+    }
+
+    // Clear the list of cached thread IDs
+    localStorage.removeItem(CACHED_THREADS_LIST_KEY);
+
+    // Clear the session initialization flag
+    sessionStorage.removeItem(CACHE_INITIALIZED_KEY);
+
+    console.log("Thread cache cleared.");
+  } catch (error) {
+    console.error("Error clearing thread cache:", error);
   }
 }

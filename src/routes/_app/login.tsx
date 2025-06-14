@@ -13,7 +13,7 @@ export const Route = createFileRoute("/_app/login")({
 
 function AuthComponent() {
   const { isAuthenticated, isLoading } = useConvexAuth();
-  const [isLoadingButton, setIsLoadingButton] = useState(false)
+  const [isLoadingButton, setIsLoadingButton] = useState(false);
   if (isLoading && !isAuthenticated) {
     return null;
   }
@@ -59,7 +59,10 @@ function AuthComponent() {
           <div className="space-y-4 mb-4">
             <Button
               // onClick={() => setIsLoading(true)}
-              onClick={() => {setIsLoadingButton(true); void signIn("google")}}
+              onClick={() => {
+                setIsLoadingButton(true);
+                void signIn("google");
+              }}
               isLoading={isLoadingButton}
               size="large"
               className="w-full max-h-10"

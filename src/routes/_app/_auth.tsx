@@ -40,9 +40,10 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useAction, useMutation } from "convex/react";
+import { useConvex, useAction, useMutation } from "convex/react";
 import { Pin, PinOff } from "lucide-react";
 import React, { useEffect, useMemo } from "react";
+import { initThreadCache, clearThreadCache } from "@/lib/threadCache";
 
 const THREADS_PAGE_SIZE = 20;
 
@@ -53,13 +54,23 @@ export const Route = createFileRoute("/_app/_auth")({
 function AuthLayout() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const navigate = useNavigate();
+  const convex = useConvex();
 
   useEffect(() => {
     // Redirect to login page if user is not authenticated.
     if (!isLoading && !isAuthenticated) {
       navigate({ to: "/login" });
     }
-  }, [isLoading, isAuthenticated]);
+  }, [isLoading, isAuthenticated, navigate]);
+
+  useEffect(() => {
+    if (isAuthenticated) {
+      // This will run once when the user is authenticated.
+      // The initThreadCache function has internal logic to prevent running
+      // more than once per session.
+      void initThreadCache(convex);
+    }
+  }, [isAuthenticated, convex]);
 
   if (isLoading && !isAuthenticated) {
     return null;
@@ -341,9 +352,10 @@ function AppSidebar() {
               </Link>
               <DropdownMenu.Separator />
               <DropdownMenu.Item
-                onClick={() =>
-                  void signOut().then(() => navigate({ to: "/login" }))
-                }
+                onClick={() => {
+                  clearThreadCache();
+                  void signOut().then(() => navigate({ to: "/login" }));
+                }}
                 className="text-ui-fg-error"
               >
                 Sign out
