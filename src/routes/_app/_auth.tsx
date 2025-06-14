@@ -138,6 +138,8 @@ function AppSidebar() {
       threadId,
       patch: { pinned: !currentPinnedState },
     });
+
+    toast.success(`Thread ${currentPinnedState ? "unpinned" : "pinned"}`);
   };
 
   const handleDeleteThread = async (threadId: Id<"threads">) => {
@@ -223,7 +225,7 @@ function AppSidebar() {
         >
           {thread.title || "New chat"}
         </Button>
-        <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0">
+        <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0 bg-ui-bg-component rounded-lg">
           <TooltipProvider>
             <Tooltip
               content={thread.pinned ? "Unpin thread" : "Pin thread"}

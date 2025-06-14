@@ -1,8 +1,8 @@
 import { cn } from "@/lib/utils";
-import { ArrowUp, Square } from "lucide-react";
+import { ArrowUpMini, SquareRedSolid } from "@medusajs/icons";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef, useCallback, useState, type FormEvent } from "react";
-import { Button, Select } from "@medusajs/ui";
+import { IconButton, Button, Select } from "@medusajs/ui";
 import TextareaAutosize, {
   type TextareaHeightChangeMeta,
 } from "react-textarea-autosize";
@@ -201,7 +201,7 @@ export function ChatPanel({
               </div>
             </div>
             <div className="flex items-center gap-2">
-              <Button
+              <IconButton
                 type={isLoading ? "button" : "submit"}
                 className={cn(
                   isLoading && "animate-pulse",
@@ -210,8 +210,8 @@ export function ChatPanel({
                 )}
                 disabled={input.length === 0 && !isLoading}
               >
-                {isLoading ? <Square size={20} /> : <ArrowUp size={20} />}
-              </Button>
+                {isLoading ? <SquareRedSolid /> : <ArrowUpMini />}
+              </IconButton>
             </div>
           </div>
         </div>

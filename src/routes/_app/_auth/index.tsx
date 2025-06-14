@@ -47,7 +47,20 @@ function NewChatComponent() {
         <div className="w-full flex justify-center flex-col items-center mb-8 gap-4">
           <Logo />
           <h1 className="text-2xl font-semibold text-ui-fg-base mt-4">
-            Hello, {user?.name || "there"}!
+            {(() => {
+              const now = new Date();
+              const hour = now.getHours();
+              let greeting = "Hello";
+              if (hour >= 5 && hour < 12) greeting = "Good morning";
+              else if (hour >= 12 && hour < 18) greeting = "Good afternoon";
+              else if (hour >= 18 && hour < 24) greeting = "Good evening";
+              else if (hour >= 1 && hour < 5) greeting = "Night owl";
+              if (greeting === "Night owl") {
+                return `${greeting}!`;
+              } else {
+                return `${greeting}, ${user?.name || "there"}!`;
+              }
+            })()}
           </h1>
         </div>
       </div>
