@@ -1,8 +1,59 @@
 import { cn } from "@/lib/utils";
 import { UIMessage, useSmoothText } from "@convex-dev/agent/react";
-import { Text, CodeBlock, Heading } from "@medusajs/ui";
+import { CodeBlock, Text } from "@medusajs/ui";
+import React, { memo } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+
+/**
+ * A custom component that wraps the Medusa UI CodeBlock.
+ * This is used as the override for the `<pre>` tag in ReactMarkdown.
+ */
+const CustomCodeBlock = memo(
+  ({
+    node,
+    className,
+    children,
+    ...props
+  }: React.HTMLAttributes<HTMLPreElement> & { node?: any }) => {
+    // The `children` of a <pre> tag is a <code> element.
+    // We need to extract its props to get the language and content.
+    const codeElement = React.Children.only(children) as React.ReactElement<{
+      className?: string;
+      children: React.ReactNode;
+    }>;
+
+    const { className: codeClassName, children: codeContent } =
+      codeElement.props;
+
+    // Extract language from className (e.g., "language-js")
+    const match = /language-(\w+)/.exec(codeClassName || "");
+    const language = match ? match[1] : "text";
+    const codeText = String(codeContent).replace(/\n$/, "");
+
+    return (
+      // The `not-prose` class is important to prevent Tailwind Typography
+      // from styling the code block, so we can use Medusa's styles.
+      <div className="not-prose my-4" {...props}>
+        <CodeBlock
+          snippets={[
+            {
+              language: language,
+              label: language, // Medusa uses this for the header
+              code: codeText,
+            },
+          ]}
+        >
+          <CodeBlock.Header />
+          <CodeBlock.Body />
+        </CodeBlock>
+      </div>
+    );
+  },
+);
+CustomCodeBlock.displayName = "CustomCodeBlock";
+
+// --- Main BotMessage Component ---
 
 export function BotMessage({
   message,
@@ -14,73 +65,45 @@ export function BotMessage({
   const [visibleText] = useSmoothText(message.content);
 
   return (
-    <div className={cn("text-ui-fg-base", className)}>
+    // We use the `prose` class from Tailwind Typography for beautiful default
+    // styling of all markdown elements (headings, paragraphs, lists, etc.).
+    <div
+      className={cn(
+        "prose prose-sm dark:prose-invert max-w-none",
+        // Customizations for prose elements
+        "prose-p:my-2 prose-headings:my-4 prose-blockquote:my-4",
+        "prose-a:text-blue-500 prose-a:no-underline hover:prose-a:underline",
+        "prose-ul:my-3 prose-ol:my-3",
+        // Base text color
+        "text-ui-fg-base",
+        className,
+      )}
+    >
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          h1: ({ node, ...props }) => (
-            <Heading level="h1" {...props} className="mb-4 mt-6" />
-          ),
-          h2: ({ node, ...props }) => (
-            <Heading level="h2" {...props} className="mb-3 mt-5" />
-          ),
-          h3: ({ node, ...props }) => (
-            <Heading level="h3" {...props} className="mb-2 mt-4" />
-          ),
-          p: ({ node, ...props }) => <Text {...props} className="my-4" />,
-          ul: ({ node, ...props }) => (
-            <ul {...props} className="list-disc list-inside my-4 space-y-2" />
-          ),
-          ol: ({ node, ...props }) => (
-            <ol
-              {...props}
-              className="list-decimal list-inside my-4 space-y-2"
-            />
-          ),
-          li: ({ children }) => (
-            <li>
-              <Text as="span">{children}</Text>
-            </li>
-          ),
-          a: ({ node, ...props }) => (
-            <a
-              {...props}
-              className="text-blue-600 hover:underline"
-              target="_blank"
-              rel="noopener noreferrer"
-            />
-          ),
-          code({ node, inline, className, children, ...props }) {
-            const match = /language-(\w+)/.exec(className || "");
-            const codeText = String(children).replace(/\n$/, "");
+          // Use `Text` component for paragraphs to ensure consistent styling
+          p: ({ node, ...props }) => <Text {...props} />,
 
+          // Override `pre` to use our custom code block component
+          pre: CustomCodeBlock,
+
+          // Override `code` to handle ONLY inline code.
+          code: ({ node, inline, className, children, ...props }) => {
             if (inline) {
               return (
                 <code
                   {...props}
-                  className="bg-ui-bg-base-pressed rounded px-1 py-0.5 font-mono text-sm text-ui-fg-subtle"
+                  className="not-prose rounded bg-ui-bg-base-pressed px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-ui-fg-subtle"
                 >
                   {children}
                 </code>
               );
             }
 
-            return (
-              <div className="my-4">
-                <CodeBlock
-                  snippets={[
-                    {
-                      language: match ? match[1] : "text",
-                      label: match ? match[1] : "code",
-                      code: codeText,
-                    },
-                  ]}
-                >
-                  <CodeBlock.Header />
-                  <CodeBlock.Body />
-                </CodeBlock>
-              </div>
-            );
+            // Block code is handled by the `pre` component override.
+            // This `<code>` is the child of that `<pre>`, so we just pass it along.
+            return <code className={className}>{children}</code>;
           },
         }}
       >
