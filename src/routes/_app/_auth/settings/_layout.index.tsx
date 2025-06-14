@@ -5,5 +5,5 @@ export const Route = createFileRoute("/_app/_auth/settings/_layout/")({
 });
 
 function RouteComponent() {
-  return <p>User settings will go here.</p>;
+  return null;
 }

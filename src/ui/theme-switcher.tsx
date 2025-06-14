@@ -1,32 +1,38 @@
-import { Sun, Moon, Monitor } from "lucide-react";
+import { Sun, Moon, ComputerDesktop } from "@medusajs/icons";
 import { cn } from "@/utils/misc";
-import { Select, SelectContent, SelectItem, SelectTrigger } from "@/ui/select";
+import { Select, Button } from "@medusajs/ui";
 import { useEffect, useState } from "react";
 
-const themes = ["light", "dark", "system"] as const;
+const themes = [
+  { value: "light", label: "Light", icon: Sun },
+  { value: "dark", label: "Dark", icon: Moon },
+  { value: "system", label: "System", icon: ComputerDesktop },
+] as const;
+
+type Theme = (typeof themes)[number]["value"];
 
 const useTheme = () => {
-  const [currentTheme, setCurrentTheme] = useState<"light" | "dark" | "system">(
-    localStorage.theme || "system",
-  );
-  const [initialized, setInitialized] = useState(false);
+  const [currentTheme, setCurrentTheme] = useState<Theme>(() => {
+    if (typeof window === "undefined") return "system";
+    return (localStorage.getItem("theme") as Theme) || "system";
+  });
 
-  // A similar script is inlined in the <head> of index.html.
+  // Apply theme whenever it changes
   useEffect(() => {
-    if (!initialized) {
-      setInitialized(true);
-      return;
-    }
+    // Save to localStorage
     if (currentTheme === "system") {
       localStorage.removeItem("theme");
     } else {
-      localStorage.theme = currentTheme;
+      localStorage.setItem("theme", currentTheme);
     }
-    if (
+
+    // Apply theme to document
+    const isDark =
       currentTheme === "dark" ||
       (currentTheme === "system" &&
-        window.matchMedia("(prefers-color-scheme: dark)").matches)
-    ) {
+        window.matchMedia("(prefers-color-scheme: dark)").matches);
+
+    if (isDark) {
       document.documentElement.classList.add("dark");
       document.documentElement.style.colorScheme = "dark";
     } else {
@@ -35,49 +41,69 @@ const useTheme = () => {
     }
   }, [currentTheme]);
 
+  // Listen for system theme changes when using system theme
+  useEffect(() => {
+    if (currentTheme !== "system") return;
+
+    const mediaQuery = window.matchMedia("(prefers-color-scheme: dark)");
+    const handleChange = () => {
+      // Trigger a re-render to apply the system theme
+      if (mediaQuery.matches) {
+        document.documentElement.classList.add("dark");
+        document.documentElement.style.colorScheme = "dark";
+      } else {
+        document.documentElement.classList.remove("dark");
+        document.documentElement.style.colorScheme = "light";
+      }
+    };
+
+    mediaQuery.addEventListener("change", handleChange);
+    return () => mediaQuery.removeEventListener("change", handleChange);
+  }, [currentTheme]);
+
   return [currentTheme, setCurrentTheme] as const;
 };
 
 export function ThemeSwitcher({ triggerClass }: { triggerClass?: string }) {
   const [currentTheme, setCurrentTheme] = useTheme();
+  const current = themes.find((t) => t.value === currentTheme) || themes[2];
+
   return (
-    <Select
-      value={currentTheme}
-      onValueChange={(theme) =>
-        setCurrentTheme(theme as (typeof themes)[number])
-      }
-    >
-      <SelectTrigger
-        className={cn(
-          "h-6 rounded border-primary/20 bg-secondary !px-2 hover:border-primary/40",
-          triggerClass,
-        )}
+    <div className="w-[250px]">
+      <Select
+        value={currentTheme}
+        onValueChange={(theme) => setCurrentTheme(theme as Theme)}
       >
-        <div className="flex items-start gap-2">
-          {currentTheme === "light" ? (
-            <Sun className="h-[14px] w-[14px]" />
-          ) : currentTheme === "dark" ? (
-            <Moon className="h-[14px] w-[14px]" />
-          ) : (
-            <Monitor className="h-[14px] w-[14px]" />
+        <Select.Trigger
+          className={cn(
+            "h-6 rounded border-primary/20 bg-secondary !px-2 hover:border-primary/40",
+            triggerClass,
           )}
-          <span className="text-xs font-medium">
-            {currentTheme.charAt(0).toUpperCase() + currentTheme.slice(1)}
-          </span>
-        </div>
-      </SelectTrigger>
-      <SelectContent>
-        {themes.map((theme) => (
-          <SelectItem
-            key={theme}
-            value={theme}
-            className={`text-sm font-medium text-primary/60 ${theme === currentTheme && "text-primary"}`}
-          >
-            {theme && theme.charAt(0).toUpperCase() + theme.slice(1)}
-          </SelectItem>
-        ))}
-      </SelectContent>
-    </Select>
+        >
+          <div className="flex items-start gap-2">
+            {/* <current.icon className="h-[14px] w-[14px]" /> */}
+            <span className="text-xs font-medium">{current.label}</span>
+          </div>
+        </Select.Trigger>
+        <Select.Content>
+          {themes.map((theme) => (
+            <Select.Item
+              key={theme.value}
+              value={theme.value}
+              className={cn(
+                "text-sm font-medium text-primary/60",
+                theme.value === currentTheme && "text-primary",
+              )}
+            >
+              <div className="flex items-center gap-2">
+                {/* <theme.icon className="h-[14px] w-[14px]" /> */}
+                {theme.label}
+              </div>
+            </Select.Item>
+          ))}
+        </Select.Content>
+      </Select>
+    </div>
   );
 }
 
@@ -86,15 +112,13 @@ export function ThemeSwitcherHome() {
   return (
     <div className="flex gap-3">
       {themes.map((theme) => (
-        <button key={theme} name="theme" onClick={() => setCurrentTheme(theme)}>
-          {theme === "light" ? (
-            <Sun className="h-4 w-4 text-primary/80 hover:text-primary" />
-          ) : theme === "dark" ? (
-            <Moon className="h-4 w-4 text-primary/80 hover:text-primary" />
-          ) : (
-            <Monitor className="h-4 w-4 text-primary/80 hover:text-primary" />
-          )}
-        </button>
+        <Button
+          key={theme.value}
+          name="theme"
+          onClick={() => setCurrentTheme(theme.value)}
+        >
+          <theme.icon className="h-4 w-4 text-primary/80 hover:text-primary" />
+        </Button>
       ))}
     </div>
   );

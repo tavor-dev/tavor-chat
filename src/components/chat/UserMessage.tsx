@@ -1,6 +1,5 @@
 import { useSmoothText, type UIMessage } from "@convex-dev/agent/react";
-import { Button, Textarea, Tooltip, TooltipProvider } from "@medusajs/ui";
-import { Pencil } from "@medusajs/icons";
+import { Button, Textarea } from "@medusajs/ui";
 import { useCallback, useState } from "react";
 import { MessageActions } from "./MessageActions";
 import { useMutation } from "convex/react";

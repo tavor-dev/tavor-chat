@@ -25,9 +25,8 @@ export function MessageActions({ message, onEdit }: MessageActionsProps) {
 
     navigate({ to: "/chat/$threadId", params: { threadId: newThreadId } });
   }, [message.id]);
-
   const handleRegenerate = useCallback(() => {
-    regenerate({ messageId: message.id });
+    regenerate({ messageId: message.id as Id<"messages"> });
   }, [message.id]);
 
   return (

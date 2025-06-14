@@ -19,7 +19,7 @@ import {
 } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
-import { ThreadDoc } from "@cvx/schema";
+// import { ThreadDoc } from "@cvx/schema";
 import { Trash } from "@medusajs/icons";
 import {
   Button,
@@ -267,7 +267,7 @@ function AppSidebar() {
           New chat
         </Button>
       </SidebarHeader>
-      <SidebarContent className="overflow-x-hidden">
+      <SidebarContent className="overflow-x-hidden pl-3">
         {/* Pinned threads */}
         {groupedThreads.pinned.length > 0 && (
           <>
@@ -327,7 +327,11 @@ function AppSidebar() {
                 <Avatar
                   className="h-6 w-6"
                   src={user?.image}
-                  fallback={user?.name[0] + user?.name?.split(" ")[1][0] || 42}
+                  fallback={
+                    user?.name
+                      ? user.name[0] + (user.name.split(" ")[1]?.[0] || "")
+                      : "-"
+                  }
                 />
               </Button>
             </DropdownMenu.Trigger>

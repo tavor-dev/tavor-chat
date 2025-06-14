@@ -15,7 +15,7 @@ const CustomCodeBlock = memo(
     className,
     children,
     ...props
-  }: React.HTMLAttributes<HTMLPreElement> & { node?: any }) => {
+  }: React.HTMLAttributes<HTMLPreElement> & { node?: unknown }) => {
     // The `children` of a <pre> tag is a <code> element.
     // We need to extract its props to get the language and content.
     const codeElement = React.Children.only(children) as React.ReactElement<{
@@ -34,7 +34,7 @@ const CustomCodeBlock = memo(
     return (
       // The `not-prose` class is important to prevent Tailwind Typography
       // from styling the code block, so we can use Medusa's styles.
-      <div className="not-prose my-4" {...props}>
+      <pre className="not-prose my-4" {...props}>
         <CodeBlock
           snippets={[
             {
@@ -47,7 +47,7 @@ const CustomCodeBlock = memo(
           <CodeBlock.Header />
           <CodeBlock.Body />
         </CodeBlock>
-      </div>
+      </pre>
     );
   },
 );
@@ -87,9 +87,9 @@ export function BotMessage({
 
           // Override `pre` to use our custom code block component
           pre: CustomCodeBlock,
-
           // Override `code` to handle ONLY inline code.
-          code: ({ node, inline, className, children, ...props }) => {
+          code: ({ node, className, children, ...props }) => {
+            const inline = !className?.includes("language-");
             if (inline) {
               return (
                 <code

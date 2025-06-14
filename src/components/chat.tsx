@@ -9,11 +9,12 @@ import {
 } from "@convex-dev/agent/react";
 import { useState } from "react";
 import { Button } from "@medusajs/ui";
+import { Id } from "@cvx/_generated/dataModel";
 
 export function Chat({ threadId }: { threadId: string }) {
   const messages = useThreadMessages(
     api.messages.getByThreadId,
-    { threadId },
+    { threadId: threadId as Id<"threads"> },
     { initialNumItems: 10, stream: true },
   );
   const sendMessage = useMutation(
@@ -24,7 +25,9 @@ export function Chat({ threadId }: { threadId: string }) {
 
   function onSendClicked() {
     if (prompt.trim() === "") return;
-    void sendMessage({ threadId, prompt }).catch(() => setPrompt(prompt));
+    void sendMessage({ threadId: threadId as Id<"threads">, prompt }).catch(
+      () => setPrompt(prompt),
+    );
     setPrompt("");
   }
 

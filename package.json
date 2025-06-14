@@ -10,7 +10,12 @@
     "dev:backend": "convex dev",
     "predev": "convex dev --run init --until-success",
     "build": "tsc -b && vite build",
-    "lint": "eslint . --ignore-pattern convex/_generated --report-unused-disable-directives --max-warnings 0",
+    "lint": "bun lint:eslint && bun lint:prettier",
+    "lint:fix": "bun lint:eslint:fix && bun lint:prettier:fix",
+    "lint:eslint": "eslint --ignore-path .gitignore --cache --cache-location ./node_modules/.cache/eslint .",
+    "lint:eslint:fix": "bun lint:eslint --fix .",
+    "lint:prettier": "prettier --check .",
+    "lint:prettier:fix": "prettier --write .",
     "typecheck": "tsc -p tsconfig.app.json && tsc -p tsconfig.node.json && tsc -p convex/tsconfig.json",
     "preview": "vite preview"
   },
