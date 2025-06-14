@@ -140,7 +140,7 @@ export function ChatPanel({
             spellCheck={false}
             value={input}
             disabled={isLoading}
-            className="resize-none w-full min-h-12 bg-transparent border-0 p-4 text-sm placeholder:text-ui-fg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-ui-fg-base"
+            className="resize-none w-full min-h-12 bg-transparent border-0 p-4 text-sm placeholder:text-ui-fg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-ui-fg-base max-h-64"
             onChange={handleInputChange}
             onKeyDown={(e) => {
               if (e.key === "Enter" && !e.shiftKey) {
