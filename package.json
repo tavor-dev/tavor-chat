@@ -52,6 +52,7 @@
     "react-hot-toast": "^2.5.2",
     "react-i18next": "^15.5.2",
     "react-markdown": "^10.1.0",
+    "react-textarea-autosize": "^8.5.9",
     "remark-gfm": "^4.0.1",
     "resend": "^3.5.0",
     "stripe": "^16.12.0",

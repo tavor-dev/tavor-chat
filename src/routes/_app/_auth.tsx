@@ -74,9 +74,7 @@ function AuthLayout() {
       <SidebarInset className="border-ui-bg-base md:peer-data-[variant=inset]:peer-data-[state=collapsed]:m-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:rounded-none transition-all">
         {/* <header className="flex h-14 shrink-0 items-center gap-2 px-4 border-b group-has-[[data-variant=inset]]/sidebar-wrapper:group-has-[[data-state=collapsed]]/sidebar-wrapper:ml-14 transition-all"> */}
         {/* </header> */}
-        <div className="flex flex-1 flex-col gap-4">
-          <Outlet />
-        </div>
+        <Outlet />
       </SidebarInset>
       <Toaster />
     </SidebarProvider>

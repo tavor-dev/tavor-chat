@@ -3,6 +3,9 @@ import { ArrowUp, Square } from "lucide-react";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef, useCallback, useState } from "react";
 import { Button, Select } from "@medusajs/ui";
+import TextareaAutosize, {
+  type TextareaHeightChangeMeta,
+} from "react-textarea-autosize";
 import {
   AiAssistent,
   GlobeEurope,
@@ -29,9 +32,9 @@ interface ChatPanelProps {
   input: string;
   handleInputChange: (e: React.ChangeEvent<HTMLTextAreaElement>) => void;
   handleSubmit: (e: React.FormEvent<HTMLFormElement>) => void;
+  onInputHeightChange: (height: number, meta: TextareaHeightChangeMeta) => void;
   isLoading: boolean;
   showScrollToBottomButton: boolean;
-  scrollContainerRef: React.RefObject<HTMLDivElement>;
   onScrollToBottom?: () => void; // Added this prop
 }
 
@@ -40,8 +43,8 @@ export function ChatPanel({
   handleInputChange,
   handleSubmit,
   isLoading,
+  onInputHeightChange,
   showScrollToBottomButton,
-  scrollContainerRef,
   onScrollToBottom, // Added this prop
 }: ChatPanelProps) {
   const navigate = useNavigate();
@@ -100,22 +103,13 @@ export function ChatPanel({
   const handleScrollToBottom = () => {
     if (onScrollToBottom) {
       onScrollToBottom();
-    } else {
-      // Fallback to direct scrolling if handler not provided
-      const scrollContainer = scrollContainerRef.current;
-      if (scrollContainer) {
-        scrollContainer.scrollTo({
-          top: scrollContainer.scrollHeight,
-          behavior: "smooth",
-        });
-      }
     }
   };
 
   return (
     <div
       className={cn(
-        "w-full group/form-container shrink-0 sticky bottom-0 px-2 pb-4 bg-ui-bg-component",
+        "w-full group/form-container absolute bottom-0 z-0 px-2 pb-2",
       )}
     >
       <form
@@ -136,7 +130,8 @@ export function ChatPanel({
         )}
 
         <div className="relative flex flex-col w-full gap-2 bg-ui-bg-field-component rounded-xl border border-ui-border-base z-50">
-          <textarea
+          <TextareaAutosize
+            onHeightChange={onInputHeightChange}
             ref={inputRef}
             name="input"
             rows={2}

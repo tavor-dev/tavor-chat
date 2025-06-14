@@ -12,11 +12,13 @@ interface ChatSection {
 interface ChatMessagesProps {
   sections: ChatSection[];
   scrollContainerRef: React.RefObject<HTMLDivElement>;
+  inputHeight: number;
 }
 
 export function ChatMessages({
   sections,
   scrollContainerRef,
+  inputHeight,
 }: ChatMessagesProps) {
   if (!sections.length) return null;
 
@@ -27,15 +29,18 @@ export function ChatMessages({
       role="list"
       aria-roledescription="chat messages"
       className={cn(
-        "relative w-full max-w-3xl mx-auto flex-1 overflow-y-auto pt-14 h-[calc(100vh-200px)]",
+        "w-full pt-14 absolute overflow-y-scroll h-screen inset-0",
         sections.length > 0 ? "flex-1" : "",
       )}
+      style={{
+        paddingBottom: inputHeight + 56,
+      }}
     >
       {sections.map((section) => (
         <div
           key={section.id}
           id={`section-${section.id}`}
-          className="chat-section mb-8 px-4"
+          className="chat-section max-w-3xl mx-auto mb-8 px-4"
         >
           <div className="flex flex-col gap-4 mb-4">
             <UserMessage message={section.userMessage} />

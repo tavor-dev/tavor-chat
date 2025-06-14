@@ -1,27 +1,27 @@
-import { useMutation } from "convex/react";
-import { api } from "../../../convex/_generated/api";
 import {
   optimisticallySendMessage,
   toUIMessages,
+  useThreadMessages,
   type UIMessage,
 } from "@convex-dev/agent/react";
-import { useThreadMessages } from "@convex-dev/agent/react";
-import { useEffect, useCallback, useMemo, useRef, useState } from "react";
-import { cn } from "@/lib/utils";
+import { useMutation } from "convex/react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { api } from "../../../convex/_generated/api";
 import { ChatMessages } from "./ChatMessages";
 import { ChatPanel } from "./ChatPanel";
+import { Id } from "@cvx/_generated/dataModel";
 
-// Define section structure
 interface ChatSection {
-  id: string; // User message ID
+  id: string;
   userMessage: UIMessage;
   assistantMessages: UIMessage[];
 }
 
-export function Chat({ threadId }: { threadId: string }) {
+export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [isAtBottom, setIsAtBottom] = useState(true);
   const [input, setInput] = useState("");
+  const [inputHeight, setInputHeight] = useState(0);
 
   const messages = useThreadMessages(
     api.messages.getByThreadId,
@@ -29,19 +29,20 @@ export function Chat({ threadId }: { threadId: string }) {
     { initialNumItems: 50, stream: true },
   );
 
-  const scrollToBottom = () => {
-    const scrollContainer = scrollContainerRef.current;
-    if (scrollContainer) {
-      scrollContainer.scrollTop =
-        scrollContainer.scrollHeight - scrollContainer.clientHeight;
+  const messagesCount = messages.results?.length || 0;
+
+  const scrollToBottom = useCallback(() => {
+    if (scrollContainerRef.current) {
+      scrollContainerRef.current.scrollTo({
+        top: scrollContainerRef.current.scrollHeight,
+        behavior: "instant",
+      });
     }
-  };
+  }, [scrollContainerRef]);
 
   useEffect(() => {
-    if (messages.results?.length > 0) {
-      scrollToBottom();
-    }
-  }, [messages.results]);
+    scrollToBottom();
+  }, [messagesCount]);
 
   const sendMessage = useMutation(
     api.chat.streamAsynchronously,
@@ -97,26 +98,21 @@ export function Chat({ threadId }: { threadId: string }) {
   );
 
   return (
-    <div
-      className={cn(
-        "relative flex h-full min-w-0 flex-1 flex-col",
-        sections.length === 0 ? "items-center justify-end" : "",
-      )}
-      data-testid="full-chat"
-    >
+    <>
       <ChatMessages
+        inputHeight={inputHeight}
         sections={sections}
         scrollContainerRef={scrollContainerRef}
       />
-
       <ChatPanel
         input={input}
         handleInputChange={handleInputChange}
         handleSubmit={handleSubmit}
         isLoading={messages.isLoading}
+        onInputHeightChange={setInputHeight}
         showScrollToBottomButton={!isAtBottom}
-        scrollContainerRef={scrollContainerRef}
+        onScrollToBottom={scrollToBottom}
       />
-    </div>
+    </>
   );
 }
