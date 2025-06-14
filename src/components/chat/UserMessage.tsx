@@ -62,10 +62,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
         <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap">
           {visibleText}
         </div>
-        <MessageActions
-          content={visibleText}
-          onEdit={() => setIsEditing(true)}
-        />
+        <MessageActions message={message} onEdit={() => setIsEditing(true)} />
       </div>
     </div>
   );

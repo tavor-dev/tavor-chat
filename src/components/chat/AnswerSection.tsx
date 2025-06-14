@@ -10,7 +10,7 @@ export function AnswerSection({ message }: AnswerSectionProps) {
   return (
     <div className="p-4">
       <BotMessage message={message} />
-      <MessageActions content={message.content} />
+      <MessageActions message={message} />
     </div>
   );
 }

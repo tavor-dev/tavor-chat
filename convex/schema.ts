@@ -111,6 +111,13 @@ const schema = defineSchema({
     status: vThreadStatus,
     pinned: v.boolean(),
     model: v.optional(v.string()),
+    forkParent: v.optional(
+      v.object({
+        threadId: v.id("threads"),
+        messageId: v.id("messages"),
+        title: v.optional(v.string()),
+      }),
+    ),
   })
     .index("userId", ["userId"])
     .index("userId_pinned", ["userId", "pinned"]),
@@ -268,8 +275,11 @@ export const vMessageDoc = v.object({
     "stepId",
     "files",
   ]),
-  threadId: v.id("threads"),
-  embeddingId: v.optional(vVectorId),
-  fileIds: v.optional(v.array(v.id("files"))),
+});
+
+export const vFullMessageDoc = v.object({
+  _id: v.id("messages"),
+  _creationTime: v.number(),
+  ...schema.tables.messages.validator.fields,
 });
 export type MessageDoc = Infer<typeof vMessageDoc>;

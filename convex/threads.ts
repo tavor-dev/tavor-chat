@@ -6,6 +6,7 @@ import { chatAgent } from "./chat";
 import { authorizeThreadAccess, getUserId } from "./account";
 import { partial } from "convex-helpers/validators";
 import { assert, pick } from "convex-helpers";
+import { Id } from "./_generated/dataModel";
 
 /**
  * List all threads for the current user with pagination
@@ -144,15 +145,33 @@ export const create = mutation({
   args: {
     title: v.optional(v.string()),
     model: v.optional(v.string()),
+    forkParentId: v.optional(v.id("threads")),
+    forkParentMessageId: v.optional(v.id("messages")),
   },
-  handler: async (ctx, { title, model }) => {
+  handler: async (
+    ctx,
+    { title, model, forkParentId, forkParentMessageId },
+  ): Promise<Id<"threads">> => {
     const userId = await getUserId(ctx);
-    const { threadId } = await chatAgent.createThread(ctx, {
-      userId,
-      title,
-      model,
-    });
-    return threadId;
+    const newThread = await ctx.runMutation(
+      api.chat_engine.threads.createThread,
+      {
+        userId,
+        title,
+        model,
+        pinned: false,
+        ...(forkParentId
+          ? {
+              forkParent: {
+                threadId: forkParentId!,
+                messageId: forkParentMessageId!,
+                title,
+              },
+            }
+          : {}),
+      },
+    );
+    return newThread._id;
   },
 });
 
