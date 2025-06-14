@@ -2,7 +2,7 @@ import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useAuthActions } from "@convex-dev/auth/react";
 import { useConvexAuth } from "convex/react";
 import { Button, Heading, Text } from "@medusajs/ui";
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { Logo } from "@/components/logo";
 import { Loader } from "@/components/loader";
 import { Google } from "@medusajs/icons";
@@ -13,6 +13,7 @@ export const Route = createFileRoute("/_app/login")({
 
 function AuthComponent() {
   const { isAuthenticated, isLoading } = useConvexAuth();
+  const [isLoadingButton, setIsLoadingButton] = useState(false)
   if (isLoading && !isAuthenticated) {
     return null;
   }
@@ -58,8 +59,8 @@ function AuthComponent() {
           <div className="space-y-4 mb-4">
             <Button
               // onClick={() => setIsLoading(true)}
-              onClick={() => void signIn("google")}
-              isLoading={isLoading}
+              onClick={() => {setIsLoadingButton(true); void signIn("google")}}
+              isLoading={isLoadingButton}
               size="large"
               className="w-full max-h-10"
             >
