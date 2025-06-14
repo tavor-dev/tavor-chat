@@ -29,6 +29,8 @@ import {
   toast,
   Tooltip,
   TooltipProvider,
+  Avatar,
+  Heading,
 } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -253,10 +255,12 @@ function AppSidebar() {
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
-        <div className="flex items-center mb-2 ml-10">
-          <div className="flex mt-1.5 gap-2 items-center">
+        <div className="flex items-center mb-2 ml-11 cursor-pointer">
+          <div className="flex mt-1.5 gap-1 items-center">
             <Logo className="h-6 w-6" />
-            <h1 className="font-semibold">Tavor</h1>
+            <Heading level="h2" className="font-semibold">
+              Tavor
+            </Heading>
           </div>
         </div>
         <Button className="w-full my-4" onClick={handleNewChat}>
@@ -311,11 +315,20 @@ function AppSidebar() {
           )}
       </SidebarContent>
       <SidebarFooter>
+        {/* <pre>{JSON.stringify(user.image, 0, 2)}</pre> */}
         {user && (
           <DropdownMenu>
             <DropdownMenu.Trigger asChild>
-              <Button className="w-full justify-start h-8 px-2 text-sm truncate">
-                {user.email || user.name || "User"}
+              <Button
+                variant="secondary"
+                className="w-full justify-between items-center h-8 px-2 text-sm truncate"
+              >
+                {user?.name?.split(" ")[1] || user.email || "User"}{" "}
+                <Avatar
+                  className="h-6 w-6"
+                  src={user?.image}
+                  fallback={user?.name[0] + user?.name?.split(" ")[1][0] || 42}
+                />
               </Button>
             </DropdownMenu.Trigger>
             <DropdownMenu.Content className="z-50">
@@ -329,7 +342,7 @@ function AppSidebar() {
                 }
                 className="text-ui-fg-error"
               >
-                Sign Out
+                Sign out
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu>

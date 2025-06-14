@@ -194,10 +194,8 @@ export function ChatPanel({
                 type={isLoading ? "button" : "submit"}
                 className={cn(
                   isLoading && "animate-pulse",
-                  "rounded-lg bg-ui-bg-interactive hover:bg-ui-bg-highlight-hover text-ui-fg-on-color border-ui-border-interactive",
-                  input.length === 0 &&
-                    !isLoading &&
-                    "bg-ui-button-neutral hover:bg-ui-button-neutral-hover text-ui-fg-base border-ui-border-base",
+                  "",
+                  input.length === 0 && !isLoading && "",
                 )}
                 disabled={input.length === 0 && !isLoading}
               >
