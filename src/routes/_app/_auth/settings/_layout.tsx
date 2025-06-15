@@ -2,18 +2,34 @@ import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
 import { Heading, Tabs, Text, Avatar, Badge, Container } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
-import { createFileRoute } from "@tanstack/react-router";
+import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ThemeSwitcher } from "@/ui/theme-switcher";
 import { User, Mail, Calendar, Sparkles } from "lucide-react";
 import { getAvailableModels, getDefaultModel } from "@/lib/models";
 import { Billing } from "@/components/settings/Billing";
+import { UsageStats } from "@/components/settings/UsageStats";
+
+// Define the search params schema
+const settingsSearchSchema = {
+  tab: (value: unknown) => {
+    const validTabs = ['account', 'usage', 'billing', 'theme'];
+    // Handle undefined/null/empty values by defaulting to 'account'
+    if (!value || typeof value !== 'string') return 'account';
+    return validTabs.includes(value) ? value : 'account';
+  }
+};
 
 export const Route = createFileRoute("/_app/_auth/settings/_layout")({
   component: RouteComponent,
+  validateSearch: (search) => ({
+    tab: settingsSearchSchema.tab(search.tab)
+  }),
 });
 
 function RouteComponent() {
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
+  const navigate = useNavigate();
+  const { tab } = Route.useSearch(); // Get current tab from URL
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
@@ -22,6 +38,14 @@ function RouteComponent() {
       day: "numeric",
       hour: "2-digit",
       minute: "2-digit",
+    });
+  };
+
+  // Handle tab changes by updating URL
+  const handleTabChange = (newTab: string) => {
+    navigate({
+      search: (prev) => ({ ...prev, tab: newTab }),
+      replace: true, // Use replace to avoid cluttering browser history
     });
   };
 
@@ -34,174 +58,181 @@ function RouteComponent() {
   const selectedModel = availableModels.find((m) => m.id === selectedModelId);
 
   return (
-    <div className="space-y-8 pt-12 px-6 max-w-4xl mb-10">
+    <div className="space-y-8 pt-12 px-6 w-full mb-10">
       <div className="flex justify-between items-center">
         <Heading>Settings</Heading>
       </div>
       <div className="w-full">
         <Tabs
-          defaultValue="account"
+          value={tab} // Use the tab from URL
+          onValueChange={handleTabChange} // Handle tab changes
           orientation="vertical"
           className="sm:tabs-horizontal tabs-vertical"
         >
           <Tabs.List className="flex flex-col sm:flex-row">
             <Tabs.Trigger value="account">Account</Tabs.Trigger>
+            <Tabs.Trigger value="usage">Usage</Tabs.Trigger>
+            <Tabs.Trigger value="billing">Billing</Tabs.Trigger>
             <Tabs.Trigger value="theme">Theme</Tabs.Trigger>
           </Tabs.List>
           <div className="mt-2">
             <Tabs.Content value="account" className="mt-6">
               <div className="space-y-8">
-                <div>
-                  <Heading level="h3" className="mb-4">
-                    Profile Information
-                  </Heading>
-                  <Container className="p-6 space-y-6">
-                    {/* Profile Header */}
-                    <div className="flex items-center gap-4 pb-4 border-b border-ui-border-base">
-                      <Avatar
-                        src={user?.image || user?.avatarUrl}
-                        fallback={
-                          user?.name
-                            ? user.name
-                                .split(" ")
-                                .map((n) => n[0])
-                                .join("")
-                                .toUpperCase()
-                            : "U"
-                        }
-                        className="h-16 w-16"
-                      />
-                      <div className="flex-1">
-                        <div className="flex items-center gap-2 mb-1">
-                          <Heading level="h3" className="text-ui-fg-base">
-                            {user?.name || "User"}
-                          </Heading>
-                          {/* {user?.emailVerificationTime && (
-                            <Badge size="small" color="green">
-                              Verified
-                            </Badge>
-                          )} */}
-                        </div>
-                        <Text size="small" className="text-ui-fg-muted">
-                          {user?.email}
-                        </Text>
-                      </div>
-                    </div>
-
-                    {/* Account Details */}
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-ui-bg-subtle">
-                            <User className="h-4 w-4 text-ui-fg-muted" />
+                {/* Profile Information Only */}
+                <div className="grid grid-cols-1 gap-8">
+                  <div className="xl:col-span-3">
+                    <Heading level="h3" className="mb-4">
+                      Profile Information
+                    </Heading>
+                    <Container className="p-6 space-y-6">
+                      {/* Profile Header */}
+                      <div className="flex items-center gap-4 pb-4 border-b border-ui-border-base">
+                        <Avatar
+                          src={user?.image || user?.avatarUrl}
+                          fallback={
+                            user?.name
+                              ? user.name
+                                  .split(" ")
+                                  .map((n) => n[0])
+                                  .join("")
+                                  .toUpperCase()
+                              : "U"
+                          }
+                          className="h-16 w-16"
+                        />
+                        <div className="flex-1">
+                          <div className="flex items-center gap-2 mb-1">
+                            <Heading level="h3" className="text-ui-fg-base">
+                              {user?.name || "User"}
+                            </Heading>
                           </div>
-                          <div>
-                            <Text
-                              size="small"
-                              weight="plus"
-                              className="text-ui-fg-base mb-1"
-                            >
-                              Full name
-                            </Text>
-                            <Text size="small" className="text-ui-fg-muted">
-                              {user?.name || "Not provided"}
-                            </Text>
-                          </div>
-                        </div>
-
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-ui-bg-subtle">
-                            <Mail className="h-4 w-4 text-ui-fg-muted" />
-                          </div>
-                          <div>
-                            <Text
-                              size="small"
-                              weight="plus"
-                              className="text-ui-fg-base mb-1"
-                            >
-                              Email address
-                            </Text>
-                            <Text size="small" className="text-ui-fg-muted">
-                              {user?.email || "Not provided"}
-                            </Text>
-                          </div>
+                          <Text size="small" className="text-ui-fg-muted">
+                            {user?.email}
+                          </Text>
                         </div>
                       </div>
 
-                      <div className="space-y-4">
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-ui-bg-subtle">
-                            <Sparkles className="h-4 w-4 text-ui-fg-muted" />
-                          </div>
-                          <div>
-                            <Text
-                              size="small"
-                              weight="plus"
-                              className="text-ui-fg-base mb-1"
-                            >
-                              Preferred model
-                            </Text>
-                            <div className="flex items-center gap-2">
-                              <Text size="small" className="text-ui-fg-muted">
-                                {selectedModel?.name ?? "Default"}
+                      {/* Account Details */}
+                      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-ui-bg-subtle">
+                              <User className="h-4 w-4 text-ui-fg-muted" />
+                            </div>
+                            <div>
+                              <Text
+                                size="small"
+                                weight="plus"
+                                className="text-ui-fg-base mb-1"
+                              >
+                                Full name
                               </Text>
-                              {selectedModel && (
-                                <Badge size="small" color="purple">
-                                  {selectedModel.provider}
-                                </Badge>
-                              )}
+                              <Text size="small" className="text-ui-fg-muted">
+                                {user?.name || "Not provided"}
+                              </Text>
+                            </div>
+                          </div>
+
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-ui-bg-subtle">
+                              <Mail className="h-4 w-4 text-ui-fg-muted" />
+                            </div>
+                            <div>
+                              <Text
+                                size="small"
+                                weight="plus"
+                                className="text-ui-fg-base mb-1"
+                              >
+                                Email address
+                              </Text>
+                              <Text size="small" className="text-ui-fg-muted">
+                                {user?.email || "Not provided"}
+                              </Text>
                             </div>
                           </div>
                         </div>
 
-                        <div className="flex items-start gap-3">
-                          <div className="p-2 rounded-lg bg-ui-bg-subtle">
-                            <Calendar className="h-4 w-4 text-ui-fg-muted" />
+                        <div className="space-y-4">
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-ui-bg-subtle">
+                              <Sparkles className="h-4 w-4 text-ui-fg-muted" />
+                            </div>
+                            <div>
+                              <Text
+                                size="small"
+                                weight="plus"
+                                className="text-ui-fg-base mb-1"
+                              >
+                                Preferred model
+                              </Text>
+                              <div className="flex items-center gap-2">
+                                <Text size="small" className="text-ui-fg-muted">
+                                  {selectedModel?.name ?? "Default"}
+                                </Text>
+                                {selectedModel && (
+                                  <Badge size="small" color="purple">
+                                    {selectedModel.provider}
+                                  </Badge>
+                                )}
+                              </div>
+                            </div>
                           </div>
-                          <div>
-                            <Text
-                              size="small"
-                              weight="plus"
-                              className="text-ui-fg-base mb-1"
-                            >
-                              Account created
-                            </Text>
-                            <Text size="small" className="text-ui-fg-muted">
-                              {user?._creationTime
-                                ? formatDate(user._creationTime)
-                                : "Unknown"}
-                            </Text>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
 
-                    {/* Email Verification Status */}
-                    {user?.emailVerificationTime && (
-                      <div className="pt-4 border-t border-ui-border-base">
-                        <div className="flex items-center justify-between">
-                          <div>
-                            <Text
-                              size="small"
-                              weight="plus"
-                              className="text-ui-fg-base mb-1"
-                            >
-                              Email verified
-                            </Text>
-                            <Text size="small" className="text-ui-fg-muted">
-                              Verified on{" "}
-                              {formatDate(user.emailVerificationTime)}
-                            </Text>
+                          <div className="flex items-start gap-3">
+                            <div className="p-2 rounded-lg bg-ui-bg-subtle">
+                              <Calendar className="h-4 w-4 text-ui-fg-muted" />
+                            </div>
+                            <div>
+                              <Text
+                                size="small"
+                                weight="plus"
+                                className="text-ui-fg-base mb-1"
+                              >
+                                Account created
+                              </Text>
+                              <Text size="small" className="text-ui-fg-muted">
+                                {user?._creationTime
+                                  ? formatDate(user._creationTime)
+                                  : "Unknown"}
+                              </Text>
+                            </div>
                           </div>
-                          <Badge color="green">Verified</Badge>
                         </div>
                       </div>
-                    )}
-                  </Container>
+
+                      {/* Email Verification Status */}
+                      {user?.emailVerificationTime && (
+                        <div className="pt-4 border-t border-ui-border-base">
+                          <div className="flex items-center justify-between">
+                            <div>
+                              <Text
+                                size="small"
+                                weight="plus"
+                                className="text-ui-fg-base mb-1"
+                              >
+                                Email verified
+                              </Text>
+                              <Text size="small" className="text-ui-fg-muted">
+                                Verified on{" "}
+                                {formatDate(user.emailVerificationTime)}
+                              </Text>
+                            </div>
+                            <Badge color="green">Verified</Badge>
+                          </div>
+                        </div>
+                      )}
+                    </Container>
+                  </div>
                 </div>
-
-                <Billing />
               </div>
+            </Tabs.Content>
+
+            <Tabs.Content value="usage" className="mt-6">
+              <UsageStats userPlan={userPlan} />
+            </Tabs.Content>
+
+            <Tabs.Content value="billing" className="mt-6">
+              <Billing />
             </Tabs.Content>
 
             <Tabs.Content value="theme" className="mt-6">

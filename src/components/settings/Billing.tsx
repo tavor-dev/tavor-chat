@@ -17,7 +17,7 @@ export function Billing() {
           <div className="flex-1 space-y-4">
             <div className="flex items-center gap-3">
               <Heading level="h3">Your plan</Heading>
-              <Badge color="purple">Free</Badge>
+              <Badge color="blue">Free</Badge>
             </div>
             <Text size="small" className="text-ui-fg-muted">
               You are currently on the Free plan. Upgrade for higher limits and
