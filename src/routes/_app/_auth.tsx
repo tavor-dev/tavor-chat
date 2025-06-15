@@ -19,18 +19,24 @@ import {
 } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
-// import { ThreadDoc } from "@cvx/schema";
-import { PlusMini, Trash } from "@medusajs/icons";
+import {
+  PlusMini,
+  Trash,
+  EllipsisHorizontal,
+  PencilSquare,
+} from "@medusajs/icons";
+import { Pin, PinOff } from "lucide-react";
 import {
   Button,
   DropdownMenu,
   IconButton,
   Toaster,
   toast,
-  Tooltip,
-  TooltipProvider,
   Avatar,
   Heading,
+  Prompt,
+  Drawer,
+  Input,
 } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -39,9 +45,9 @@ import {
   Outlet,
   useNavigate,
   useRouter,
+  useParams,
 } from "@tanstack/react-router";
 import { useConvex, useAction, useMutation } from "convex/react";
-import { Pin, PinOff } from "lucide-react";
 import React, { useEffect, useMemo } from "react";
 import { initThreadCache, clearThreadCache } from "@/lib/threadCache";
 
@@ -85,8 +91,6 @@ function AuthLayout() {
         <SidebarTrigger className="ml-1" />
       </div>
       <SidebarInset className="border-ui-bg-base md:peer-data-[variant=inset]:peer-data-[state=collapsed]:m-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:rounded-none transition-all">
-        {/* <header className="flex h-14 shrink-0 items-center gap-2 px-4 border-b group-has-[[data-variant=inset]]/sidebar-wrapper:group-has-[[data-state=collapsed]]/sidebar-wrapper:ml-14 transition-all"> */}
-        {/* </header> */}
         <Outlet />
       </SidebarInset>
       <Toaster />
@@ -101,8 +105,57 @@ function AppSidebar() {
   const router = useRouter();
   const { signOut } = useAuthActions();
 
+  // State to force re-renders when route changes
+  const [, setForceUpdate] = React.useState(0);
+
   const updateThread = useMutation(api.threads.update);
   const deleteThread = useAction(api.threads.deleteThread);
+
+  // Get current thread ID from the URL - try multiple approaches for better reactivity
+  const currentThreadId = useMemo(() => {
+    // Try to get from router state first
+    let pathname = router.state.location.pathname;
+
+    // Fallback to window location if router state isn't updated
+    if (typeof window !== "undefined" && !pathname.includes("/chat/")) {
+      pathname = window.location.pathname;
+    }
+
+    const match = pathname.match(/\/chat\/(.+)/);
+    return match ? match[1] : null;
+  }, [router.state.location.pathname]);
+
+  // Also listen to router history changes
+  useEffect(() => {
+    const handleRouteChange = () => {
+      // Force a re-render when route changes
+      setForceUpdate((prev) => prev + 1);
+    };
+
+    // Listen for browser navigation events
+    if (typeof window !== "undefined") {
+      window.addEventListener("popstate", handleRouteChange);
+      // Also listen for pushstate/replacestate which don't trigger popstate
+      const originalPushState = window.history.pushState;
+      const originalReplaceState = window.history.replaceState;
+
+      window.history.pushState = function (...args) {
+        originalPushState.apply(window.history, args);
+        handleRouteChange();
+      };
+
+      window.history.replaceState = function (...args) {
+        originalReplaceState.apply(window.history, args);
+        handleRouteChange();
+      };
+
+      return () => {
+        window.removeEventListener("popstate", handleRouteChange);
+        window.history.pushState = originalPushState;
+        window.history.replaceState = originalReplaceState;
+      };
+    }
+  }, []);
 
   // unfortunately can't go through tanstack yet:
   // https://github.com/get-convex/convex-react-query/issues/1
@@ -134,12 +187,16 @@ function AppSidebar() {
     threadId: Id<"threads">,
     currentPinnedState: boolean,
   ) => {
-    await updateThread({
-      threadId,
-      patch: { pinned: !currentPinnedState },
-    });
-
-    toast.success(`Thread ${currentPinnedState ? "unpinned" : "pinned"}`);
+    try {
+      await updateThread({
+        threadId,
+        patch: { pinned: !currentPinnedState },
+      });
+      toast.success(`Thread ${currentPinnedState ? "unpinned" : "pinned"}`);
+    } catch (error) {
+      console.error("Failed to pin/unpin thread:", error);
+      toast.error("Failed to update thread");
+    }
   };
 
   const handleDeleteThread = async (threadId: Id<"threads">) => {
@@ -156,6 +213,21 @@ function AppSidebar() {
     } catch (error) {
       console.error("Failed to delete thread:", error);
       toast.error("Failed to delete thread");
+    }
+  };
+
+  const handleRenameThread = async (
+    threadId: Id<"threads">,
+    newTitle: string,
+  ) => {
+    try {
+      await updateThread({ threadId, patch: { title: newTitle.trim() } });
+      toast.success("Thread renamed");
+      return true;
+    } catch (error) {
+      console.error("Failed to rename thread:", error);
+      toast.error("Failed to rename thread");
+      return false;
     }
   };
 
@@ -215,57 +287,196 @@ function AppSidebar() {
     return { pinned, groups };
   }, [threads]);
 
-  const ThreadItem = ({ thread }: { thread: (typeof threads)[0] }) => (
-    <SidebarMenuItem className="group/thread">
-      <div className="relative flex items-center group">
-        <Button
-          variant="transparent"
-          className="w-full justify-start h-8 px-2 text-sm truncate mx-0"
-          onClick={() => handleNavigation(thread._id)}
-        >
-          {thread.title && thread.title.length > 30
-            ? thread.title.slice(0, 30) + "..."
-            : thread.title || "New chat"}
-        </Button>
-        <div className="absolute overflow-hidden right-0.5 shadow-l-3xl flex items-center gap-0.5 opacity-0 translate-x-full transition-[opacity,transform] group-hover/thread:opacity-100 group-hover/thread:translate-x-0 bg-ui-bg-component rounded-lg">
-          <TooltipProvider>
-            <Tooltip
-              content={thread.pinned ? "Unpin thread" : "Pin thread"}
-              className="z-[9999]"
+  const ThreadItem = ({ thread }: { thread: (typeof threads)[0] }) => {
+    const [deletePromptOpen, setDeletePromptOpen] = React.useState(false);
+    const [renameDrawerOpen, setRenameDrawerOpen] = React.useState(false);
+    const [newTitle, setNewTitle] = React.useState(thread.title || "");
+    const [isRenaming, setIsRenaming] = React.useState(false);
+    const [dropdownOpen, setDropdownOpen] = React.useState(false);
+
+    // Check if this thread is currently active
+    const isActive = currentThreadId === thread._id;
+
+    // Keep input in sync if thread changes
+    React.useEffect(() => {
+      setNewTitle(thread.title || "");
+    }, [thread.title]);
+
+    const handleRename = async () => {
+      if (!newTitle.trim() || newTitle === thread.title) return;
+
+      setIsRenaming(true);
+      const success = await handleRenameThread(thread._id, newTitle);
+      setIsRenaming(false);
+
+      if (success) {
+        setRenameDrawerOpen(false);
+      }
+    };
+
+    const handleKeyDown = (e: React.KeyboardEvent) => {
+      if (e.key === "Enter") {
+        handleRename();
+      } else if (e.key === "Escape") {
+        setRenameDrawerOpen(false);
+        setNewTitle(thread.title || "");
+      }
+    };
+
+    return (
+      <>
+        <SidebarMenuItem className="group/thread">
+          <div className="relative flex items-center mr-3">
+            <Button
+              variant="transparent"
+              className={`flex-1 justify-start h-8 px-2 text-sm truncate group-hover/thread:pr-10 transition-all ${
+                isActive
+                  ? "bg-ui-bg-component-pressed text-ui-fg-base font-medium"
+                  : "hover:bg-ui-bg-component-hover"
+              }`}
+              onClick={() => handleNavigation(thread._id)}
             >
-              <IconButton
-                size="small"
-                variant="transparent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handlePinThread(thread._id, thread.pinned || false);
+              {thread.title && thread.title.length > 30
+                ? thread.title.slice(0, 30) + "..."
+                : thread.title || "New chat"}
+            </Button>
+
+            {/* Actions button - positioned absolutely to avoid layout shifts */}
+            <div
+              className={
+                "absolute right-1 transition-opacity " +
+                (dropdownOpen || isActive
+                  ? "opacity-100"
+                  : "opacity-0 group-hover/thread:opacity-100")
+              }
+            >
+              <DropdownMenu open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                <DropdownMenu.Trigger asChild>
+                  <IconButton
+                    size="small"
+                    variant="transparent"
+                    className="bg-ui-bg-component hover:bg-ui-bg-component-hover border border-ui-border-base shadow-sm"
+                  >
+                    <EllipsisHorizontal className="h-4 w-4" />
+                  </IconButton>
+                </DropdownMenu.Trigger>
+                <DropdownMenu.Content className="z-[9999]" align="end">
+                  <DropdownMenu.Item
+                    className="gap-x-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setRenameDrawerOpen(true);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    <PencilSquare className="text-ui-fg-subtle h-4 w-4" />
+                    Rename
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Item
+                    className="gap-x-2"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handlePinThread(thread._id, thread.pinned || false);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    {thread.pinned ? (
+                      <PinOff className="text-ui-fg-subtle h-4 w-4" />
+                    ) : (
+                      <Pin className="text-ui-fg-subtle h-4 w-4" />
+                    )}
+                    {thread.pinned ? "Unpin" : "Pin"}
+                  </DropdownMenu.Item>
+                  <DropdownMenu.Separator />
+                  <DropdownMenu.Item
+                    className="gap-x-2 text-ui-fg-error focus:text-ui-fg-error"
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      setDeletePromptOpen(true);
+                      setDropdownOpen(false);
+                    }}
+                  >
+                    <Trash className="h-4 w-4" />
+                    Delete
+                  </DropdownMenu.Item>
+                </DropdownMenu.Content>
+              </DropdownMenu>
+            </div>
+          </div>
+        </SidebarMenuItem>
+
+        {/* Delete confirmation prompt */}
+        <Prompt open={deletePromptOpen} onOpenChange={setDeletePromptOpen}>
+          <Prompt.Content>
+            <Prompt.Header>
+              <Prompt.Title>Delete thread?</Prompt.Title>
+              <Prompt.Description>
+                This action cannot be undone. Are you sure you want to delete "
+                {thread.title || "this thread"}"?
+              </Prompt.Description>
+            </Prompt.Header>
+            <Prompt.Footer>
+              <Prompt.Cancel onClick={() => setDeletePromptOpen(false)}>
+                Cancel
+              </Prompt.Cancel>
+              <Prompt.Action
+                onClick={async () => {
+                  setDeletePromptOpen(false);
+                  await handleDeleteThread(thread._id);
                 }}
+                className=""
               >
-                {thread.pinned ? (
-                  <PinOff className="h-4 w-4" />
-                ) : (
-                  <Pin className="h-4 w-4" />
-                )}
-              </IconButton>
-            </Tooltip>
-            <Tooltip content="Delete thread" className="z-[9999]">
-              <IconButton
-                size="small"
-                variant="transparent"
-                onClick={(e) => {
-                  e.stopPropagation();
-                  handleDeleteThread(thread._id);
+                Delete
+              </Prompt.Action>
+            </Prompt.Footer>
+          </Prompt.Content>
+        </Prompt>
+
+        {/* Rename drawer */}
+        <Drawer open={renameDrawerOpen} onOpenChange={setRenameDrawerOpen}>
+          <Drawer.Content>
+            <Drawer.Header>
+              <Drawer.Title>Rename thread</Drawer.Title>
+            </Drawer.Header>
+            <Drawer.Body className="space-y-4">
+              <div className="w-full max-w-md">
+                <Input
+                  placeholder="Enter thread name"
+                  value={newTitle}
+                  onChange={(e) => setNewTitle(e.target.value)}
+                  onKeyDown={handleKeyDown}
+                  disabled={isRenaming}
+                  autoFocus
+                  className="w-full"
+                />
+              </div>
+            </Drawer.Body>
+            <Drawer.Footer>
+              <Button
+                variant="secondary"
+                onClick={() => {
+                  setRenameDrawerOpen(false);
+                  setNewTitle(thread.title || "");
                 }}
-                className="text-ui-fg-error hover:text-ui-fg-error"
+                disabled={isRenaming}
               >
-                <Trash className="h-4 w-4" />
-              </IconButton>
-            </Tooltip>
-          </TooltipProvider>
-        </div>
-      </div>
-    </SidebarMenuItem>
-  );
+                Cancel
+              </Button>
+              <Button
+                onClick={handleRename}
+                isLoading={isRenaming}
+                disabled={
+                  !newTitle.trim() || newTitle === thread.title || isRenaming
+                }
+              >
+                {isRenaming ? "Renaming..." : "Rename"}
+              </Button>
+            </Drawer.Footer>
+          </Drawer.Content>
+        </Drawer>
+      </>
+    );
+  };
 
   return (
     <Sidebar variant="inset">
@@ -329,7 +540,7 @@ function AppSidebar() {
                   onClick={() => loadMoreThreads(THREADS_PAGE_SIZE)}
                 >
                   {threadsPaginationStatus === "LoadingMore"
-                    ? "Loading"
+                    ? "Loading..."
                     : "Load more"}
                 </Button>
               </SidebarMenuItem>
@@ -337,7 +548,6 @@ function AppSidebar() {
           )}
       </SidebarContent>
       <SidebarFooter>
-        {/* <pre>{JSON.stringify(user.image, 0, 2)}</pre> */}
         {user && (
           <DropdownMenu>
             <DropdownMenu.Trigger asChild>
@@ -345,7 +555,6 @@ function AppSidebar() {
                 variant="secondary"
                 className="w-full justify-between items-center h-8 px-2 text-sm truncate"
               >
-                {/* {user?.name?.split(" ")[0] || user.email || "User"}{" "} */}
                 {user?.name || user.email || "User"}{" "}
                 <Avatar
                   className="h-6 w-6"

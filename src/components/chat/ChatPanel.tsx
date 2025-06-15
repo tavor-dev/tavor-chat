@@ -131,13 +131,10 @@ export function ChatPanel({
         {showScrollToBottomButton && (
           <div className="absolute -top-10 right-0.5 z-20 size-8 w-full flex items-end justify-end">
             <Tooltip content="Scroll to bottom">
-            <IconButton
-              variant="transparent"
-              onClick={handleScrollToBottom}
-            >
-              <ArrowDown/>
-            </IconButton>
-</Tooltip>
+              <IconButton variant="transparent" onClick={handleScrollToBottom}>
+                <ArrowDown />
+              </IconButton>
+            </Tooltip>
           </div>
         )}
 
