@@ -345,7 +345,8 @@ function AppSidebar() {
                 variant="secondary"
                 className="w-full justify-between items-center h-8 px-2 text-sm truncate"
               >
-                {user?.name?.split(" ")[1] || user.email || "User"}{" "}
+                {/* {user?.name?.split(" ")[0] || user.email || "User"}{" "} */}
+                {user?.name || user.email || "User"}{" "}
                 <Avatar
                   className="h-6 w-6"
                   src={user?.image}

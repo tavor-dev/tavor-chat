@@ -34,7 +34,7 @@ function RouteComponent() {
   const selectedModel = availableModels.find((m) => m.id === selectedModelId);
 
   return (
-    <div className="space-y-8 pt-12 px-6 max-w-4xl">
+    <div className="space-y-8 pt-12 px-6 max-w-4xl mb-10">
       <div className="flex justify-between items-center">
         <Heading>Settings</Heading>
       </div>

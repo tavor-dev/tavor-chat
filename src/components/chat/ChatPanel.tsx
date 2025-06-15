@@ -2,7 +2,7 @@ import { cn } from "@/lib/utils";
 import { ArrowUpMini, SquareRedSolid } from "@medusajs/icons";
 import { useNavigate } from "@tanstack/react-router";
 import { useRef, useCallback, useState, type FormEvent } from "react";
-import { IconButton, Button, Select } from "@medusajs/ui";
+import { IconButton, Button, Select, Tooltip } from "@medusajs/ui";
 import TextareaAutosize, {
   type TextareaHeightChangeMeta,
 } from "react-textarea-autosize";
@@ -15,6 +15,7 @@ import {
   CogSixTooth,
   LightBulb,
   Bolt,
+  ArrowDown,
 } from "@medusajs/icons";
 import {
   FEATURE_CONFIGS,
@@ -128,16 +129,16 @@ export function ChatPanel({
         className={cn("max-w-3xl w-full mx-auto relative")}
       >
         {showScrollToBottomButton && (
-          <Button
-            type="button"
-            variant="transparent"
-            size="small"
-            className="absolute -top-10 right-4 z-20 size-8 rounded-full shadow-md hover:bg-ui-bg-component-hover"
-            onClick={handleScrollToBottom}
-            title="Scroll to bottom"
-          >
-            ↓
-          </Button>
+          <div className="absolute -top-10 right-0.5 z-20 size-8 w-full flex items-end justify-end">
+            <Tooltip content="Scroll to bottom">
+            <IconButton
+              variant="transparent"
+              onClick={handleScrollToBottom}
+            >
+              <ArrowDown/>
+            </IconButton>
+</Tooltip>
+          </div>
         )}
 
         <div className="flex p-1 rounded-2xl bg-ui-bg-field-component-hover border border-ui-border-base">

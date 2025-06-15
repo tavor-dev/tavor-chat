@@ -18,7 +18,10 @@ import { UserMessage } from "./UserMessage";
 
 export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
-  const [isAtBottom, setIsAtBottom] = useState(true);
+  // Controls the visibility of the "scroll to bottom" button.
+  const [showScrollDownButton, setShowScrollDownButton] = useState(false);
+  // Tracks if the user has intentionally scrolled up, to disable auto-scroll.
+  const userHasScrolledUp = useRef(false);
   const [inputHeight, setInputHeight] = useState(0);
 
   // Load initial messages from cache to show something immediately.
@@ -51,36 +54,79 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
       : (messages.results ?? []),
   );
 
-  const messagesCount = messagesToRender.length;
+  // Get the content of the last message to use as a dependency.
+  // This is more stable than the entire messages array during streaming.
+  const lastMessageContent = messagesToRender.at(-1)?.content;
 
-  const scrollToBottom = useCallback(() => {
-    if (scrollContainerRef.current) {
-      scrollContainerRef.current.scrollTo({
-        top: scrollContainerRef.current.scrollHeight,
-        behavior: "instant",
-      });
-    }
+  const scrollToBottom = useCallback(
+    (behavior: "smooth" | "instant" = "instant") => {
+      const container = scrollContainerRef.current;
+      if (container) {
+        container.scrollTo({
+          top: container.scrollHeight,
+          behavior,
+        });
+      }
+    },
+    [],
+  );
+
+  // Effect for handling manual scroll to show/hide the button.
+  useEffect(() => {
+    const scrollContainer = scrollContainerRef.current;
+    if (!scrollContainer) return;
+
+    const handleScroll = () => {
+      const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 5;
+
+      // Update the ref that tracks user's intent.
+      userHasScrolledUp.current = !isAtBottom;
+
+      // Update the state that shows/hides the button.
+      setShowScrollDownButton(!isAtBottom);
+    };
+
+    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    handleScroll(); // Initial check
+
+    return () => scrollContainer.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Effect for auto-scrolling when new messages (or chunks) arrive.
   useEffect(() => {
-    scrollToBottom();
-  }, [messagesCount, scrollToBottom]);
+    // We only auto-scroll if the user has NOT manually scrolled up.
+    if (!userHasScrolledUp.current) {
+      scrollToBottom("instant");
+    } else {
+      // If the user has scrolled up, a new message means they are now even
+      // further from the bottom. We should ensure the button is visible.
+      // This handles new streaming content pushing the view up without a scroll event.
+      setShowScrollDownButton(true);
+    }
+  }, [lastMessageContent, scrollToBottom]);
 
   const sendMessage = useMutation(
     api.chat.streamAsynchronously,
   ).withOptimisticUpdate(optimisticallySendMessage(api.messages.getByThreadId));
 
-  const handleScrollPositionChange = useCallback((atBottom: boolean) => {
-    setIsAtBottom(atBottom);
-  }, []);
-
   const handleSubmit = useCallback(
     (prompt: string) => {
       if (prompt.trim() === "") return;
+      // On submission, we want to resume auto-scrolling.
+      userHasScrolledUp.current = false;
+      setShowScrollDownButton(false);
       sendMessage({ threadId, prompt });
     },
     [sendMessage, threadId],
   );
+
+  const handleScrollToBottomClick = useCallback(() => {
+    // When the user clicks the button, they intentionally go to the bottom.
+    userHasScrolledUp.current = false;
+    setShowScrollDownButton(false);
+    scrollToBottom("smooth"); // Use smooth scroll for a better UX.
+  }, [scrollToBottom]);
 
   return (
     <>
@@ -91,13 +137,13 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         aria-roledescription="chat messages"
         className={cn(
           "w-full pt-14 absolute overflow-y-scroll h-screen inset-0",
-          messagesCount > 0 ? "flex-1" : "",
+          messagesToRender.length > 0 ? "flex-1" : "",
         )}
         style={{
           paddingBottom: inputHeight + 56,
         }}
       >
-        {messagesCount > 0 &&
+        {messagesToRender.length > 0 &&
           messagesToRender.map((m) => (
             <div
               key={m.id}
@@ -116,8 +162,8 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         handleSubmit={handleSubmit}
         isLoading={messages.isLoading}
         onInputHeightChange={setInputHeight}
-        showScrollToBottomButton={!isAtBottom}
-        onScrollToBottom={scrollToBottom}
+        showScrollToBottomButton={showScrollDownButton}
+        onScrollToBottom={handleScrollToBottomClick}
       />
     </>
   );
