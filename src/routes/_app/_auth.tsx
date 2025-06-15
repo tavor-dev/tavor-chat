@@ -325,7 +325,7 @@ function AppSidebar() {
     return (
       <>
         <SidebarMenuItem className="group/thread">
-          <div className="relative flex items-center mr-3">
+          <div className="relative flex items-center mr-1 md:mr-3">
             <Button
               variant="transparent"
               className={`flex-1 justify-start h-8 px-2 text-sm truncate group-hover/thread:pr-10 transition-all ${
@@ -480,7 +480,7 @@ function AppSidebar() {
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
-        <div className="flex items-center mb-2 ml-11 cursor-pointer">
+        <div className="flex items-center mb-2 ml-2 md:ml-11 cursor-pointer">
           <div className="flex mt-1.5 gap-1 items-center">
             <Logo className="h-6 w-6" />
             <Heading level="h2" className="font-semibold">
@@ -499,7 +499,7 @@ function AppSidebar() {
           New chat
         </Button>
       </SidebarHeader>
-      <SidebarContent className="overflow-x-hidden pl-3">
+      <SidebarContent className="overflow-x-hidden ml-1 md:ml-3">
         {/* Pinned threads */}
         {groupedThreads.pinned.length > 0 && (
           <>
