@@ -8,7 +8,7 @@ import React, { Suspense } from "react";
 import { Helmet } from "react-helmet-async";
 
 const TanStackRouterDevtools =
-  process.env.NODE_ENV === "development"
+  process.env.NODE_ENV === "production"
     ? () => null // Render nothing in production
     : React.lazy(() =>
         // Lazy load in development
