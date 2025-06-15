@@ -46,7 +46,12 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import { useAction, useConvex, useMutation } from "convex/react";
+import {
+  useAction,
+  useConvex,
+  useMutation,
+  useQuery as useConvexQuery,
+} from "convex/react";
 import { Pin, PinOff } from "lucide-react";
 import React, { useEffect, useMemo } from "react";
 
@@ -106,6 +111,26 @@ function AppSidebar() {
 
   // State to force re-renders when route changes
   const [, setForceUpdate] = React.useState(0);
+  const [searchQuery, setSearchQuery] = React.useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] =
+    React.useState(searchQuery);
+
+  React.useEffect(() => {
+    const handler = setTimeout(() => {
+      setDebouncedSearchQuery(searchQuery);
+    }, 300);
+
+    return () => {
+      clearTimeout(handler);
+    };
+  }, [searchQuery]);
+
+  const { data: searchResults, isLoading: isSearching } = useQuery(
+    convexQuery(
+      api.threads.search,
+      debouncedSearchQuery ? { query: debouncedSearchQuery } : "skip",
+    ),
+  );
 
   const updateThread = useMutation(api.threads.update);
   const deleteThread = useAction(api.threads.deleteThread);
@@ -325,7 +350,7 @@ function AppSidebar() {
     return (
       <>
         <SidebarMenuItem className="group/thread">
-          <div className="relative flex items-center mr-1 md:mr-3">
+          <div className="relative flex items-center px-3 md:px-3 md:-ml-2">
             <Button
               variant="transparent"
               className={`flex-1 justify-start h-8 px-2 text-sm truncate group-hover/thread:pr-10 transition-all ${
@@ -343,7 +368,7 @@ function AppSidebar() {
             {/* Actions button - positioned absolutely to avoid layout shifts */}
             <div
               className={
-                "absolute right-1 transition-opacity " +
+                "absolute right-5 transition-opacity " +
                 (dropdownOpen || isActive
                   ? "opacity-100"
                   : "opacity-0 group-hover/thread:opacity-100")
@@ -446,7 +471,7 @@ function AppSidebar() {
                   onKeyDown={handleKeyDown}
                   disabled={isRenaming}
                   autoFocus
-                  className="w-full"
+                  className="w-full text-base"
                 />
               </div>
             </Drawer.Body>
@@ -480,7 +505,7 @@ function AppSidebar() {
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
-        <div className="flex items-center mb-2 ml-2 md:ml-11 cursor-pointer">
+        <div className="flex items-center mb-2 ml-2.5 md:ml-11 cursor-pointer">
           <div className="flex mt-1.5 gap-1 items-center">
             <Logo className="h-6 w-6" />
             <Heading level="h2" className="font-semibold">
@@ -488,63 +513,99 @@ function AppSidebar() {
             </Heading>
           </div>
         </div>
-        <Button
-          variant="transparent"
-          className="w-full my-4 flex justify-start items-center"
-          onClick={handleNewChat}
-        >
-          <div className="flex items-center justify-center rounded-md bg-ui-tag-purple-border p-1 mr-1">
-            <PlusMini />
-          </div>
-          New chat
-        </Button>
+        <div className="px-2">
+          <Button
+            variant="transparent"
+            className="w-full my-4 flex justify-start items-center"
+            onClick={handleNewChat}
+          >
+            <div className="flex items-center justify-center rounded-md bg-ui-tag-purple-border p-1 mr-1 -ml-2">
+              <PlusMini />
+            </div>
+            New chat
+          </Button>
+        </div>
+        <div className="px-2 mb-2">
+          <Input
+            placeholder="Search threads..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="text-base"
+            type="search"
+          />
+        </div>
       </SidebarHeader>
       <SidebarContent className="overflow-x-hidden ml-1 md:ml-3">
-        {/* Pinned threads */}
-        {groupedThreads.pinned.length > 0 && (
+        {debouncedSearchQuery ? (
           <>
-            <p className="text-xs font-semibold text-ui-fg-muted px-2 mt-2">
-              Pinned
-            </p>
-            <SidebarMenu>
-              {groupedThreads.pinned.map((thread) => (
-                <ThreadItem key={thread._id} thread={thread} />
-              ))}
-            </SidebarMenu>
+            {isSearching && (
+              <p className="p-2 text-sm text-ui-fg-muted">Searching...</p>
+            )}
+            {!isSearching && searchResults && (
+              <SidebarMenu>
+                {searchResults.length > 0 ? (
+                  searchResults.map((thread) => (
+                    <ThreadItem key={thread._id} thread={thread} />
+                  ))
+                ) : (
+                  <SidebarMenuItem>
+                    <p className="px-2 text-sm text-ui-fg-muted">
+                      No results found
+                    </p>
+                  </SidebarMenuItem>
+                )}
+              </SidebarMenu>
+            )}
+          </>
+        ) : (
+          <>
+            {/* Pinned threads */}
+            {groupedThreads.pinned.length > 0 && (
+              <>
+                <p className="text-xs font-semibold text-ui-fg-muted px-2 mt-2">
+                  Pinned
+                </p>
+                <SidebarMenu>
+                  {groupedThreads.pinned.map((thread) => (
+                    <ThreadItem key={thread._id} thread={thread} />
+                  ))}
+                </SidebarMenu>
+              </>
+            )}
+
+            {/* Time-grouped threads */}
+            {groupedThreads.groups.map((group) => (
+              <React.Fragment key={group.label}>
+                <p className="text-xs font-semibold text-ui-fg-muted px-2 mt-4 first:mt-2">
+                  {group.label}
+                </p>
+                <SidebarMenu>
+                  {group.threads.map((thread) => (
+                    <ThreadItem key={thread._id} thread={thread} />
+                  ))}
+                </SidebarMenu>
+              </React.Fragment>
+            ))}
+
+            {threadsPaginationStatus !== "Exhausted" &&
+              threadsPaginationStatus !== "LoadingFirstPage" && (
+                <SidebarMenu className="mt-2">
+                  <SidebarMenuItem>
+                    <Button
+                      variant="secondary"
+                      className="w-full justify-center h-6 px-2 text-sm truncate mx-0"
+                      disabled={threadsPaginationStatus === "LoadingMore"}
+                      onClick={() => loadMoreThreads(THREADS_PAGE_SIZE)}
+                    >
+                      {threadsPaginationStatus === "LoadingMore"
+                        ? "Loading..."
+                        : "Load more"}
+                    </Button>
+                  </SidebarMenuItem>
+                </SidebarMenu>
+              )}
           </>
         )}
-
-        {/* Time-grouped threads */}
-        {groupedThreads.groups.map((group) => (
-          <React.Fragment key={group.label}>
-            <p className="text-xs font-semibold text-ui-fg-muted px-2 mt-4 first:mt-2">
-              {group.label}
-            </p>
-            <SidebarMenu>
-              {group.threads.map((thread) => (
-                <ThreadItem key={thread._id} thread={thread} />
-              ))}
-            </SidebarMenu>
-          </React.Fragment>
-        ))}
-
-        {threadsPaginationStatus !== "Exhausted" &&
-          threadsPaginationStatus !== "LoadingFirstPage" && (
-            <SidebarMenu className="mt-2">
-              <SidebarMenuItem>
-                <Button
-                  variant="secondary"
-                  className="w-full justify-center h-6 px-2 text-sm truncate mx-0"
-                  disabled={threadsPaginationStatus === "LoadingMore"}
-                  onClick={() => loadMoreThreads(THREADS_PAGE_SIZE)}
-                >
-                  {threadsPaginationStatus === "LoadingMore"
-                    ? "Loading..."
-                    : "Load more"}
-                </Button>
-              </SidebarMenuItem>
-            </SidebarMenu>
-          )}
       </SidebarContent>
       <SidebarFooter>
         {user && (

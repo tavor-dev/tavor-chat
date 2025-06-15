@@ -41,7 +41,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
           <Textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="rounded-lg px-4 py-2 w-full"
+            className="rounded-lg px-4 py-2 w-full text-base"
             autoFocus
           />
           <div className="flex justify-end gap-2 mt-2">
