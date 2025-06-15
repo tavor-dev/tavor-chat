@@ -7,7 +7,14 @@ export default defineConfig({
   server: {
     port: 9055,
   },
-  plugins: [TanStackRouterVite(), viteReact()],
+  plugins: [
+    TanStackRouterVite(),
+    viteReact({
+      babel: {
+        plugins: [["babel-plugin-react-compiler", { target: "18" }]],
+      },
+    }),
+  ],
   resolve: {
     alias: {
       "~": __dirname,
