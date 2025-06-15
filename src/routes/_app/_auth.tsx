@@ -1,4 +1,5 @@
 import { Logo } from "@/components/logo";
+import { clearThreadCache, initThreadCache } from "@/lib/threadCache";
 import {
   Sidebar,
   SidebarContent,
@@ -20,23 +21,22 @@ import {
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
 import {
-  PlusMini,
-  Trash,
   EllipsisHorizontal,
   PencilSquare,
+  PlusMini,
+  Trash,
 } from "@medusajs/icons";
-import { Pin, PinOff } from "lucide-react";
 import {
-  Button,
-  DropdownMenu,
-  IconButton,
-  Toaster,
-  toast,
   Avatar,
-  Heading,
-  Prompt,
+  Button,
   Drawer,
+  DropdownMenu,
+  Heading,
+  IconButton,
   Input,
+  Prompt,
+  toast,
+  Toaster,
 } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import {
@@ -45,11 +45,10 @@ import {
   Outlet,
   useNavigate,
   useRouter,
-  useParams,
 } from "@tanstack/react-router";
-import { useConvex, useAction, useMutation } from "convex/react";
+import { useAction, useConvex, useMutation } from "convex/react";
+import { Pin, PinOff } from "lucide-react";
 import React, { useEffect, useMemo } from "react";
-import { initThreadCache, clearThreadCache } from "@/lib/threadCache";
 
 const THREADS_PAGE_SIZE = 20;
 

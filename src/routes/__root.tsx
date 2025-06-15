@@ -19,24 +19,24 @@ const TanStackRouterDevtools =
         })),
       );
 
-const GridOverlay = () => (
-  <div
-    style={{
-      pointerEvents: "none",
-      position: "fixed",
-      top: 0,
-      left: 0,
-      width: "100vw",
-      height: "100vh",
-      zIndex: 9999,
-      backgroundImage:
-        "repeating-linear-gradient(to right, rgba(255,0,0,0.25) 0, rgba(255,0,0,0.25) 2px, transparent 2px, transparent 20px)," +
-        "repeating-linear-gradient(to bottom, rgba(255,0,0,0.25) 0, rgba(255,0,0,0.25) 2px, transparent 2px, transparent 20px)",
-      backgroundSize: "20px 20px",
-      mixBlendMode: "multiply",
-    }}
-  />
-);
+// const GridOverlay = () => (
+//   <div
+//     style={{
+//       pointerEvents: "none",
+//       position: "fixed",
+//       top: 0,
+//       left: 0,
+//       width: "100vw",
+//       height: "100vh",
+//       zIndex: 9999,
+//       backgroundImage:
+//         "repeating-linear-gradient(to right, rgba(255,0,0,0.25) 0, rgba(255,0,0,0.25) 2px, transparent 2px, transparent 20px)," +
+//         "repeating-linear-gradient(to bottom, rgba(255,0,0,0.25) 0, rgba(255,0,0,0.25) 2px, transparent 2px, transparent 20px)",
+//       backgroundSize: "20px 20px",
+//       mixBlendMode: "multiply",
+//     }}
+//   />
+// );
 
 export const Route = createRootRouteWithContext<{
   queryClient: QueryClient;

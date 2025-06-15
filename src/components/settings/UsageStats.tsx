@@ -1,6 +1,6 @@
-import { Container, Heading, Text, Badge } from "@medusajs/ui";
 import { Progress } from "@/ui/progress";
-import { MessageSquare, TrendingUp, Calendar, Zap } from "lucide-react";
+import { Badge, Container, Heading, Text } from "@medusajs/ui";
+import { MessageSquare } from "lucide-react";
 
 interface UsageStatsProps {
   userPlan?: string;
@@ -37,13 +37,13 @@ export function UsageStats({ userPlan = "Free" }: UsageStatsProps) {
     ? (stats.messagesUsed / stats.messagesLimit) * 100
     : 0;
 
-  const formatDate = (date: Date) => {
-    return date.toLocaleDateString("en-US", {
-      month: "short",
-      day: "numeric",
-      year: "numeric",
-    });
-  };
+  // const formatDate = (date: Date) => {
+  //   return date.toLocaleDateString("en-US", {
+  //     month: "short",
+  //     day: "numeric",
+  //     year: "numeric",
+  //   });
+  // };
 
   const getUsageColor = (percentage: number) => {
     if (percentage >= 90) return "red";

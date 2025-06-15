@@ -9,26 +9,32 @@ import { getAvailableModels, getDefaultModel } from "@/lib/models";
 import { Billing } from "@/components/settings/Billing";
 import { UsageStats } from "@/components/settings/UsageStats";
 
-// Define the search params schema
-const settingsSearchSchema = {
-  tab: (value: unknown) => {
-    const validTabs = ['account', 'usage', 'billing', 'theme'];
-    // Handle undefined/null/empty values by defaulting to 'account'
-    if (!value || typeof value !== 'string') return 'account';
-    return validTabs.includes(value) ? value : 'account';
-  }
+const VALID_TABS = ["account", "usage", "billing", "theme"] as const;
+type SettingsSearchTab = (typeof VALID_TABS)[number];
+
+type SettingsSearch = {
+  tab: SettingsSearchTab;
+};
+
+const validateSearchTab = (tab: unknown): SettingsSearchTab => {
+  const defaultTab = VALID_TABS[0];
+  if (!tab || typeof tab !== "string") return defaultTab;
+  if (!VALID_TABS.includes(tab as unknown as SettingsSearchTab))
+    return defaultTab;
+
+  return tab as SettingsSearchTab;
 };
 
 export const Route = createFileRoute("/_app/_auth/settings/_layout")({
   component: RouteComponent,
-  validateSearch: (search) => ({
-    tab: settingsSearchSchema.tab(search.tab)
+  validateSearch: (search: Record<string, unknown>): SettingsSearch => ({
+    tab: validateSearchTab(search.tab),
   }),
 });
 
 function RouteComponent() {
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
-  const navigate = useNavigate();
+  const navigate = useNavigate({ from: Route.fullPath });
   const { tab } = Route.useSearch(); // Get current tab from URL
 
   const formatDate = (timestamp: number) => {
@@ -44,7 +50,7 @@ function RouteComponent() {
   // Handle tab changes by updating URL
   const handleTabChange = (newTab: string) => {
     navigate({
-      search: (prev) => ({ ...prev, tab: newTab }),
+      search: (prev: Record<string, unknown>) => ({ ...prev, tab: newTab }),
       replace: true, // Use replace to avoid cluttering browser history
     });
   };
@@ -266,3 +272,4 @@ function RouteComponent() {
     </div>
   );
 }
+

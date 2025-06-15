@@ -1,33 +1,21 @@
+import {
+  // FEATURE_CONFIGS,
+  getAvailableModels,
+  getDefaultModel,
+  // type ModelFeature,
+  type ModelId,
+} from "@/lib/models";
 import { cn } from "@/lib/utils";
-import { ArrowUpMini, SquareRedSolid } from "@medusajs/icons";
-import { useNavigate } from "@tanstack/react-router";
-import { useRef, useCallback, useState, type FormEvent } from "react";
-import { IconButton, Button, Select, Tooltip } from "@medusajs/ui";
+import { convexQuery } from "@convex-dev/react-query";
+import { api } from "@cvx/_generated/api";
+import { ArrowDown, ArrowUpMini, SquareRedSolid } from "@medusajs/icons";
+import { IconButton, Select, Tooltip } from "@medusajs/ui";
+import { useQuery } from "@tanstack/react-query";
+import { useMutation } from "convex/react";
+import { useCallback, useRef, useState, type FormEvent } from "react";
 import TextareaAutosize, {
   type TextareaHeightChangeMeta,
 } from "react-textarea-autosize";
-import {
-  AiAssistent,
-  GlobeEurope,
-  Photo,
-  DocumentText,
-  Sparkles,
-  CogSixTooth,
-  LightBulb,
-  Bolt,
-  ArrowDown,
-} from "@medusajs/icons";
-import {
-  FEATURE_CONFIGS,
-  getAvailableModels,
-  getDefaultModel,
-  type ModelFeature,
-  type ModelId,
-} from "@/lib/models";
-import { convexQuery } from "@convex-dev/react-query";
-import { api } from "@cvx/_generated/api";
-import { useQuery } from "@tanstack/react-query";
-import { useMutation } from "convex/react";
 
 interface ChatPanelProps {
   handleSubmit: (prompt: string) => void;
@@ -44,7 +32,6 @@ export function ChatPanel({
   showScrollToBottomButton,
   onScrollToBottom, // Added this prop
 }: ChatPanelProps) {
-  const navigate = useNavigate();
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const [input, setInput] = useState("");
 
@@ -73,7 +60,7 @@ export function ChatPanel({
     [updateUserPreferences],
   );
 
-  const [enabledFeatures, setEnabledFeatures] = useState<ModelFeature[]>([]);
+  // const [enabledFeatures, setEnabledFeatures] = useState<ModelFeature[]>([]);
 
   // Get available models based on user plan (assuming free plan for now)
   const availableModels = getAvailableModels("Free");
@@ -90,27 +77,23 @@ export function ChatPanel({
     {} as Record<string, typeof availableModels>,
   );
 
-  const getSelectedModelCapabilities = (): ModelFeature[] => {
-    if (!selectedModel) return [];
-    const model = availableModels.find((m) => m.id === selectedModel);
-    return (
-      model?.features.filter(
-        (f) => FEATURE_CONFIGS[f].includeInModelSelector,
-      ) || []
-    );
-  };
-
-  const toggleFeature = (feature: ModelFeature) => {
-    setEnabledFeatures((prev) =>
-      prev.includes(feature)
-        ? prev.filter((f) => f !== feature)
-        : [...prev, feature],
-    );
-  };
-
-  const handleNewChat = () => {
-    navigate({ to: "/" });
-  };
+  // const getSelectedModelCapabilities = (): ModelFeature[] => {
+  //   if (!selectedModel) return [];
+  //   const model = availableModels.find((m) => m.id === selectedModel);
+  //   return (
+  //     model?.features.filter(
+  //       (f) => FEATURE_CONFIGS[f].includeInModelSelector,
+  //     ) || []
+  //   );
+  // };
+  //
+  // const toggleFeature = (feature: ModelFeature) => {
+  //   setEnabledFeatures((prev) =>
+  //     prev.includes(feature)
+  //       ? prev.filter((f) => f !== feature)
+  //       : [...prev, feature],
+  //   );
+  // };
 
   const handleScrollToBottom = () => {
     if (onScrollToBottom) {

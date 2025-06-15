@@ -1,12 +1,11 @@
-import * as React from "react";
+import { SidebarLeft } from "@medusajs/icons";
 import { Slot } from "@radix-ui/react-slot";
 import { cva, VariantProps } from "class-variance-authority";
-import { SidebarLeft } from "@medusajs/icons";
+import * as React from "react";
 
 import { useIsMobile } from "@/hooks/use-mobile";
 import { cn } from "@/lib/utils";
 // import { Button } from "@/ui/button";
-import { IconButton, Button } from "@medusajs/ui";
 import { Input } from "@/ui/input";
 import { Separator } from "@/ui/separator";
 import {
@@ -23,11 +22,12 @@ import {
   TooltipProvider,
   TooltipTrigger,
 } from "@/ui/tooltip";
+import { IconButton } from "@medusajs/ui";
 
 const SIDEBAR_COOKIE_NAME = "sidebar_state";
 const SIDEBAR_COOKIE_MAX_AGE = 60 * 60 * 24 * 7;
 const SIDEBAR_WIDTH = "16rem";
-const SIDEBAR_WIDTH_MOBILE = "18rem";
+// const SIDEBAR_WIDTH_MOBILE = "18rem";
 const SIDEBAR_WIDTH_ICON = "3rem";
 const SIDEBAR_KEYBOARD_SHORTCUT = "b";
 
