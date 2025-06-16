@@ -1,5 +1,6 @@
 import { cn } from "@/lib/utils";
 import { UIMessage, useSmoothText } from "@convex-dev/agent/react";
+import { Spinner } from "@medusajs/icons";
 import { CodeBlock, Text } from "@medusajs/ui";
 import React, { memo } from "react";
 import ReactMarkdown from "react-markdown";
@@ -53,6 +54,54 @@ const CustomCodeBlock = memo(
 );
 CustomCodeBlock.displayName = "CustomCodeBlock";
 
+const ToolStatus = memo(
+  ({
+    part,
+  }: {
+    part: Extract<UIMessage["parts"][0], { type: "tool-invocation" }>;
+  }) => {
+    const invocation = part.toolInvocation;
+    const isExecuting = invocation.state === "call";
+    const command =
+      invocation.toolName === "executeCommand"
+        ? (invocation.args?.command as string)
+        : null;
+
+    if (!command) return null;
+
+    return (
+      <div className="not-prose my-4 rounded-lg border border-ui-border-base bg-ui-bg-surface p-4">
+        <div className="flex items-center gap-3">
+          {isExecuting && (
+            <Spinner className="h-4 w-4 text-ui-fg-muted animate-spin" />
+          )}
+          <div className="flex-1 max-w-full">
+            <div className="flex items-center gap-2">
+              <span className="text-sm font-medium text-ui-fg-base">
+                {isExecuting ? "Executing" : "Executed"} command
+              </span>
+              <code className="rounded bg-ui-bg-base-pressed px-2 py-1 font-mono text-xs text-ui-fg-subtle max-w-96 truncate text-ellipsis">
+                {command}
+              </code>
+            </div>
+            {invocation.state === "result" && invocation.result && (
+              <div className="mt-3">
+                <div className="text-xs font-medium text-ui-fg-muted mb-1">
+                  Output:
+                </div>
+                <p className="break-words rounded bg-ui-bg-base-pressed p-3 font-mono text-xs text-ui-fg-subtle">
+                  {String(invocation.result).trim()}
+                </p>
+              </div>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  },
+);
+ToolStatus.displayName = "ToolStatus";
+
 // --- Main BotMessage Component ---
 
 export function BotMessage({
@@ -63,6 +112,12 @@ export function BotMessage({
   className?: string;
 }) {
   const [visibleText] = useSmoothText(message.content);
+
+  const toolInvocations =
+    message.parts?.filter(
+      (part): part is Extract<typeof part, { type: "tool-invocation" }> =>
+        part.type === "tool-invocation",
+    ) || [];
 
   return (
     // We use the `prose` class from Tailwind Typography for beautiful default
@@ -79,6 +134,9 @@ export function BotMessage({
         className,
       )}
     >
+      {toolInvocations.map((invocation, index) => (
+        <ToolStatus key={index} part={invocation} />
+      ))}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
