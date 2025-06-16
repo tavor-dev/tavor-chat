@@ -360,8 +360,8 @@ function AppSidebar() {
               }`}
               onClick={() => handleNavigation(thread._id)}
             >
-              {thread.title && thread.title.length > 30
-                ? thread.title.slice(0, 30) + "..."
+              {thread.title && thread.title.length > 25
+                ? thread.title.slice(0, 22) + "..."
                 : thread.title || "New chat"}
             </Button>
 

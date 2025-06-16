@@ -8,7 +8,7 @@ type AnswerSectionProps = {
 
 export function AnswerSection({ message }: AnswerSectionProps) {
   return (
-    <div className="p-4">
+    <div className="p-2">
       <BotMessage message={message} />
       <MessageActions message={message} />
     </div>
