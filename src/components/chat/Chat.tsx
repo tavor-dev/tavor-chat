@@ -240,3 +240,4 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     </>
   );
 }
+

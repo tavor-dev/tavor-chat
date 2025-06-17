@@ -82,7 +82,7 @@ function NewChatComponent() {
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col min-h-full">
           {/* Header section */}
-          <div className="flex-shrink-0 pt-8 pb-4 px-4 sm:px-8">
+          <div className="flex-shrink-0 pt-8 pb-4 px-4 sm:px-8 mt-40">
             <div className="w-full flex justify-center flex-col items-center gap-4">
               <Logo />
               <h1 className="text-xl sm:text-2xl font-semibold text-ui-fg-base text-center">
@@ -123,4 +123,3 @@ function NewChatComponent() {
     </div>
   );
 }
-

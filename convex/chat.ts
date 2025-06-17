@@ -5,8 +5,13 @@ import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { action, internalAction, mutation } from "./_generated/server";
-import { authorizeThreadAccess, checkAndIncrementUsage, getUserId } from "./account";
-import { z } from "zod";
+import {
+  authorizeThreadAccess,
+  checkAndIncrementUsage,
+  getUserId,
+} from "./account";
+import { setupTavorTools } from "./tavor";
+// import { z } from "zod";
 
 const models = {
   "gpt-4o-mini": openai("gpt-4o-mini"),
