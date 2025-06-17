@@ -140,7 +140,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
           messagesToRender.length > 0 ? "flex-1" : "",
         )}
         style={{
-          paddingBottom: inputHeight + 56,
+          paddingBottom: inputHeight + 76,
         }}
       >
         {messagesToRender.length > 0 &&

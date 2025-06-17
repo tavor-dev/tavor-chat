@@ -1,7 +1,15 @@
 import { cn } from "@/lib/utils";
 import { UIMessage, useSmoothText } from "@convex-dev/agent/react";
+import {
+  Spinner,
+  ChevronDownMini,
+  ChevronUpMini,
+  CommandLine,
+  CheckCircleSolid,
+  ExclamationCircleSolid,
+} from "@medusajs/icons";
 import { CodeBlock, Text } from "@medusajs/ui";
-import React, { memo } from "react";
+import React, { memo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 
@@ -53,6 +61,155 @@ const CustomCodeBlock = memo(
 );
 CustomCodeBlock.displayName = "CustomCodeBlock";
 
+const ToolStatus = memo(
+  ({
+    part,
+  }: {
+    part: Extract<UIMessage["parts"][0], { type: "tool-invocation" }>;
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const invocation = part.toolInvocation;
+    const isExecuting = invocation.state === "call";
+    const isCompleted = invocation.state === "result";
+    const hasError = invocation.state === "result" && !invocation.result;
+
+    const command =
+      invocation.toolName === "executeCommand"
+        ? (invocation.args?.command as string)
+        : null;
+
+    if (!command) return null;
+
+    const getStatusIcon = () => {
+      if (isExecuting) {
+        return (
+          <Spinner className="h-4 w-4 text-ui-fg-interactive animate-spin" />
+        );
+      }
+      if (hasError) {
+        return <ExclamationCircleSolid className="h-4 w-4 text-ui-fg-error" />;
+      }
+      if (isCompleted) {
+        return <CheckCircleSolid className="h-4 w-4 text-ui-tag-green-text" />;
+      }
+      return <CommandLine className="h-4 w-4 text-ui-fg-muted" />;
+    };
+
+    const getStatusText = () => {
+      if (isExecuting) return "Running command";
+      if (hasError) return "Command failed";
+      if (isCompleted) return "Command completed";
+      return "Command";
+    };
+
+    const getStatusColor = () => {
+      if (isExecuting) return "text-ui-fg-interactive";
+      if (hasError) return "text-ui-fg-error";
+      if (isCompleted) return "text-ui-tag-green-text";
+      return "text-ui-fg-base";
+    };
+
+    const hasOutput =
+      isCompleted && invocation.result && String(invocation.result).trim();
+
+    return (
+      <div className="not-prose my-4">
+        <div
+          className={cn(
+            "rounded-lg border transition-all duration-200",
+            isExecuting
+              ? "border-ui-border-interactive bg-ui-bg-base shadow-sm"
+              : hasError
+                ? "border-ui-border-error bg-ui-bg-base"
+                : "border-ui-border-base bg-ui-bg-subtle hover:bg-ui-bg-base",
+            hasOutput && "",
+          )}
+        >
+          {/* Header */}
+          <div
+            className="flex items-center gap-3 p-4 cursor-pointer"
+            onClick={hasOutput ? () => setIsExpanded(!isExpanded) : undefined}
+          >
+            <div className="flex-shrink-0">{getStatusIcon()}</div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className={cn("text-sm font-medium", getStatusColor())}>
+                  {getStatusText()}
+                </span>
+                {/* {isExecuting && ( */}
+                {/*   <div className="flex gap-1"> */}
+                {/*     <div */}
+                {/*       className="w-1 h-1 bg-ui-fg-interactive rounded-full animate-bounce" */}
+                {/*       style={{ animationDelay: "0ms" }} */}
+                {/*     /> */}
+                {/*     <div */}
+                {/*       className="w-1 h-1 bg-ui-fg-interactive rounded-full animate-bounce" */}
+                {/*       style={{ animationDelay: "150ms" }} */}
+                {/*     /> */}
+                {/*     <div */}
+                {/*       className="w-1 h-1 bg-ui-fg-interactive rounded-full animate-bounce" */}
+                {/*       style={{ animationDelay: "300ms" }} */}
+                {/*     /> */}
+                {/*   </div> */}
+                {/* )} */}
+              </div>
+
+              <div className="flex items-center gap-2">
+                <code className="rounded bg-ui-bg-base-pressed px-2 py-1 font-mono text-xs text-ui-fg-subtle max-w-md truncate">
+                  {command}
+                </code>
+                {hasOutput && (
+                  <span className="text-xs text-ui-fg-muted">
+                    Click to {isExpanded ? "hide" : "view"} output
+                  </span>
+                )}
+              </div>
+            </div>
+
+            {hasOutput && (
+              <div className="flex-shrink-0">
+                {isExpanded ? (
+                  <ChevronUpMini className="h-4 w-4 text-ui-fg-muted" />
+                ) : (
+                  <ChevronDownMini className="h-4 w-4 text-ui-fg-muted" />
+                )}
+              </div>
+            )}
+          </div>
+
+          {/* Expandable Output */}
+          {hasOutput && isExpanded && (
+            <div className="border-t border-ui-border-base">
+              <div className="p-4 pt-3">
+                {/* <div className="text-xs font-medium text-ui-fg-muted mb-2 flex items-center gap-2"> */}
+                {/*   <span>Output</span> */}
+                {/*   <div className="flex-1 h-px bg-ui-border-base" /> */}
+                {/* </div> */}
+                <div className="rounded-md overflow-hidden">
+                  <CodeBlock
+                    snippets={[
+                      {
+                        language: "bash",
+                        label: "Output",
+                        code: String(invocation.result).trim(),
+                        hideLineNumbers: true,
+                      },
+                    ]}
+                  >
+                    <CodeBlock.Body />
+                  </CodeBlock>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+);
+ToolStatus.displayName = "ToolStatus";
+
 // --- Main BotMessage Component ---
 
 export function BotMessage({
@@ -64,6 +221,12 @@ export function BotMessage({
 }) {
   const [visibleText] = useSmoothText(message.content);
 
+  const toolInvocations =
+    message.parts?.filter(
+      (part): part is Extract<typeof part, { type: "tool-invocation" }> =>
+        part.type === "tool-invocation",
+    ) || [];
+
   return (
     // We use the `prose` class from Tailwind Typography for beautiful default
     // styling of all markdown elements (headings, paragraphs, lists, etc.).
@@ -72,13 +235,16 @@ export function BotMessage({
         "prose prose-sm dark:prose-invert max-w-none",
         // Customizations for prose elements
         "prose-p:my-2 prose-headings:my-4 prose-blockquote:my-4",
-        "prose-a:text-blue-500 prose-a:no-underline hover:prose-a:underline",
+        "prose-a:text-ui-fg-interactive prose-a:no-underline hover:prose-a:underline",
         "prose-ul:my-3 prose-ol:my-3",
         // Base text color
         "text-ui-fg-base",
         className,
       )}
     >
+      {toolInvocations.map((invocation, index) => (
+        <ToolStatus key={index} part={invocation} />
+      ))}
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{

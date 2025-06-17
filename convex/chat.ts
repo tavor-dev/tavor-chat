@@ -1,11 +1,14 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
-import { Agent } from "@cvx/chat_engine/client";
+import { Agent /*, createTool */ } from "@cvx/chat_engine/client";
+import { tool } from "ai";
+import { Tavor } from "@tavor/sdk";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { internalAction, mutation } from "./_generated/server";
 import { authorizeThreadAccess } from "./account";
+import { z } from "zod";
 
 const models = {
   // OpenAI models
@@ -35,8 +38,42 @@ const newAgent = ({
     name: "Agent",
     chat: chatModel,
     textEmbedding: textEmbedding,
+    maxSteps: 25,
     instructions:
       "You're an interactive, fun LLM that can tell stories and jokes, ~200 words.",
+    tools: {
+      executeCommand: tool({
+        description:
+          "Execute bash commands in a sandboxed environment. Each call generates a new ephemeral sandbox to run the command, if you want to run multiple commands, chain them or write a script that you execute.",
+        parameters: z.object({
+          command: z.string().describe("The command to execute inside sandbox"),
+        }),
+        execute: async ({ command }) => {
+          const tavor = new Tavor();
+
+          let output = "";
+
+          await tavor.withSandbox(async (box) => {
+            const result = await box.run(command);
+
+            if (result.stdout) output += result.stdout;
+            if (result.stderr) output += `STDERR:\n${result.stderr}`;
+          });
+
+          return output;
+        },
+      }),
+      // executeCommands: createTool({
+      //   description: "Execute bash commands in a sandboxed environment. Each call generates a new ephemeral sandbox to run the command, if you want to run multiple commands, chain them or write a script that you execute.",
+      //   args: z.object({
+      //     command: z.string(),
+      //   }),
+      //   // Note: annotate the return type of the handler to avoid type cycles.
+      //   handler: async (ctx, args): Promise<string> => {
+      //     return "Hello, world!";
+      //   },
+      // }),
+    },
   });
 };
 

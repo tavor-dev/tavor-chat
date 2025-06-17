@@ -41,7 +41,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
           <Textarea
             value={editedContent}
             onChange={(e) => setEditedContent(e.target.value)}
-            className="rounded-lg px-4 py-2 w-full"
+            className="rounded-lg px-4 py-2 w-full text-base"
             autoFocus
           />
           <div className="flex justify-end gap-2 mt-2">
@@ -60,7 +60,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   return (
     <div className="flex justify-end">
       <div className="flex flex-col items-end">
-        <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap">
+        <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap break-words">
           {visibleText}
         </div>
         <MessageActions message={message} onEdit={() => setIsEditing(true)} />

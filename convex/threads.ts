@@ -6,7 +6,7 @@ import { chatAgent } from "./chat";
 import { authorizeThreadAccess, getUserId } from "./account";
 import { partial } from "convex-helpers/validators";
 import { assert, pick } from "convex-helpers";
-import { Id } from "./_generated/dataModel";
+import { Doc, Id } from "./_generated/dataModel";
 
 /**
  * List all threads for the current user with pagination
@@ -54,89 +54,41 @@ export const getByIdForCurrentUser = query({
 });
 
 /**
- * Search threads by content in their messages
+ * Search threads by content in their messages for the current user.
  */
-// export const search = query({
-//   args: {
-//     query: v.string(),
-//     paginationOpts: paginationOptsValidator,
-//   },
-//   returns: v.object({
-//     page: v.array(
-//       v.object({
-//         threadId: v.string(),
-//         thread: v.object({
-//           _id: v.string(),
-//           _creationTime: v.number(),
-//           userId: v.string(),
-//           metadata: v.any(),
-//         }),
-//         relevantMessages: v.array(
-//           v.object({
-//             _id: v.string(),
-//             content: v.string(),
-//             timestamp: v.number(),
-//           }),
-//         ),
-//       }),
-//     ),
-//     isDone: v.boolean(),
-//     continueCursor: v.union(v.string(), v.null()),
-//   }),
-//   handler: async (ctx, args) => {
-//     const userid = await getuserid(ctx);
-//
-//     const messages = await ctx.runaction(
-//       api.chat_engine.messages.searchmessages,
-//       { searchallmessagesforuserid: userid },
-//     );
-//
-//     const threadids = userthreads.map((t) => t._id);
-//
-//     // search messages within those threads
-//     const searchresults = [];
-//
-//     for (const thread of userthreads) {
-//       const messages = await ctx.db
-//         .query("agent_messages")
-//         .filter((q) =>
-//           q.and(
-//             q.eq(q.field("threadid"), thread._id),
-//             q.contains(q.field("content"), args.query),
-//           ),
-//         )
-//         .take(5); // limit messages per thread
-//
-//       if (messages.length > 0) {
-//         searchresults.push({
-//           threadid: thread._id,
-//           thread,
-//           relevantmessages: messages.map((m) => ({
-//             _id: m._id,
-//             content: m.content || "",
-//             timestamp: m._creationTime,
-//           })),
-//         });
-//       }
-//     }
-//
-//     // Manual pagination of results
-//     const startIndex = args.paginationOpts.cursor
-//       ? parseInt(args.paginationOpts.cursor)
-//       : 0;
-//     const endIndex = startIndex + args.paginationOpts.numItems;
-//
-//     const page = searchResults.slice(startIndex, endIndex);
-//     const isDone = endIndex >= searchResults.length;
-//     const continueCursor = isDone ? null : endIndex.toString();
-//
-//     return {
-//       page,
-//       isDone,
-//       continueCursor,
-//     };
-//   },
-// });
+export const search = query({
+  args: {
+    query: v.string(),
+  },
+  handler: async (ctx, { query: searchQuery }) => {
+    if (searchQuery === "") {
+      return [];
+    }
+
+    const userId = await getUserId(ctx);
+    if (!userId) return [];
+
+    const messages = await ctx.db
+      .query("messages")
+      .withSearchIndex("text_search", (q) =>
+        q.search("text", searchQuery).eq("userId", userId),
+      )
+      .take(100); // Limit to avoid fetching too many messages
+
+    const threadIds = [...new Set(messages.map((m) => m.threadId))];
+
+    if (threadIds.length === 0) {
+      return [];
+    }
+
+    const threads = await Promise.all(
+      threadIds.map((threadId) => ctx.db.get(threadId)),
+    );
+
+    // Filter out nulls and sort by most recent creation time.
+    return threads.filter((t): t is Doc<"threads"> => t !== null);
+  },
+});
 
 /**
  * Create a new thread
