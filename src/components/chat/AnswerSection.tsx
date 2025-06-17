@@ -1,16 +1,27 @@
-import { UIMessage } from "@convex-dev/agent/react";
+import { UIMessageWithFiles } from "./Chat";
 import { BotMessage } from "./BotMessage";
 import { MessageActions } from "./MessageActions";
 
 type AnswerSectionProps = {
-  message: UIMessage;
+  message?: UIMessageWithFiles;
+  isLoading?: boolean;
 };
 
-export function AnswerSection({ message }: AnswerSectionProps) {
+export function AnswerSection({ message, isLoading }: AnswerSectionProps) {
+  if (isLoading) {
+    return (
+      <div className="p-2">
+        <BotMessage isLoading={true} />
+      </div>
+    );
+  }
+
+  if (!message) return null;
+
   return (
-    <div className="p-2">
+    <div className="p-5">
       <BotMessage message={message} />
-      <MessageActions message={message} />
+      {!message.error && <MessageActions message={message} />}
     </div>
   );
 }

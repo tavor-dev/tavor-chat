@@ -1,31 +1,27 @@
 import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
-import { Agent /*, createTool */ } from "@cvx/chat_engine/client";
+import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
 import { tool } from "ai";
 import { Tavor } from "@tavor/sdk";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
-import { internalAction, mutation } from "./_generated/server";
-import { authorizeThreadAccess } from "./account";
+import { action, internalAction, mutation } from "./_generated/server";
+import { authorizeThreadAccess, getUserId } from "./account";
 import { z } from "zod";
 
 const models = {
-  // OpenAI models
-  "gpt-4o-mini": openai.chat("gpt-4o-mini"),
-  "gpt-4o": openai.chat("gpt-4o"),
+  "gpt-4o-mini": openai("gpt-4o-mini"),
+  "gpt-4o": openai("gpt-4o"),
 
-  // Anthropic models
-  "claude-3-5-sonnet": anthropic.chat("claude-3-5-sonnet-latest"),
-  "claude-3-5-haiku": anthropic.chat("claude-3-5-haiku-latest"),
+  "claude-3-5-sonnet": anthropic("claude-3-5-sonnet-latest"),
+  "claude-3-5-haiku": anthropic("claude-3-5-haiku-latest"),
 
-  // Google models
-  "gemini-2-0-flash": google.chat("gemini-2.0-flash-latest"),
-  "gemini-2-5-flash": google.chat("gemini-2.5-flash-latest"),
-  "gemini-2-5-pro": google.chat("gemini-2.5-pro-latest"),
+  "gemini-2-0-flash": google("gemini-2.0-flash-latest"),
+  "gemini-2-5-flash": google("gemini-2.5-flash-preview-05-20"),
+  "gemini-2-5-pro": google("gemini-2.5-pro-latest"),
 } as const;
 
-// Default model and embedding
 const defaultChat = models["gpt-4o-mini"];
 const textEmbedding = openai.textEmbeddingModel("text-embedding-3-small");
 
@@ -63,43 +59,82 @@ const newAgent = ({
           return output;
         },
       }),
-      // executeCommands: createTool({
-      //   description: "Execute bash commands in a sandboxed environment. Each call generates a new ephemeral sandbox to run the command, if you want to run multiple commands, chain them or write a script that you execute.",
-      //   args: z.object({
-      //     command: z.string(),
-      //   }),
-      //   // Note: annotate the return type of the handler to avoid type cycles.
-      //   handler: async (ctx, args): Promise<string> => {
-      //     return "Hello, world!";
-      //   },
-      // }),
     },
   });
 };
 
 export const chatAgent = newAgent({ chatModel: defaultChat });
 
+export const uploadFile = action({
+  args: {
+    filename: v.string(),
+    mimeType: v.string(),
+    bytes: v.bytes(),
+    sha256: v.optional(v.string()),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getUserId(ctx);
+    console.log(userId);
+    // Maybe rate limit how often a user can upload a file / attribute?
+    const {
+      file: { fileId, url },
+    } = await storeFile(
+      ctx,
+      new Blob([args.bytes], { type: args.mimeType }),
+      args.filename,
+      args.sha256,
+    );
+    return { fileId, url };
+  },
+});
+
 export const streamAsynchronously = mutation({
   args: {
     prompt: v.string(),
     threadId: v.id("threads"),
     model: v.optional(v.string()),
+    files: v.optional(
+      v.array(
+        v.object({
+          fileId: v.id("files"),
+        }),
+      ),
+    ),
   },
   returns: v.object({ messageId: v.id("messages") }),
-  handler: async (ctx, { prompt, threadId, model }) => {
+  handler: async (ctx, { prompt, threadId, model, files }) => {
     await authorizeThreadAccess(ctx, threadId);
+
+    const safeFiles = files || [];
+    const parsedFiles = await Promise.all(
+      safeFiles.map(async (file) => {
+        const { filePart, imagePart } = await getFile(ctx, file.fileId);
+
+        return { filePart, imagePart };
+      }),
+    );
+
     const { messageId } = await chatAgent.saveMessage(ctx, {
       threadId,
-      prompt,
-      // we're in a mutation, so skip embeddings for now. They'll be generated
-      // lazily when streaming text.
+      message: {
+        role: "user",
+        content: [
+          ...parsedFiles.map((f) => f.imagePart ?? f.filePart),
+          { type: "text", text: prompt },
+        ],
+      },
+      metadata: {
+        ...{ fileIds: safeFiles.map((f) => f.fileId) },
+      },
       skipEmbeddings: true,
     });
+
     await ctx.scheduler.runAfter(0, internal.chat.stream, {
       threadId,
       promptMessageId: messageId,
       model,
     });
+
     return { messageId };
   },
 });
@@ -111,12 +146,9 @@ export const stream = internalAction({
     model: v.optional(v.string()),
   },
   handler: async (ctx, { promptMessageId, threadId, model }) => {
-    const tempThread = await ctx.runQuery(api.threads.getById, {
-      threadId,
-    });
+    const tempThread = await ctx.runQuery(api.threads.getById, { threadId });
     const effectiveModelId = model || tempThread?.model;
 
-    // Create a custom agent with the selected model if provided
     let agent = chatAgent;
     if (effectiveModelId && models[effectiveModelId as keyof typeof models]) {
       agent = newAgent({
@@ -125,14 +157,11 @@ export const stream = internalAction({
     }
 
     const { thread } = await agent.continueThread(ctx, { threadId });
-
-    // Start streaming immediately
     const result = await thread.streamText(
       { promptMessageId },
       { saveStreamDeltas: true },
     );
 
-    // Schedule title generation in the background
     ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
       threadId,
     });

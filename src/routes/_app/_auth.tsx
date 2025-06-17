@@ -46,12 +46,7 @@ import {
   useNavigate,
   useRouter,
 } from "@tanstack/react-router";
-import {
-  useAction,
-  useConvex,
-  useMutation,
-  useQuery as useConvexQuery,
-} from "convex/react";
+import { useAction, useConvex, useMutation } from "convex/react";
 import { Pin, PinOff } from "lucide-react";
 import React, { useEffect, useMemo } from "react";
 

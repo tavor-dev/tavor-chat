@@ -104,6 +104,11 @@ export const copyMessagesFromThread = internalAction({
         message,
         newThreadId,
       });
+      if (message.fileIds && message.fileIds.length > 0) {
+        for (const fileId of message.fileIds) {
+          await ctx.runMutation(api.chat_engine.files.copyFile, { fileId });
+        }
+      }
     }
   },
 });
@@ -118,22 +123,6 @@ export const stopGeneration = mutation({
   returns: v.null(),
   handler: async (ctx, { threadId }) => {
     await authorizeThreadAccess(ctx, threadId);
-
-    // // Find any active streaming messages for this thread
-    // const activeStreams = await ctx.db
-    //   .query("agent_streamDeltas")
-    //   .filter((q) =>
-    //     q.and(
-    //       q.eq(q.field("threadId"), args.threadId),
-    //       q.eq(q.field("status"), "streaming")
-    //     )
-    //   )
-    //   .collect();
-    //
-    // // Mark them as stopped
-    // for (const stream of activeStreams) {
-    //   await ctx.db.patch(stream._id, { status: "stopped" });
-    // }
 
     return null;
   },
@@ -231,103 +220,6 @@ export const regenerate = mutation({
 });
 
 /**
- * Delete a message
- */
-// export const deleteMessage = mutation({
-//   args: {
-//     messageId: v.string(),
-//     threadId: v.string(),
-//   },
-//   returns: v.null(),
-//   handler: async (ctx, { threadId, messageId }) => {
-//     await authorizeThreadAccess(ctx, threadId);
-//
-//     await ctx.runMutation(components.agent.messages.deleteMessage)
-//
-//     // Verify the message belongs to this thread
-//     const message = await ctx.db.get(messageId as any);
-//
-//     if (message && message.threadId !== threadId) {
-//       throw new Error("Message does not belong to this thread");
-//     }
-//
-//     if (message) {
-//       await ctx.db.delete(message._id);
-//     }
-//
-//     return null;
-//   },
-// });
-
-/**
- * Get recent messages for a thread (simplified version without pagination)
- */
-// export const getRecentMessages = query({
-//   args: {
-//     threadId: v.string(),
-//     limit: v.optional(v.number()),
-//   },
-//   returns: v.array(v.any()),
-//   handler: async (ctx, args) => {
-//     await authorizeThreadAccess(ctx, args.threadId);
-//
-//     const limit = args.limit || 10;
-//     const { page: messages } = await chatAgent.listMessages(ctx, {
-//       threadId: args.threadId,
-//       paginationOpts: {
-//         cursor: null,
-//         numItems: limit,
-//       },
-//     });
-//
-//     // Return in ascending order (oldest first)
-//     return messages.reverse();
-//   },
-// });
-
-/**
- * Search messages within a thread
- */
-// export const searchInThread = query({
-//   args: {
-//     threadId: v.string(),
-//     query: v.string(),
-//     limit: v.optional(v.number()),
-//   },
-//   returns: v.array(
-//     v.object({
-//       _id: v.string(),
-//       content: v.string(),
-//       role: v.string(),
-//       timestamp: v.number(),
-//     }),
-//   ),
-//   handler: async (ctx, args) => {
-//     await authorizeThreadAccess(ctx, args.threadId);
-//
-//     const limit = args.limit || 10;
-//
-//     const messages = await ctx.db
-//       .query("agent_messages")
-//       .filter((q) =>
-//         q.and(
-//           q.eq(q.field("threadId"), args.threadId),
-//           q.contains(q.field("content"), args.query),
-//         ),
-//       )
-//       .order("desc")
-//       .take(limit);
-//
-//     return messages.map((m) => ({
-//       _id: m._id,
-//       content: m.content || "",
-//       role: m.role || "user",
-//       timestamp: m._creationTime,
-//     }));
-//   },
-// });
-
-/**
  * Internal query to get a single message
  */
 export const getMessage = internalQuery({
@@ -372,8 +264,7 @@ export const copyMessage = internalMutation({
   },
   handler: async (ctx, { message, newThreadId }) => {
     // Copy the message to the new thread, removing relations and system fields
-    const { _id, _creationTime, embeddingId, fileIds, ...messageToCopy } =
-      message;
+    const { _id, _creationTime, embeddingId, ...messageToCopy } = message;
 
     await ctx.db.insert("messages", {
       ...messageToCopy,
@@ -404,18 +295,3 @@ export const deleteMessagesFrom = internalMutation({
     }
   },
 });
-
-/**
- * Internal mutation to update message content
- */
-// export const updateMessageContent = internalMutation({
-//   args: {
-//     messageId: v.string(),
-//     content: v.string(),
-//   },
-//   returns: v.null(),
-//   handler: async (ctx, args) => {
-//     await ctx.db.patch(args.messageId, { content: args.content });
-//     return null;
-//   },
-// });

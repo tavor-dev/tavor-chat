@@ -1,11 +1,13 @@
 import { Logo } from "@/components/logo";
-import { ChatPanel } from "@/components/chat/ChatPanel";
+import { ChatPanel, ProcessedFile } from "@/components/chat/ChatPanel";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useState } from "react";
+import { useCallback, useState } from "react";
+import { Id } from "@cvx/_generated/dataModel";
+import { toast } from "@medusajs/ui";
 
 export const Route = createFileRoute("/_app/_auth/")({
   component: NewChatComponent,
@@ -20,26 +22,35 @@ function NewChatComponent() {
 
   const [isLoading, setIsLoading] = useState(false);
 
-  const handleSubmit = async (prompt: string) => {
-    if (!prompt.trim() || isLoading) return;
+  const handleSubmit = useCallback(
+    async (prompt: string, files: ProcessedFile[]) => {
+      if ((prompt.trim() === "" && files.length === 0) || isLoading) return;
+      setIsLoading(true);
+      try {
+        const threadId = await createThread({
+          model: user?.selectedModel || undefined,
+        });
 
-    setIsLoading(true);
-    try {
-      const threadId = await createThread({
-        model: user?.selectedModel || undefined,
-      });
-      await sendMessage({
-        threadId,
-        prompt,
-        model: user?.selectedModel || undefined,
-      });
-      navigate({ to: "/chat/$threadId", params: { threadId } });
-    } catch (error) {
-      console.error("Failed to create new chat:", error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+        const filesForBackend = files.map((f) => ({
+          fileId: f.fileId,
+        })) as { fileId: Id<"files"> }[];
+
+        await sendMessage({
+          threadId,
+          prompt,
+          files: filesForBackend,
+          model: user?.selectedModel || undefined,
+        });
+        navigate({ to: "/chat/$threadId", params: { threadId } });
+      } catch (error) {
+        console.error("Failed to create new chat:", error);
+        toast.error("Failed to create new chat with files. Please try again.");
+      } finally {
+        setIsLoading(false);
+      }
+    },
+    [sendMessage, createThread, isLoading, navigate, user?.selectedModel],
+  );
 
   return (
     <div className="flex flex-1 flex-col h-screen">

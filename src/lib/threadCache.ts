@@ -6,6 +6,7 @@ const CACHE_PREFIX = "tavor_thread_cache_";
 const CACHED_THREADS_LIST_KEY = `${CACHE_PREFIX}threads_list`;
 const CACHE_INITIALIZED_KEY = `${CACHE_PREFIX}initialized`;
 const MAX_CACHED_THREADS = 10;
+const MAX_CACHE_SIZE_PER_THREAD = 1 * 1024 * 1024;
 
 type MessageDoc = Doc<"messages">;
 
@@ -61,14 +62,18 @@ export function cacheThreadMessages(
   messages: MessageDoc[],
 ): void {
   try {
-    // Cache the messages for the current thread
-    localStorage.setItem(getThreadCacheKey(threadId), JSON.stringify(messages));
+    const jsonString = JSON.stringify(messages);
+    const size = new TextEncoder().encode(jsonString).length; // Size in bytes
+    if (size > MAX_CACHE_SIZE_PER_THREAD) {
+      console.warn(
+        `Thread ${threadId} messages are too large to cache (${size} bytes)`,
+      );
+      return; // Skip caching this thread
+    }
+    localStorage.setItem(getThreadCacheKey(threadId), jsonString);
 
-    // Update the list of cached threads
     let threadIds = getCachedThreadIds();
-    // Remove the threadId if it already exists to move it to the front
     threadIds = threadIds.filter((id) => id !== threadId);
-    // Add the new threadId to the front (most recently used)
     threadIds.unshift(threadId);
 
     // If cache is full, remove the oldest thread's messages
@@ -81,7 +86,6 @@ export function cacheThreadMessages(
 
     setCachedThreadIds(threadIds);
   } catch (error) {
-    // If storage is full, we might get an error.
     console.error(`Error caching messages for thread ${threadId}:`, error);
   }
 }
