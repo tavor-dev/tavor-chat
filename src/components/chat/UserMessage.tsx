@@ -63,7 +63,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
     <div className="flex justify-end p-5">
       <div className="flex flex-col items-end">
         {attachedFiles && attachedFiles.length > 0 && (
-          <div className="mb-2 w-full rounded-lg border border-ui-border-base bg-ui-bg-subtle p-3">
+          <div className="mb-2 w-full rounded-lg border border-ui-border-base bg-ui-bg-subtle">
             <div className="flex flex-col gap-2">
               {attachedFiles.map((part, i) => (
                 <div
@@ -73,10 +73,10 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
                   {part.mimeType.startsWith("image/") ? (
                     <img
                       src={part.data}
-                      className="max-h-40 max-w-xs rounded-lg mt-2 border border-gray-300 shadow"
+                      className="max-h-40 max-w-xs rounded-lg border border-ui-border-base shadow-md"
                     />
                   ) : (
-                    <>
+                    <div className="p-2 flex items-center gap-2 max-h-40 max-w-xs shadow-md">
                       <PaperClip className="text-ui-fg-muted" />
                       <a
                         href={part.data}
@@ -84,7 +84,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
                       >
                         {part.filename ?? "File"}
                       </a>
-                    </>
+                    </div>
                   )}
                 </div>
               ))}
@@ -92,7 +92,7 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
           </div>
         )}
         {visibleText && (
-          <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap break-words">
+          <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap break-words shadow-md">
             {visibleText}
           </div>
         )}

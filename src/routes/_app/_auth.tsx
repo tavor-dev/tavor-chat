@@ -86,8 +86,8 @@ function AuthLayout() {
   return (
     <SidebarProvider>
       <AppSidebar />
-      <div className="fixed left-2 z-50 p-1 top-2">
-        <SidebarTrigger className="ml-1" />
+      <div className="fixed left-1.5 z-50 p-1 top-2">
+        <SidebarTrigger className="ml-0" />
       </div>
       <SidebarInset className="border-ui-bg-base md:peer-data-[variant=inset]:peer-data-[state=collapsed]:m-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:rounded-none transition-all">
         <Outlet />
@@ -345,7 +345,7 @@ function AppSidebar() {
     return (
       <>
         <SidebarMenuItem className="group/thread">
-          <div className="relative flex items-center px-3 md:px-3 md:-ml-2">
+          <div className="relative flex items-center">
             <Button
               variant="transparent"
               className={`flex-1 justify-start h-8 px-2 text-sm truncate group-hover/thread:pr-10 transition-all ${
@@ -363,7 +363,7 @@ function AppSidebar() {
             {/* Actions button - positioned absolutely to avoid layout shifts */}
             <div
               className={
-                "absolute right-5 transition-opacity " +
+                "absolute right-2 transition-opacity " +
                 (dropdownOpen || isActive
                   ? "opacity-100"
                   : "opacity-0 group-hover/thread:opacity-100")
@@ -500,7 +500,7 @@ function AppSidebar() {
   return (
     <Sidebar variant="inset">
       <SidebarHeader>
-        <div className="flex items-center mb-2 ml-2.5 md:ml-11 cursor-pointer">
+        <div className="flex items-center mb-2 ml-1 md:ml-11 cursor-pointer">
           <div className="flex mt-1.5 gap-1 items-center">
             <Logo className="h-6 w-6" />
             <Heading level="h2" className="font-semibold">
@@ -508,29 +508,25 @@ function AppSidebar() {
             </Heading>
           </div>
         </div>
-        <div className="px-2">
-          <Button
-            variant="transparent"
-            className="w-full my-4 flex justify-start items-center"
-            onClick={handleNewChat}
-          >
-            <div className="flex items-center justify-center rounded-md bg-ui-tag-purple-border p-1 mr-1 -ml-2">
-              <PlusMini />
-            </div>
-            New chat
-          </Button>
-        </div>
-        <div className="px-2 mb-2">
-          <Input
-            placeholder="Search threads..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="text-base"
-            type="search"
-          />
-        </div>
+        <Button
+          variant="transparent"
+          className="w-full my-4 flex justify-start items-center"
+          onClick={handleNewChat}
+        >
+          <div className="flex items-center justify-center rounded-md bg-ui-tag-purple-border p-1 mr-1 -ml-2">
+            <PlusMini />
+          </div>
+          New chat
+        </Button>
+        <Input
+          placeholder="Search threads..."
+          value={searchQuery}
+          onChange={(e) => setSearchQuery(e.target.value)}
+          className="text-base"
+          type="search"
+        />
       </SidebarHeader>
-      <SidebarContent className="overflow-x-hidden ml-1 md:ml-3">
+      <SidebarContent className="overflow-x-hidden">
         {debouncedSearchQuery ? (
           <>
             {isSearching && (
@@ -584,11 +580,11 @@ function AppSidebar() {
 
             {threadsPaginationStatus !== "Exhausted" &&
               threadsPaginationStatus !== "LoadingFirstPage" && (
-                <SidebarMenu className="mt-2">
+                <SidebarMenu className="my-2">
                   <SidebarMenuItem>
                     <Button
-                      variant="secondary"
-                      className="w-full justify-center h-6 px-2 text-sm truncate mx-0"
+                      variant="transparent"
+                      className="w-full"
                       disabled={threadsPaginationStatus === "LoadingMore"}
                       onClick={() => loadMoreThreads(THREADS_PAGE_SIZE)}
                     >
