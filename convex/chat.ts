@@ -124,7 +124,7 @@ export const streamAsynchronously = mutation({
         ],
       },
       metadata: {
-        ...{ fileIds: safeFiles.map((f) => f.fileId) },
+        fileIds: safeFiles.length > 0 ? safeFiles.map((f) => f.fileId) : undefined,
       },
       skipEmbeddings: true,
     });

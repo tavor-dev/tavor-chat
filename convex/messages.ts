@@ -104,11 +104,6 @@ export const copyMessagesFromThread = internalAction({
         message,
         newThreadId,
       });
-      if (message.fileIds && message.fileIds.length > 0) {
-        for (const fileId of message.fileIds) {
-          await ctx.runMutation(api.chat_engine.files.copyFile, { fileId });
-        }
-      }
     }
   },
 });
@@ -125,24 +120,6 @@ export const stopGeneration = mutation({
     await authorizeThreadAccess(ctx, threadId);
 
     return null;
-  },
-});
-
-/**
- * Send a message to a thread
- */
-export const sendMessage = mutation({
-  args: {
-    threadId: v.id("threads"),
-    content: v.string(),
-  },
-  handler: async (ctx, { content, threadId }) => {
-    await authorizeThreadAccess(ctx, threadId);
-
-    await ctx.runMutation(api.chat.streamAsynchronously, {
-      threadId,
-      prompt: content,
-    });
   },
 });
 
@@ -176,6 +153,7 @@ export const editMessage = mutation({
       threadId: message.threadId,
       prompt: content,
       model,
+      files: message?.fileIds?.map((id) => ({ fileId: id })),
     });
   },
 });
@@ -270,6 +248,12 @@ export const copyMessage = internalMutation({
       ...messageToCopy,
       threadId: newThreadId,
     });
+
+    if (message.fileIds && message.fileIds.length > 0) {
+      for (const fileId of message.fileIds) {
+        await ctx.runMutation(api.chat_engine.files.copyFile, { fileId });
+      }
+    }
   },
 });
 
