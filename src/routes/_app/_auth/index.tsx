@@ -40,8 +40,30 @@ function NewChatComponent() {
           prompt,
           files: filesForBackend,
           model: user?.selectedModel || undefined,
-        });
-        navigate({ to: "/chat/$threadId", params: { threadId } });
+        })
+          .then(() => {
+            navigate({ to: "/chat/$threadId", params: { threadId } });
+          })
+          // eslint-disable-next-line @typescript-eslint/no-explicit-any
+          .catch((error: any) => {
+            const errorMessage =
+              typeof error.data === "string"
+                ? error.data
+                : error.data?.message || error.message;
+            if (errorMessage?.includes("MESSAGE_LIMIT_EXCEEDED")) {
+              toast.error("You've reached your free message limit.", {
+                action: {
+                  label: "Upgrade",
+                  onClick: () =>
+                    navigate({ to: "/settings", search: { tab: "billing" } }),
+                  altText: "",
+                },
+                duration: 10000,
+              });
+            } else {
+              throw error;
+            }
+          });
       } catch (error) {
         console.error("Failed to create new chat:", error);
         toast.error("Failed to create new chat with files. Please try again.");
@@ -67,7 +89,7 @@ function NewChatComponent() {
               else if (hour >= 18 && hour < 24) greeting = "Good evening";
               else if (hour >= 1 && hour < 5) greeting = "Night owl";
               if (greeting === "Night owl") {
-                return `${greeting}!`;
+                return `Hello, ${greeting}!`;
               } else {
                 return `${greeting}, ${user?.name || "there"}!`;
               }
@@ -85,3 +107,4 @@ function NewChatComponent() {
     </div>
   );
 }
+

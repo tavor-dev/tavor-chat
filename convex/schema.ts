@@ -72,6 +72,9 @@ const schema = defineSchema({
     isAnonymous: v.optional(v.boolean()),
     customerId: v.optional(v.string()),
     selectedModel: v.optional(v.string()),
+    // Fields for free tier usage tracking
+    messageCount: v.optional(v.number()),
+    usageResetTime: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("customerId", ["customerId"]),

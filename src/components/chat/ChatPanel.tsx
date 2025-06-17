@@ -510,7 +510,7 @@ export function ChatPanel({
                     <Select.Trigger className="w-48 bg-ui-bg-field border-ui-border-base">
                       <Select.Value placeholder="Select a model" />
                     </Select.Trigger>
-                    <Select.Content className="bg-ui-bg-component border-ui-border-base">
+                    <Select.Content className="bg-ui-bg-component border-ui-border-base max-h-80">
                       {Object.entries(modelsByProvider).map(
                         ([provider, models]) => (
                           <Select.Group key={provider}>
