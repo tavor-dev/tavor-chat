@@ -583,7 +583,7 @@ function AppSidebar() {
                 <SidebarMenu className="my-2">
                   <SidebarMenuItem>
                     <Button
-                      variant="transparent"
+                      variant="secondary"
                       className="w-full"
                       disabled={threadsPaginationStatus === "LoadingMore"}
                       onClick={() => loadMoreThreads(THREADS_PAGE_SIZE)}
