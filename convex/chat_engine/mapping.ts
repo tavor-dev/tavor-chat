@@ -1,4 +1,4 @@
-import type { FileUIPart } from "@ai-sdk/ui-utils";
+import type { FileUIPart as AIFileUIPart } from "@ai-sdk/ui-utils";
 import {
   convertToCoreMessages,
   coreMessageSchema,
@@ -21,6 +21,9 @@ import type { MessageWithMetadata } from "./validators";
 import { Id } from "@cvx/_generated/dataModel";
 
 export type AIMessageWithoutId = Omit<AIMessage, "id">;
+export type FileUIPart = AIFileUIPart & {
+  filename?: string;
+};
 
 export type SerializeUrlsAndUint8Arrays<T> = T extends URL
   ? string
@@ -305,6 +308,7 @@ export function toUIFilePart(part: ImagePart | FilePart): FileUIPart {
 
   return {
     type: "file",
+    filename: (part as FilePart)?.filename,
     data:
       dataOrUrl instanceof ArrayBuffer ? encodeBase64(dataOrUrl) : dataOrUrl,
     mimeType: part.mimeType ?? guessMimeType(dataOrUrl),

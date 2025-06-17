@@ -1,17 +1,18 @@
 import { cn } from "@/lib/utils";
-import { UIMessage, useSmoothText } from "@convex-dev/agent/react";
+import { useSmoothText } from "@convex-dev/agent/react";
 import {
-  Spinner,
+  CheckCircleSolid,
   ChevronDownMini,
   ChevronUpMini,
   CommandLine,
-  CheckCircleSolid,
   ExclamationCircleSolid,
+  Spinner,
 } from "@medusajs/icons";
-import { CodeBlock, Text } from "@medusajs/ui";
+import { Alert, CodeBlock, Text } from "@medusajs/ui";
 import React, { memo, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
+import { UIMessageWithFiles } from "./Chat";
 
 /**
  * A custom component that wraps the Medusa UI CodeBlock.
@@ -65,7 +66,7 @@ const ToolStatus = memo(
   ({
     part,
   }: {
-    part: Extract<UIMessage["parts"][0], { type: "tool-invocation" }>;
+    part: Extract<UIMessageWithFiles["parts"][0], { type: "tool-invocation" }>;
   }) => {
     const [isExpanded, setIsExpanded] = useState(false);
     const invocation = part.toolInvocation;
@@ -116,7 +117,7 @@ const ToolStatus = memo(
       <div className="not-prose my-4">
         <div
           className={cn(
-            "rounded-lg border transition-all duration-200",
+            "rounded-2xl border transition-all duration-200",
             isExecuting
               ? "border-ui-border-interactive bg-ui-bg-base shadow-sm"
               : hasError
@@ -137,22 +138,6 @@ const ToolStatus = memo(
                 <span className={cn("text-sm font-medium", getStatusColor())}>
                   {getStatusText()}
                 </span>
-                {/* {isExecuting && ( */}
-                {/*   <div className="flex gap-1"> */}
-                {/*     <div */}
-                {/*       className="w-1 h-1 bg-ui-fg-interactive rounded-full animate-bounce" */}
-                {/*       style={{ animationDelay: "0ms" }} */}
-                {/*     /> */}
-                {/*     <div */}
-                {/*       className="w-1 h-1 bg-ui-fg-interactive rounded-full animate-bounce" */}
-                {/*       style={{ animationDelay: "150ms" }} */}
-                {/*     /> */}
-                {/*     <div */}
-                {/*       className="w-1 h-1 bg-ui-fg-interactive rounded-full animate-bounce" */}
-                {/*       style={{ animationDelay: "300ms" }} */}
-                {/*     /> */}
-                {/*   </div> */}
-                {/* )} */}
               </div>
 
               <div className="flex items-center gap-2">
@@ -160,7 +145,7 @@ const ToolStatus = memo(
                   {command}
                 </code>
                 {hasOutput && (
-                  <span className="text-xs text-ui-fg-muted">
+                  <span className="text-xs text-ui-fg-muted select-none">
                     Click to {isExpanded ? "hide" : "view"} output
                   </span>
                 )}
@@ -182,10 +167,6 @@ const ToolStatus = memo(
           {hasOutput && isExpanded && (
             <div className="border-t border-ui-border-base">
               <div className="p-4 pt-3">
-                {/* <div className="text-xs font-medium text-ui-fg-muted mb-2 flex items-center gap-2"> */}
-                {/*   <span>Output</span> */}
-                {/*   <div className="flex-1 h-px bg-ui-border-base" /> */}
-                {/* </div> */}
                 <div className="rounded-md overflow-hidden">
                   <CodeBlock
                     snippets={[
@@ -215,10 +196,34 @@ ToolStatus.displayName = "ToolStatus";
 export function BotMessage({
   message,
   className,
+  isLoading,
 }: {
-  message: UIMessage;
+  message?: UIMessageWithFiles;
   className?: string;
+  isLoading?: boolean;
 }) {
+  if (isLoading) {
+    return (
+      <div
+        className={cn("flex items-center gap-2 text-ui-fg-subtle", className)}
+      >
+        <Spinner className="animate-spin" />
+        <Text>Thinking...</Text>
+      </div>
+    );
+  }
+
+  if (!message) return null;
+
+  if (message.error) {
+    return (
+      <Alert variant="error" className="not-prose my-4">
+        <Text className="text-ui-fg-error">An error occurred</Text>
+        <Text className="text-ui-fg-subtle">{message.error}</Text>
+      </Alert>
+    );
+  }
+
   const [visibleText] = useSmoothText(message.content);
 
   const toolInvocations =
@@ -228,16 +233,12 @@ export function BotMessage({
     ) || [];
 
   return (
-    // We use the `prose` class from Tailwind Typography for beautiful default
-    // styling of all markdown elements (headings, paragraphs, lists, etc.).
     <div
       className={cn(
         "prose prose-sm dark:prose-invert max-w-none",
-        // Customizations for prose elements
         "prose-p:my-2 prose-headings:my-4 prose-blockquote:my-4",
         "prose-a:text-ui-fg-interactive prose-a:no-underline hover:prose-a:underline",
         "prose-ul:my-3 prose-ol:my-3",
-        // Base text color
         "text-ui-fg-base",
         className,
       )}
@@ -248,12 +249,8 @@ export function BotMessage({
       <ReactMarkdown
         remarkPlugins={[remarkGfm]}
         components={{
-          // Use `Text` component for paragraphs to ensure consistent styling
           p: ({ node, ...props }) => <Text {...props} />,
-
-          // Override `pre` to use our custom code block component
           pre: CustomCodeBlock,
-          // Override `code` to handle ONLY inline code.
           code: ({ node, className, children, ...props }) => {
             const inline = !className?.includes("language-");
             if (inline) {
@@ -266,9 +263,6 @@ export function BotMessage({
                 </code>
               );
             }
-
-            // Block code is handled by the `pre` component override.
-            // This `<code>` is the child of that `<pre>`, so we just pass it along.
             return <code className={className}>{children}</code>;
           },
         }}

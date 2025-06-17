@@ -1,13 +1,13 @@
-import { useSmoothText, type UIMessage } from "@convex-dev/agent/react";
+import { useSmoothText } from "@convex-dev/agent/react";
 import { Button, Textarea } from "@medusajs/ui";
 import { useCallback, useState } from "react";
 import { MessageActions } from "./MessageActions";
 import { useMutation } from "convex/react";
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
-// To make editing functional, you'll need to create and import a Convex mutation for updating messages.
-// import { useMutation } from "convex/react";
-// import { api } from "@cvx/_generated/api";
+import { PaperClip } from "@medusajs/icons";
+import { type UIMessage } from "@/lib/toUIMessages";
+import { type FileUIPart } from "@cvx/chat_engine/mapping";
 
 type UserMessageProps = {
   message: UIMessage;
@@ -19,20 +19,22 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   const [visibleText] = useSmoothText(message.content);
   const editMessage = useMutation(api.messages.editMessage);
 
-  // const updateMessage = useMutation(api.messages.update); // Example mutation
-
   const handleSave = useCallback(() => {
     editMessage({
       messageId: message.id as Id<"messages">,
       content: editedContent,
     });
     setIsEditing(false);
-  }, [editedContent]);
+  }, [editedContent, editMessage, message.id]);
 
   const handleCancel = () => {
     setIsEditing(false);
     setEditedContent(message.content);
   };
+
+  const attachedFiles = message.parts.filter(
+    (part) => part.type === "file",
+  ) as FileUIPart[];
 
   if (isEditing) {
     return (
@@ -58,11 +60,42 @@ export const UserMessage: React.FC<UserMessageProps> = ({ message }) => {
   }
 
   return (
-    <div className="flex justify-end">
+    <div className="flex justify-end p-5">
       <div className="flex flex-col items-end">
-        <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap break-words">
-          {visibleText}
-        </div>
+        {attachedFiles && attachedFiles.length > 0 && (
+          <div className="mb-2 w-full rounded-lg border border-ui-border-base bg-ui-bg-subtle p-3">
+            <div className="flex flex-col gap-2">
+              {attachedFiles.map((part, i) => (
+                <div
+                  key={message.key + i + Math.random()}
+                  className="flex items-center gap-2 text-sm"
+                >
+                  {part.mimeType.startsWith("image/") ? (
+                    <img
+                      src={part.data}
+                      className="max-h-40 max-w-xs rounded-lg mt-2 border border-gray-300 shadow"
+                    />
+                  ) : (
+                    <>
+                      <PaperClip className="text-ui-fg-muted" />
+                      <a
+                        href={part.data}
+                        className="truncate text-ui-fg-subtle"
+                      >
+                        {part.filename ?? "File"}
+                      </a>
+                    </>
+                  )}
+                </div>
+              ))}
+            </div>
+          </div>
+        )}
+        {visibleText && (
+          <div className="bg-ui-bg-base rounded-lg px-4 py-2 max-w-lg whitespace-pre-wrap break-words">
+            {visibleText}
+          </div>
+        )}
         <MessageActions message={message} onEdit={() => setIsEditing(true)} />
       </div>
     </div>
