@@ -371,6 +371,7 @@ export const createSubscriptionCheckout = action({
     }
 
     const checkout = await stripe.checkout.sessions.create({
+      allow_promotion_codes: true,
       customer: user.customerId,
       line_items: [{ price: price.stripeId, quantity: 1 }],
       mode: "subscription",
