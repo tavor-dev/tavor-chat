@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useSmoothText } from "@convex-dev/agent/react";
+import { useSmoothText as useSmoothTextHook } from "@convex-dev/agent/react";
 import {
   CheckCircleSolid,
   ChevronDownMini,
@@ -171,7 +171,7 @@ const ToolStatus = memo(
             <div className="border-t border-ui-border-base">
               <div className="p-4 pt-3">
                 <div className="rounded-md overflow-hidden flex flex-col gap-4">
-<CodeBlock
+                  <CodeBlock
                     snippets={[
                       {
                         language: "bash",
@@ -348,53 +348,64 @@ const URLPreview = memo(
 URLPreview.displayName = "URLPreview";
 
 // Enhanced ReactMarkdown component with URL detection and navigation
-const EnhancedMarkdown = memo(({ content }: { content: string }) => {
-  const currentUrlIndex = useState(0);
+const EnhancedMarkdown = memo(
+  ({
+    content,
+    useSmoothText = false,
+  }: {
+    content: string;
+    useSmoothText?: boolean;
+  }) => {
+    const currentUrlIndex = useState(0);
+    const [visibleText] = useSmoothText
+      ? useSmoothTextHook(content)
+      : [content];
 
-  // Regex to match the specific URL pattern (extract unique URLs)
-  const urlRegex = /https:\/\/\d+-[a-f0-9-]+\.tavor\.app?/g;
-  const urls = content.match(urlRegex) || [];
+    // Regex to match the specific URL pattern (extract unique URLs)
+    const urlRegex = /https:\/\/\d+-[a-f0-9-]+\.tavor\.app?/g;
+    const urls = visibleText.match(urlRegex) || [];
 
-  // Get unique URLs to avoid duplicates
-  const uniqueUrls = [...new Set(urls)];
+    // Get unique URLs to avoid duplicates
+    const uniqueUrls = [...new Set(urls)];
 
-  return (
-    <>
-      {/* Render the full markdown content as-is */}
-      <ReactMarkdown
-        remarkPlugins={[remarkGfm]}
-        components={{
-          p: ({ node, ...props }) => <Text {...props} />,
-          pre: CustomCodeBlock,
-          code: ({ node, className, children, ...props }) => {
-            const inline = !className?.includes("language-");
-            if (inline) {
-              return (
-                <code
-                  {...props}
-                  className="not-prose rounded bg-ui-bg-base-pressed px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-ui-fg-subtle"
-                >
-                  {children}
-                </code>
-              );
-            }
-            return <code className={className}>{children}</code>;
-          },
-        }}
-      >
-        {content}
-      </ReactMarkdown>
+    return (
+      <>
+        {/* Render the full markdown content as-is */}
+        <ReactMarkdown
+          remarkPlugins={[remarkGfm]}
+          components={{
+            p: ({ node, ...props }) => <Text {...props} />,
+            pre: CustomCodeBlock,
+            code: ({ node, className, children, ...props }) => {
+              const inline = !className?.includes("language-");
+              if (inline) {
+                return (
+                  <code
+                    {...props}
+                    className="not-prose rounded bg-ui-bg-base-pressed px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-ui-fg-subtle"
+                  >
+                    {children}
+                  </code>
+                );
+              }
+              return <code className={className}>{children}</code>;
+            },
+          }}
+        >
+          {visibleText}
+        </ReactMarkdown>
 
-      {/* Add URL preview for the current selected URL */}
-      {uniqueUrls.length > 0 && (
-        <URLPreviewWithNavigation
-          urls={uniqueUrls}
-          currentIndex={currentUrlIndex[0]}
-        />
-      )}
-    </>
-  );
-});
+        {/* Add URL preview for the current selected URL */}
+        {uniqueUrls.length > 0 && (
+          <URLPreviewWithNavigation
+            urls={uniqueUrls}
+            currentIndex={currentUrlIndex[0]}
+          />
+        )}
+      </>
+    );
+  },
+);
 EnhancedMarkdown.displayName = "EnhancedMarkdown";
 
 // URL Preview Component with proper navigation handling
@@ -544,14 +555,39 @@ export function BotMessage({
     return <Alert variant="error">An error occurred {message.error}</Alert>;
   }
 
-  const [visibleText] = useSmoothText(message.content);
+  // If there are parts, render them in order
+  if (message.parts && message.parts.length > 0) {
+    return (
+      <div
+        className={cn(
+          "prose prose-sm dark:prose-invert max-w-none",
+          "prose-p:my-2 prose-headings:my-4 prose-blockquote:my-4",
+          "prose-a:text-ui-fg-interactive prose-a:no-underline hover:prose-a:underline",
+          "prose-ul:my-3 prose-ol:my-3",
+          "text-ui-fg-base",
+          className,
+        )}
+      >
+        {message.parts.map((part, index) => {
+          if (part.type === "tool-invocation") {
+            return <ToolStatus key={`part-${index}`} part={part} />;
+          } else if (part.type === "text") {
+            return (
+              <EnhancedMarkdown
+                key={`part-${index}`}
+                content={part.text}
+                useSmoothText={true}
+              />
+            );
+          }
+          return null;
+        })}
+      </div>
+    );
+  }
 
-  const toolInvocations =
-    message.parts?.filter(
-      (part): part is Extract<typeof part, { type: "tool-invocation" }> =>
-        part.type === "tool-invocation",
-    ) || [];
-
+  // Fallback to rendering the message content if no parts
+  const [visibleText] = useSmoothTextHook(message.content);
   return (
     <div
       className={cn(
@@ -563,9 +599,6 @@ export function BotMessage({
         className,
       )}
     >
-      {toolInvocations.map((invocation, index) => (
-        <ToolStatus key={index} part={invocation} />
-      ))}
       <EnhancedMarkdown content={visibleText} />
     </div>
   );
