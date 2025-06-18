@@ -1,15 +1,12 @@
 import { useState } from "react";
 import {
-  RocketLaunch,
   CodeCommit,
   ChartBar,
   Sparkles,
-  Component,
   BugAntSolid,
   CloudArrowUp,
   DocumentText,
 } from "@medusajs/icons";
-import { Button } from "@medusajs/ui";
 
 interface ExamplePrompt {
   id: string;

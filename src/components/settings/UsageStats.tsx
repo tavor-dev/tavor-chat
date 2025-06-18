@@ -18,8 +18,7 @@ export function UsageStats() {
     ? (messagesUsed / messagesLimit) * 100
     : 0;
 
-  if (userPlan === "pro") {
-    // Don't show usage stats for Pro users as they have unlimited usage.
+  if (!user) {
     return null;
   }
 
@@ -59,12 +58,18 @@ export function UsageStats() {
                   Messages this cycle
                 </Text>
                 <div className="flex items-baseline gap-2">
-                  <Text size="small" className="text-ui-fg-muted">
-                    {messagesUsed.toLocaleString()}
-                    {messagesLimit && (
-                      <span> / {messagesLimit.toLocaleString()}</span>
-                    )}
-                  </Text>
+                  {userPlan === "pro" ? (
+                    <Text size="small" className="text-ui-fg-muted">
+                      Unlimited
+                    </Text>
+                  ) : (
+                    <Text size="small" className="text-ui-fg-muted">
+                      {messagesUsed.toLocaleString()}
+                      {messagesLimit && (
+                        <span> / {messagesLimit.toLocaleString()}</span>
+                      )}
+                    </Text>
+                  )}
                   <Badge
                     size="small"
                     color={
@@ -75,7 +80,7 @@ export function UsageStats() {
                           : "orange"
                     }
                   >
-                    {userPlan}
+                    {userPlan.toUpperCase()}
                   </Badge>
                 </div>
               </div>
@@ -83,7 +88,7 @@ export function UsageStats() {
           </div>
 
           {/* Progress Bar (only show for plans with limits) */}
-          {messagesLimit && (
+          {userPlan !== "pro" && messagesLimit && (
             <div className="space-y-2">
               <Progress
                 value={usagePercentage}
@@ -105,16 +110,20 @@ export function UsageStats() {
           </div>
           <div>
             <Text size="small" weight="plus" className="text-ui-fg-base mb-1">
-              Resets on
+              {userPlan === "pro" ? "No reset, unlimited usage" : "Resets on"}
             </Text>
             <Text size="small" className="text-ui-fg-muted">
-              {usageResetTime ? formatDate(usageResetTime) : "N/A"}
+              {userPlan === "pro"
+                ? "Enjoy unlimited messages with your Pro plan."
+                : usageResetTime
+                  ? formatDate(usageResetTime)
+                  : "N/A"}
             </Text>
           </div>
         </div>
 
         {/* Usage Warning/Info */}
-        {messagesLimit && usagePercentage >= 90 && (
+        {userPlan !== "pro" && messagesLimit && usagePercentage >= 90 && (
           <div className="p-4 rounded-lg bg-ui-tag-red-bg border border-ui-tag-red-border">
             <div className="flex items-start gap-3">
               <MessageSquare className="h-4 w-4 text-ui-tag-red-text mt-0.5" />

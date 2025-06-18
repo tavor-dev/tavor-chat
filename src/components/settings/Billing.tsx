@@ -3,11 +3,18 @@ import { toast, Badge, Button, Container, Heading, Text } from "@medusajs/ui";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { useAction } from "convex/react";
-import { Check } from "lucide-react";
+import { Crown } from "lucide-react";
+import { CreditCard } from "@medusajs/icons";
+import { useState } from "react";
+
+type PlanInterval = "month" | "year";
 
 export function Billing() {
+  const [selectedInterval, setSelectedInterval] =
+    useState<PlanInterval>("month");
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
   const { data: plans } = useQuery(convexQuery(api.app.getActivePlans, {}));
+
   const createSubscriptionCheckout = useAction(
     api.stripe.createSubscriptionCheckout,
   );
@@ -19,8 +26,8 @@ export function Billing() {
       const url = await createSubscriptionCheckout({
         userId: user._id,
         planId: plans.pro._id,
-        planInterval: "month", // Default to monthly, can add a selector
-        currency: "usd", // Default to USD, can be dynamic
+        planInterval: selectedInterval,
+        currency: "usd",
       });
       if (url) {
         window.location.href = url;
@@ -45,54 +52,131 @@ export function Billing() {
   };
 
   const isPro = user?.subscription?.planKey === "pro";
-  const planName = isPro ? "Pro" : "Free";
-  const planDescription = isPro
-    ? "You have full access to all features."
-    : "You are currently on the Free plan. Upgrade for higher limits and access to premium models.";
+
+  // Pricing data
+  const monthlyPrice = 19;
+  const yearlyPrice = 190;
+  const yearlyDiscount = Math.round(
+    ((monthlyPrice * 12 - yearlyPrice) / (monthlyPrice * 12)) * 100,
+  );
 
   return (
     <div>
       <Heading level="h3" className="mb-4">
-        Billing & Plan
+        Billing
       </Heading>
-      <Container className="p-6" id="billing">
-        <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-6">
-          <div className="flex-1 space-y-4">
+
+      {/* Current Plan */}
+      <Container className="p-6 space-y-6">
+        <div className="space-y-4">
+          <div className="flex items-center justify-between">
             <div className="flex items-center gap-3">
-              <Heading level="h3">Your plan</Heading>
-              <Badge color={isPro ? "purple" : "blue"}>{planName}</Badge>
+              <div className="p-2 rounded-lg bg-ui-bg-subtle">
+                {isPro ? (
+                  <Crown className="h-4 w-4 text-ui-fg-muted" />
+                ) : (
+                  <CreditCard className="h-4 w-4 text-ui-fg-muted" />
+                )}
+              </div>
+              <div>
+                <Text
+                  size="small"
+                  weight="plus"
+                  className="text-ui-fg-base mb-1"
+                >
+                  Current plan
+                </Text>
+                <div className="flex items-center gap-2">
+                  <Badge size="small" color={isPro ? "purple" : "blue"}>
+                    {isPro ? "PRO" : "Free"}
+                  </Badge>
+                  {isPro && (
+                    <Text size="small" className="text-ui-fg-muted">
+                      Unlimited messages
+                    </Text>
+                  )}
+                </div>
+              </div>
             </div>
-            <Text size="small" className="text-ui-fg-muted">
-              {planDescription}
-            </Text>
-            <ul className="space-y-2 text-sm text-ui-fg-subtle">
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-ui-fg-interactive" />
-                <span>
-                  {isPro ? "Access to all models" : "Access to standard models"}
-                </span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-ui-fg-interactive" />
-                <span>{isPro ? "Unlimited messages" : "Limited messages"}</span>
-              </li>
-              <li className="flex items-center gap-2">
-                <Check className="h-4 w-4 text-ui-fg-interactive" />
-                <span>{isPro ? "Priority support" : "Community support"}</span>
-              </li>
-            </ul>
-          </div>
-          <div className="md:w-auto">
-            {isPro ? (
-              <Button onClick={handleManageSubscription} variant="secondary">
-                Manage subscription
-              </Button>
-            ) : (
-              <Button onClick={handleUpgrade} variant="primary">
-                Upgrade to Pro
+            {isPro && (
+              <Button
+                onClick={handleManageSubscription}
+                variant="secondary"
+                size="small"
+              >
+                Manage
               </Button>
             )}
           </div>
+
+          {/* Upgrade Section for Free Users */}
+          {!isPro && (
+            <div className="pt-4 border-t border-ui-border-base space-y-4">
+              <div>
+                <Text
+                  size="small"
+                  weight="plus"
+                  className="text-ui-fg-base mb-1"
+                >
+                  Upgrade to Pro
+                </Text>
+                <Text size="small" className="text-ui-fg-muted mb-3">
+                  Get unlimited messages and access to all AI models
+                </Text>
+              </div>
+
+              {/* Billing Toggle */}
+              <div className="flex items-center gap-4">
+                <div className="bg-ui-bg-subtle rounded-lg p-1 flex items-center gap-1">
+                  <button
+                    className={`px-3 py-1.5 rounded text-xs font-medium transition-all ${
+                      selectedInterval === "month"
+                        ? "bg-ui-bg-base text-ui-fg-base shadow-sm"
+                        : "text-ui-fg-muted hover:text-ui-fg-base"
+                    }`}
+                    onClick={() => setSelectedInterval("month")}
+                  >
+                    Monthly
+                  </button>
+                  <button
+                    className={`px-3 py-1.5 rounded text-xs font-medium transition-all relative flex gap-2 items-center ${
+                      selectedInterval === "year"
+                        ? "bg-ui-bg-base text-ui-fg-base shadow-sm"
+                        : "text-ui-fg-muted hover:text-ui-fg-base"
+                    }`}
+                    onClick={() => setSelectedInterval("year")}
+                  >
+                    Yearly
+                  </button>
+                </div>
+
+                <div className="flex items-center gap-2">
+                  <Text size="small" className="text-ui-fg-base font-medium">
+                    $
+                    {selectedInterval === "month"
+                      ? monthlyPrice
+                      : Math.round(yearlyPrice / 12)}
+                    /month
+                  </Text>
+                  {selectedInterval === "year" && (
+                    <>
+                      <Text size="small" className="text-ui-fg-muted">
+                        (${yearlyPrice}/year)
+                      </Text>
+                      <Text className="text-ui-tag-green-text">
+                        {" "}
+                        {yearlyDiscount}% off
+                      </Text>
+                    </>
+                  )}
+                </div>
+
+                <Button onClick={handleUpgrade} size="small">
+                  Upgrade
+                </Button>
+              </div>
+            </div>
+          )}
         </div>
       </Container>
     </div>

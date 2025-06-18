@@ -73,14 +73,13 @@ const handleInvoicePaymentSucceeded = async (
 
   const { customer: customerId, subscription: subscriptionId } = z
     .object({
-      customer: z.string().nullable(),
-      subscription: z.string().nullable(),
+      customer: z.string().nullable().optional(),
+      subscription: z.string().nullable().optional(),
     })
     .parse(invoice);
 
-  // We only care about invoices linked to a subscription and a customer
   if (!customerId || !subscriptionId) {
-    return new Response(null, { status: 200 }); // Acknowledge event but do nothing
+    return new Response(null, { status: 200 });
   }
 
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
@@ -89,7 +88,6 @@ const handleInvoicePaymentSucceeded = async (
 
   if (!user) {
     console.error(`User not found for customer ID: ${customerId}`);
-    // Return 200 to prevent Stripe from retrying for a user that doesn't exist.
     return new Response(null, { status: 200 });
   }
 
@@ -122,7 +120,6 @@ const handleCheckoutSessionCompleted = async (
       : undefined;
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
   await handleUpdateSubscription(ctx, user, subscription);
 
   await sendSubscriptionSuccessEmail({
@@ -130,8 +127,6 @@ const handleCheckoutSessionCompleted = async (
     subscriptionId,
   });
 
-  // Cancel free subscription. — User upgraded to a paid plan.
-  // Not required, but it's a good practice to keep just a single active plan.
   if (freeSubscriptionStripeId) {
     try {
       await stripe.subscriptions.cancel(freeSubscriptionStripeId);
@@ -207,10 +202,10 @@ const handleCustomerSubscriptionUpdated = async (
   ctx: ActionCtx,
   event: Stripe.CustomerSubscriptionUpdatedEvent,
 ) => {
-  const subscription = event.data.object;
-  const { customer: customerId } = z
-    .object({ customer: z.string() })
-    .parse(subscription);
+  const subscription = await stripe.subscriptions.retrieve(
+    event.data.object.id,
+  );
+  const customerId = subscription.customer as string;
 
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
     customerId,

@@ -337,7 +337,7 @@ URLPreview.displayName = "URLPreview";
 
 // Enhanced ReactMarkdown component with URL detection and navigation
 const EnhancedMarkdown = memo(({ content }: { content: string }) => {
-  const [currentUrlIndex, setCurrentUrlIndex] = useState(0);
+  const currentUrlIndex = useState(0);
 
   // Regex to match the specific URL pattern (extract unique URLs)
   const urlRegex = /https:\/\/\d+-[a-f0-9-]+\.tavor\.app?/g;
@@ -345,14 +345,6 @@ const EnhancedMarkdown = memo(({ content }: { content: string }) => {
 
   // Get unique URLs to avoid duplicates
   const uniqueUrls = [...new Set(urls)];
-
-  const handlePreviousUrl = () => {
-    setCurrentUrlIndex((prev) => Math.max(0, prev - 1));
-  };
-
-  const handleNextUrl = () => {
-    setCurrentUrlIndex((prev) => Math.min(uniqueUrls.length - 1, prev + 1));
-  };
 
   return (
     <>
@@ -385,9 +377,7 @@ const EnhancedMarkdown = memo(({ content }: { content: string }) => {
       {uniqueUrls.length > 0 && (
         <URLPreviewWithNavigation
           urls={uniqueUrls}
-          currentIndex={currentUrlIndex}
-          onPrevious={handlePreviousUrl}
-          onNext={handleNextUrl}
+          currentIndex={currentUrlIndex[0]}
         />
       )}
     </>
@@ -400,13 +390,9 @@ const URLPreviewWithNavigation = memo(
   ({
     urls,
     currentIndex,
-    onPrevious,
-    onNext,
   }: {
     urls: string[];
     currentIndex: number;
-    onPrevious: () => void;
-    onNext: () => void;
   }) => {
     const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
     const [key, setKey] = useState(0);

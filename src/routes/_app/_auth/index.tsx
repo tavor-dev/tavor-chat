@@ -22,7 +22,7 @@ function NewChatComponent() {
   const sendMessage = useMutation(api.chat.streamAsynchronously);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [input, setInput] = useState("");
+  const [_input, setInput] = useState("");
 
   const handleSubmit = useCallback(
     async (prompt: string, files: ProcessedFile[]) => {
@@ -118,6 +118,7 @@ function NewChatComponent() {
           isLoading={isLoading}
           showScrollToBottomButton={false}
           onInputHeightChange={() => {}}
+          threadId={"" as Id<"threads">}
         />
       </div>
     </div>
