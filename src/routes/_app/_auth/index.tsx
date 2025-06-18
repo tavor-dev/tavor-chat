@@ -5,7 +5,7 @@ import { api } from "@cvx/_generated/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useCallback, useState } from "react";
+import { useCallback, useState, useRef, useEffect } from "react";
 import { Id } from "@cvx/_generated/dataModel";
 import { toast } from "@medusajs/ui";
 import ExamplePrompts from "@/components/ExamplePrompts";
@@ -23,6 +23,10 @@ function NewChatComponent() {
 
   const [isLoading, setIsLoading] = useState(false);
   const [_input, setInput] = useState("");
+  const inputRef = useRef<HTMLTextAreaElement>(null);
+  useEffect(() => {
+    inputRef.current?.focus();
+  }, []);
 
   const handleSubmit = useCallback(
     async (prompt: string, files: ProcessedFile[]) => {
@@ -119,6 +123,7 @@ function NewChatComponent() {
           showScrollToBottomButton={false}
           onInputHeightChange={() => {}}
           threadId={"" as Id<"threads">}
+          inputRef={inputRef}
         />
       </div>
     </div>

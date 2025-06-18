@@ -106,6 +106,7 @@ interface ChatPanelProps {
   onScrollToBottom?: () => void;
   isStreaming?: boolean; // New prop
   threadId: Id<"threads">; // New prop
+  inputRef?: React.RefObject<HTMLTextAreaElement>; // <-- add this
 }
 
 export function ChatPanel({
@@ -116,6 +117,7 @@ export function ChatPanel({
   onScrollToBottom,
   isStreaming = false,
   threadId,
+  inputRef: inputRefProp, // <-- get from props
 }: ChatPanelProps) {
   const stopGeneration = useMutation(api.messages.stopGeneration);
 
@@ -124,7 +126,7 @@ export function ChatPanel({
   }, [stopGeneration, threadId]);
 
   const uploadFile = useAction(api.chat.uploadFile);
-  const inputRef = useRef<HTMLTextAreaElement>(null);
+  const inputRef = inputRefProp ?? useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<ProcessedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
