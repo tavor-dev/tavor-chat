@@ -103,6 +103,8 @@ interface ChatPanelProps {
   isLoading: boolean;
   showScrollToBottomButton: boolean;
   onScrollToBottom?: () => void;
+  input: string;
+  setInput: (input: string) => void;
 }
 
 export function ChatPanel({
@@ -111,11 +113,12 @@ export function ChatPanel({
   onInputHeightChange,
   showScrollToBottomButton,
   onScrollToBottom,
+  input,
+  setInput,
 }: ChatPanelProps) {
   const uploadFile = useAction(api.chat.uploadFile);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [input, setInput] = useState("");
   const [files, setFiles] = useState<ProcessedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
   // const [showFilePreview, setShowFilePreview] = useState<string | null>(null);
@@ -462,7 +465,7 @@ export function ChatPanel({
               name="input"
               rows={2}
               tabIndex={0}
-              placeholder="Ask a question or drop a file..."
+              placeholder="Ask a question..."
               spellCheck={false}
               value={input}
               disabled={isLoading}

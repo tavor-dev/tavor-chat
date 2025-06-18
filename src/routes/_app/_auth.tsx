@@ -426,7 +426,7 @@ function AppSidebar() {
 
         {/* Delete confirmation prompt */}
         <Prompt open={deletePromptOpen} onOpenChange={setDeletePromptOpen}>
-          <Prompt.Content>
+          <Prompt.Content className="z-[9999]">
             <Prompt.Header>
               <Prompt.Title>Delete thread?</Prompt.Title>
               <Prompt.Description>

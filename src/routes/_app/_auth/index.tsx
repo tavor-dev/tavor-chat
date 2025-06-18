@@ -8,6 +8,7 @@ import { useMutation } from "convex/react";
 import { useCallback, useState } from "react";
 import { Id } from "@cvx/_generated/dataModel";
 import { toast } from "@medusajs/ui";
+import ExamplePrompts from "@/components/ExamplePrompts";
 
 export const Route = createFileRoute("/_app/_auth/")({
   component: NewChatComponent,
@@ -21,6 +22,7 @@ function NewChatComponent() {
   const sendMessage = useMutation(api.chat.streamAsynchronously);
 
   const [isLoading, setIsLoading] = useState(false);
+  const [input, setInput] = useState("");
 
   const handleSubmit = useCallback(
     async (prompt: string, files: ProcessedFile[]) => {
@@ -75,36 +77,51 @@ function NewChatComponent() {
   );
 
   return (
-    <div className="flex flex-1 flex-col h-screen">
-      <div className="flex-1 flex flex-col justify-center p-8">
-        <div className="w-full flex justify-center flex-col items-center mb-8 gap-4">
-          <Logo />
-          <h1 className="text-2xl font-semibold text-ui-fg-base mt-4">
-            {(() => {
-              const now = new Date();
-              const hour = now.getHours();
-              let greeting = "Hello";
-              if (hour >= 5 && hour < 12) greeting = "Good morning";
-              else if (hour >= 12 && hour < 18) greeting = "Good afternoon";
-              else if (hour >= 18 && hour < 24) greeting = "Good evening";
-              else if (hour >= 1 && hour < 5) greeting = "Night owl";
-              if (greeting === "Night owl") {
-                return `Hello, ${greeting}!`;
-              } else {
-                return `${greeting}, ${user?.name || "there"}!`;
-              }
-            })()}
-          </h1>
+    <div className="flex flex-col h-screen min-h-0">
+      {/* Main content area that can scroll */}
+      <div className="flex-1 overflow-auto">
+        <div className="flex flex-col min-h-full">
+          {/* Header section */}
+          <div className="flex-shrink-0 pt-8 pb-4 px-4 sm:px-8">
+            <div className="w-full flex justify-center flex-col items-center gap-4">
+              <Logo />
+              <h1 className="text-xl sm:text-2xl font-semibold text-ui-fg-base text-center">
+                {(() => {
+                  const now = new Date();
+                  const hour = now.getHours();
+                  let greeting = "Hello";
+                  if (hour >= 5 && hour < 12) greeting = "Good morning";
+                  else if (hour >= 12 && hour < 18) greeting = "Good afternoon";
+                  else if (hour >= 18 && hour < 24) greeting = "Good evening";
+                  else if (hour >= 1 && hour < 5) greeting = "night owl";
+                  if (greeting === "night owl") {
+                    return `Hello, ${greeting}!`;
+                  } else {
+                    return `${greeting}, ${user?.name || "there"}!`;
+                  }
+                })()}
+              </h1>
+            </div>
+          </div>
+
+          {/* Examples section - grows to fill remaining space */}
+          <div className="flex-1 flex items-center justify-center px-4 sm:px-8 pb-4">
+            <ExamplePrompts onPromptSelect={(prompt) => setInput(prompt)} />
+          </div>
         </div>
       </div>
 
-      <ChatPanel
-        handleSubmit={handleSubmit}
-        isLoading={isLoading}
-        showScrollToBottomButton={false}
-        onInputHeightChange={() => {}}
-      />
+      {/* Fixed ChatPanel at bottom */}
+      <div className="flex-shrink-0">
+        <ChatPanel
+          handleSubmit={handleSubmit}
+          isLoading={isLoading}
+          showScrollToBottomButton={false}
+          onInputHeightChange={() => {}}
+          input={input}
+          setInput={setInput}
+        />
+      </div>
     </div>
   );
 }
-
