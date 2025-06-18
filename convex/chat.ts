@@ -1,16 +1,16 @@
-import { type LanguageModelV1 } from "ai";
 import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
+import { type LanguageModelV1 } from "ai";
 import { v } from "convex/values";
-import { api, internal } from "./_generated/api";
-import { action, internalAction, mutation } from "./_generated/server";
-import { authorizeThreadAccess, checkAndIncrementUsage } from "./account";
-import { setupTavorTools } from "./tavor";
 import {
   MODEL_CONFIGS,
   type ModelId,
   getDefaultModel,
   textEmbedding,
 } from "../src/lib/models";
+import { internal } from "./_generated/api";
+import { action, internalAction, mutation } from "./_generated/server";
+import { authorizeThreadAccess, checkAndIncrementUsage } from "./account";
+import { setupTavorTools } from "./tavor";
 
 const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
   return new Agent({
@@ -273,7 +273,9 @@ export const stream = internalAction({
     model: v.optional(v.string()),
   },
   handler: async (ctx, { promptMessageId, threadId, model }) => {
-    const tempThread = await ctx.runQuery(api.threads.getById, { threadId });
+    const tempThread = await ctx.runQuery(internal.threads.getById, {
+      threadId,
+    });
     const effectiveModelId = model || tempThread?.model;
 
     let agent = chatAgent;

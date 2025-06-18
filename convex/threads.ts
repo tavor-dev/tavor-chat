@@ -1,12 +1,20 @@
 import { paginationOptsValidator, PaginationResult } from "convex/server";
 import { ThreadDoc, v } from "./schema";
-import { api } from "./_generated/api";
-import { action, internalAction, mutation, query } from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import {
+  action,
+  internalAction,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { chatAgent } from "./chat";
 import { authorizeThreadAccess, getUserId } from "./account";
 import { partial } from "convex-helpers/validators";
 import { assert, pick } from "convex-helpers";
 import { Doc, Id } from "./_generated/dataModel";
+import invariant from "tiny-invariant";
+import { ERRORS } from "~/errors";
 
 /**
  * List all threads for the current user with pagination
@@ -33,11 +41,11 @@ export const list = query({
 /**
  * Get a thread by ID
  */
-export const getById = query({
+export const getById = internalQuery({
   args: {
     threadId: v.id("threads"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<ThreadDoc | null> => {
     return await ctx.db.get(args.threadId);
   },
 });
@@ -46,8 +54,12 @@ export const getByIdForCurrentUser = query({
   args: {
     threadId: v.id("threads"),
   },
-  handler: async (ctx, args) => {
-    const thread = await authorizeThreadAccess(ctx, args.threadId);
+  handler: async (ctx, { threadId }): Promise<ThreadDoc> => {
+    const userId = await getUserId(ctx);
+    invariant(userId, ERRORS.AUTH_NOT_AUTHENTICATED);
+
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
+    invariant(thread?.userId === userId, ERRORS.THREADS_NOT_ALLOWED);
 
     return thread;
   },

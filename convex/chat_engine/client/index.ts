@@ -1,5 +1,5 @@
 import type { EmbeddingModelV1, LanguageModelV1 } from "@ai-sdk/provider";
-import { api } from "@cvx/_generated/api";
+import { api, internal } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
 import type { MessageDoc, ThreadDoc } from "@cvx/schema";
 import type {
@@ -1095,7 +1095,7 @@ export class Agent<AgentTools extends ToolSet> {
             ? (args.userId ??
               (args.threadId &&
                 (
-                  await ctx.runQuery(api.threads.getById, {
+                  await ctx.runQuery(internal.threads.getById, {
                     threadId: args.threadId,
                   })
                 )?.userId))
@@ -1134,7 +1134,7 @@ export class Agent<AgentTools extends ToolSet> {
     ctx: RunQueryCtx,
     args: { threadId: Id<"threads"> },
   ): Promise<ThreadDoc> {
-    const thread = await ctx.runQuery(api.threads.getById, {
+    const thread = await ctx.runQuery(internal.threads.getById, {
       threadId: args.threadId,
     });
     if (!thread) {
@@ -1453,7 +1453,7 @@ export class Agent<AgentTools extends ToolSet> {
       argsUserId ??
       (threadId &&
         (
-          await ctx.runQuery(api.threads.getById, {
+          await ctx.runQuery(internal.threads.getById, {
             threadId,
           })
         )?.userId);

@@ -32,15 +32,7 @@ export async function authorizeThreadAccess(
   ctx: QueryCtx | MutationCtx | ActionCtx,
   threadId: Id<"threads">,
 ): Promise<ThreadDoc> {
-  const userId = await getUserId(ctx);
-
-  const thread = await ctx.runQuery(api.threads.getById, { threadId });
-
-  if (!thread || thread.userId !== userId) {
-    throw new Error("Unauthorized");
-  }
-
-  return thread;
+  return await ctx.runQuery(api.threads.getByIdForCurrentUser, { threadId });
 }
 
 /**

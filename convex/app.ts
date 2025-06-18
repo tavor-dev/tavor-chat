@@ -1,6 +1,11 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "@cvx/_generated/api";
-import { mutation, query, QueryCtx } from "@cvx/_generated/server";
+import {
+  internalQuery,
+  mutation,
+  query,
+  QueryCtx,
+} from "@cvx/_generated/server";
 import { currencyValidator, PLANS } from "@cvx/schema";
 import { asyncMap } from "convex-helpers";
 import { v } from "convex/values";
@@ -48,7 +53,7 @@ export const getCurrentUser = query({
   },
 });
 
-export const getUserById = query({
+export const getUserById = internalQuery({
   args: {
     userId: v.id("users"),
   },
