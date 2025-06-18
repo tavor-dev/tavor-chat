@@ -10,14 +10,8 @@ import {
   mutation,
   internalQuery,
 } from "./_generated/server";
-import {
-  authorizeThreadAccess,
-  checkAndIncrementUsage,
-  // getUserId,
-} from "./account";
+import { authorizeThreadAccess, checkAndIncrementUsage } from "./account";
 import { setupTavorTools } from "./tavor";
-import { Id } from "@cvx/_generated/dataModel";
-// import { z } from "zod";
 
 const models = {
   "gpt-4o-mini": openai("gpt-4o-mini"),
@@ -359,51 +353,6 @@ export const stream = internalAction({
       { promptMessageId },
       { saveStreamDeltas: true },
     );
-
-    // Log for debugging (optional)
-    // console.log("Result from streamText:", result);
-
-    // Use baseStream as the async iterable
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const streamResult = (result as any).baseStream as AsyncIterable<unknown>;
-
-    let streamId: Id<"streamingMessages"> | undefined;
-    for await (const _delta of streamResult) {
-      if (!streamId) {
-        const streams = await ctx.runQuery(internal.chat.getStreamingMessages, {
-          threadId,
-        });
-        streamId = streams[0]?._id;
-      }
-
-      if (streamId) {
-        const stream = await ctx.runQuery(internal.chat.getStreamById, {
-          streamId,
-        });
-        if (stream?.state.kind !== "streaming") {
-          break; // Exit if stream is canceled or finished
-        }
-      }
-    }
-
-    // Handle cancellation
-    if (streamId) {
-      const stream = await ctx.runQuery(internal.chat.getStreamById, {
-        streamId,
-      });
-      if (stream?.state.kind === "canceled") {
-        const message = await ctx.runQuery(internal.chat.getMessageByOrder, {
-          threadId,
-          order: stream.order,
-          stepOrder: stream.stepOrder,
-        });
-        if (message) {
-          await ctx.runMutation(api.chat_engine.messages.commitMessage, {
-            messageId: message._id,
-          });
-        }
-      }
-    }
 
     // Schedule thread title update
     ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {

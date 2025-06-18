@@ -155,7 +155,7 @@ export function SubscriptionSuccessEmail({ email }: SubscriptionEmailOptions) {
                           textDecoration: "none",
                         }}
                       >
-                        domain-name.com
+                        chat.tavor.dev
                       </Link>{" "}
                       team.
                     </Text>

@@ -547,6 +547,7 @@ export class Agent<AgentTools extends ToolSet> {
             providerOptions: aiArgs.providerOptions,
             order,
             stepOrder,
+            abortSignal: aiArgs.abortSignal,
           })
         : undefined;
 
@@ -555,6 +556,7 @@ export class Agent<AgentTools extends ToolSet> {
       maxSteps: this.options.maxSteps,
       ...aiArgs,
       tools,
+      abortSignal: streamer?.abortController.signal ?? aiArgs.abortSignal,
       experimental_transform: mergeTransforms(
         options?.saveStreamDeltas,
         args.experimental_transform,
@@ -1060,8 +1062,7 @@ export class Agent<AgentTools extends ToolSet> {
         api.chat_engine.messages.listMessagesByThreadId,
         {
           threadId: args.threadId,
-          excludeToolMessages:
-            opts.includeToolCalls === true ? false : opts.excludeToolMessages,
+          excludeToolMessages: opts.excludeToolMessages,
           paginationOpts: {
             numItems: opts.recentMessages ?? DEFAULT_RECENT_MESSAGES,
             cursor: null,

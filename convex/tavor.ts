@@ -97,24 +97,32 @@ export const runCommandInBox = internalAction({
     const box = await tavor.getBox(tavorBox);
     await box.refresh();
 
-    let output = "";
-
     const commandPromise = box.run(command);
 
     if (background) {
+      // TODO: kinda hack, ensure command gets scheduled by convex before function shuts down
       await new Promise((resolve) => {
         setTimeout(resolve, 3000);
       });
 
-      return "running in background";
+      return JSON.stringify({
+        stdout: "",
+        stderr: "",
+        output: "Command is running in the background",
+        success: true,
+      });
     }
 
     const result = await commandPromise;
+    const output =
+      result.stdout + (result.stderr ? `STDERR:\n${result.stderr}` : "");
 
-    if (result.stdout) output += result.stdout;
-    if (result.stderr) output += `STDERR:\n${result.stderr}`;
-
-    return output;
+    return JSON.stringify({
+      stdout: result.stdout || "",
+      stderr: result.stderr || "",
+      output: output || "",
+      success: !result.stderr,
+    });
   },
 });
 

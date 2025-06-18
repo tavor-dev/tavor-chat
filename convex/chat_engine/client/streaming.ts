@@ -66,6 +66,7 @@ export class DeltaStreamer {
   #latestWrite: number = 0;
   #ongoingWrite: Promise<void> | undefined;
   #cursor: number = 0;
+  public abortController: AbortController;
 
   constructor(
     public readonly component: AgentComponent,
@@ -80,6 +81,7 @@ export class DeltaStreamer {
       userId: Id<"users"> | undefined;
       order: number | undefined;
       stepOrder: number | undefined;
+      abortSignal: AbortSignal | undefined;
     },
   ) {
     this.options =
@@ -93,21 +95,25 @@ export class DeltaStreamer {
     this.#nextParts = [];
     this.#nextOrder = metadata.order ?? 0;
     this.#nextStepOrder = (metadata.stepOrder ?? 0) + 1;
+    this.abortController = new AbortController();
+    if (metadata.abortSignal) {
+      metadata.abortSignal.addEventListener("abort", () => {
+        this.abortController.abort();
+      });
+    }
   }
   public async addParts(parts: TextStreamPart[]) {
+    if (this.abortController.signal.aborted) {
+      return;
+    }
     if (!this.metadata.userId) {
       throw new Error("userId is required to create a stream");
     }
-    // Assert that userId is defined
-    const metadataWithUserId = {
-      ...this.metadata,
-      userId: this.metadata.userId as Id<"users">,
-    };
     if (!this.streamId) {
       this.streamId = await this.ctx.runMutation(
         this.component.chat_engine.streams.create,
         {
-          ...metadataWithUserId,
+          ...this.metadata,
           order: this.#nextOrder,
           stepOrder: this.#nextStepOrder,
         },
@@ -123,12 +129,23 @@ export class DeltaStreamer {
   }
 
   async #sendDelta() {
+    if (this.abortController.signal.aborted) {
+      return;
+    }
     const delta = this.#createDelta();
     this.#latestWrite = Date.now();
-    await this.ctx.runMutation(
-      this.component.chat_engine.streams.addDelta,
-      delta,
-    );
+    try {
+      const success = await this.ctx.runMutation(
+        this.component.chat_engine.streams.addDelta,
+        delta,
+      );
+      if (!success) {
+        this.abortController.abort();
+      }
+    } catch (e) {
+      this.abortController.abort();
+      throw e;
+    }
     // Now that we've sent the delta, check if we need to send another one.
     if (
       this.#nextParts.length > 0 &&
