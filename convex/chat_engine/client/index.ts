@@ -930,22 +930,25 @@ export class Agent<AgentTools extends ToolSet> {
         args.messages,
       );
     }
+    const messagesToSave = await Promise.all(
+      args.messages.map(async (m, i) => {
+        const { message, fileIds } = await serializeMessage(ctx, m);
+        const metadata = args.metadata?.[i];
+        return {
+          ...metadata,
+          message,
+          fileIds: metadata?.fileIds || fileIds,
+        } as MessageWithMetadata;
+      }),
+    );
+
     const result = await ctx.runMutation(api.chat_engine.messages.addMessages, {
       threadId: args.threadId,
       userId: args.userId,
       agentName: this.options.name,
       promptMessageId: args.promptMessageId,
       embeddings,
-      messages: await Promise.all(
-        args.messages.map(async (m, i) => {
-          const { message, fileIds } = await serializeMessage(ctx, m);
-          return {
-            ...args.metadata?.[i],
-            message,
-            fileIds,
-          } as MessageWithMetadata;
-        }),
-      ),
+      messages: messagesToSave,
       failPendingSteps: args.failPendingSteps ?? false,
       pending: args.pending ?? false,
     });

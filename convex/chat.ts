@@ -2,8 +2,6 @@ import { anthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
-import { tool } from "ai";
-import { Tavor } from "@tavor/sdk";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { action, internalAction, mutation } from "./_generated/server";
@@ -37,29 +35,7 @@ const newAgent = ({
     maxSteps: 25,
     instructions:
       "You're an interactive, fun LLM that can tell stories and jokes, ~200 words.",
-    tools: {
-      executeCommand: tool({
-        description:
-          "Execute bash commands in a sandboxed environment. Each call generates a new ephemeral sandbox to run the command, if you want to run multiple commands, chain them or write a script that you execute.",
-        parameters: z.object({
-          command: z.string().describe("The command to execute inside sandbox"),
-        }),
-        execute: async ({ command }) => {
-          const tavor = new Tavor();
-
-          let output = "";
-
-          await tavor.withSandbox(async (box) => {
-            const result = await box.run(command);
-
-            if (result.stdout) output += result.stdout;
-            if (result.stderr) output += `STDERR:\n${result.stderr}`;
-          });
-
-          return output;
-        },
-      }),
-    },
+    tools: {},
   });
 };
 
@@ -127,7 +103,8 @@ export const streamAsynchronously = mutation({
         ],
       },
       metadata: {
-        ...{ fileIds: safeFiles.map((f) => f.fileId) },
+        fileIds:
+          safeFiles.length > 0 ? safeFiles.map((f) => f.fileId) : undefined,
       },
       skipEmbeddings: true,
     });
@@ -159,7 +136,10 @@ export const stream = internalAction({
       });
     }
 
-    const { thread } = await agent.continueThread(ctx, { threadId });
+    const { thread } = await agent.continueThread(ctx, {
+      threadId,
+      tools: setupTavorTools({ threadId }),
+    });
     const result = await thread.streamText(
       { promptMessageId },
       { saveStreamDeltas: true },

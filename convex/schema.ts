@@ -121,6 +121,7 @@ const schema = defineSchema({
         title: v.optional(v.string()),
       }),
     ),
+    tavorBox: v.optional(v.string()),
   })
     .index("userId", ["userId"])
     .index("userId_pinned", ["userId", "pinned"]),
