@@ -16,20 +16,10 @@ import { Route as AppLoginRouteImport } from './routes/_app/login'
 import { Route as AppAuthRouteImport } from './routes/_app/_auth'
 import { Route as AppAuthIndexRouteImport } from './routes/_app/_auth/index'
 import { Route as AppAuthSettingsLayoutRouteImport } from './routes/_app/_auth/settings/_layout'
-import { Route as AppAuthOnboardingLayoutRouteImport } from './routes/_app/_auth/onboarding/_layout'
-import { Route as AppAuthDashboardLayoutRouteImport } from './routes/_app/_auth/dashboard/_layout'
 import { Route as AppAuthChatThreadIdRouteImport } from './routes/_app/_auth/chat.$threadId'
 import { Route as AppAuthSettingsLayoutIndexRouteImport } from './routes/_app/_auth/settings/_layout.index'
-import { Route as AppAuthDashboardLayoutIndexRouteImport } from './routes/_app/_auth/dashboard/_layout.index'
-import { Route as AppAuthOnboardingLayoutUsernameRouteImport } from './routes/_app/_auth/onboarding/_layout.username'
-import { Route as AppAuthDashboardLayoutSettingsRouteImport } from './routes/_app/_auth/dashboard/_layout.settings'
-import { Route as AppAuthDashboardLayoutCheckoutRouteImport } from './routes/_app/_auth/dashboard/_layout.checkout'
-import { Route as AppAuthDashboardLayoutSettingsIndexRouteImport } from './routes/_app/_auth/dashboard/_layout.settings.index'
-import { Route as AppAuthDashboardLayoutSettingsBillingRouteImport } from './routes/_app/_auth/dashboard/_layout.settings.billing'
 
 const AppAuthSettingsRouteImport = createFileRoute('/_app/_auth/settings')()
-const AppAuthOnboardingRouteImport = createFileRoute('/_app/_auth/onboarding')()
-const AppAuthDashboardRouteImport = createFileRoute('/_app/_auth/dashboard')()
 
 const AppRoute = AppRouteImport.update({
   id: '/_app',
@@ -49,16 +39,6 @@ const AppAuthSettingsRoute = AppAuthSettingsRouteImport.update({
   path: '/settings',
   getParentRoute: () => AppAuthRoute,
 } as any)
-const AppAuthOnboardingRoute = AppAuthOnboardingRouteImport.update({
-  id: '/onboarding',
-  path: '/onboarding',
-  getParentRoute: () => AppAuthRoute,
-} as any)
-const AppAuthDashboardRoute = AppAuthDashboardRouteImport.update({
-  id: '/dashboard',
-  path: '/dashboard',
-  getParentRoute: () => AppAuthRoute,
-} as any)
 const AppAuthIndexRoute = AppAuthIndexRouteImport.update({
   id: '/',
   path: '/',
@@ -67,14 +47,6 @@ const AppAuthIndexRoute = AppAuthIndexRouteImport.update({
 const AppAuthSettingsLayoutRoute = AppAuthSettingsLayoutRouteImport.update({
   id: '/_layout',
   getParentRoute: () => AppAuthSettingsRoute,
-} as any)
-const AppAuthOnboardingLayoutRoute = AppAuthOnboardingLayoutRouteImport.update({
-  id: '/_layout',
-  getParentRoute: () => AppAuthOnboardingRoute,
-} as any)
-const AppAuthDashboardLayoutRoute = AppAuthDashboardLayoutRouteImport.update({
-  id: '/_layout',
-  getParentRoute: () => AppAuthDashboardRoute,
 } as any)
 const AppAuthChatThreadIdRoute = AppAuthChatThreadIdRouteImport.update({
   id: '/chat/$threadId',
@@ -87,71 +59,21 @@ const AppAuthSettingsLayoutIndexRoute =
     path: '/',
     getParentRoute: () => AppAuthSettingsLayoutRoute,
   } as any)
-const AppAuthDashboardLayoutIndexRoute =
-  AppAuthDashboardLayoutIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppAuthDashboardLayoutRoute,
-  } as any)
-const AppAuthOnboardingLayoutUsernameRoute =
-  AppAuthOnboardingLayoutUsernameRouteImport.update({
-    id: '/username',
-    path: '/username',
-    getParentRoute: () => AppAuthOnboardingLayoutRoute,
-  } as any)
-const AppAuthDashboardLayoutSettingsRoute =
-  AppAuthDashboardLayoutSettingsRouteImport.update({
-    id: '/settings',
-    path: '/settings',
-    getParentRoute: () => AppAuthDashboardLayoutRoute,
-  } as any)
-const AppAuthDashboardLayoutCheckoutRoute =
-  AppAuthDashboardLayoutCheckoutRouteImport.update({
-    id: '/checkout',
-    path: '/checkout',
-    getParentRoute: () => AppAuthDashboardLayoutRoute,
-  } as any)
-const AppAuthDashboardLayoutSettingsIndexRoute =
-  AppAuthDashboardLayoutSettingsIndexRouteImport.update({
-    id: '/',
-    path: '/',
-    getParentRoute: () => AppAuthDashboardLayoutSettingsRoute,
-  } as any)
-const AppAuthDashboardLayoutSettingsBillingRoute =
-  AppAuthDashboardLayoutSettingsBillingRouteImport.update({
-    id: '/billing',
-    path: '/billing',
-    getParentRoute: () => AppAuthDashboardLayoutSettingsRoute,
-  } as any)
 
 export interface FileRoutesByFullPath {
   '': typeof AppAuthRouteWithChildren
   '/login': typeof AppLoginRoute
   '/': typeof AppAuthIndexRoute
   '/chat/$threadId': typeof AppAuthChatThreadIdRoute
-  '/dashboard': typeof AppAuthDashboardLayoutRouteWithChildren
-  '/onboarding': typeof AppAuthOnboardingLayoutRouteWithChildren
   '/settings': typeof AppAuthSettingsLayoutRouteWithChildren
-  '/dashboard/checkout': typeof AppAuthDashboardLayoutCheckoutRoute
-  '/dashboard/settings': typeof AppAuthDashboardLayoutSettingsRouteWithChildren
-  '/onboarding/username': typeof AppAuthOnboardingLayoutUsernameRoute
-  '/dashboard/': typeof AppAuthDashboardLayoutIndexRoute
   '/settings/': typeof AppAuthSettingsLayoutIndexRoute
-  '/dashboard/settings/billing': typeof AppAuthDashboardLayoutSettingsBillingRoute
-  '/dashboard/settings/': typeof AppAuthDashboardLayoutSettingsIndexRoute
 }
 export interface FileRoutesByTo {
   '': typeof AppRouteWithChildren
   '/login': typeof AppLoginRoute
   '/': typeof AppAuthIndexRoute
   '/chat/$threadId': typeof AppAuthChatThreadIdRoute
-  '/dashboard': typeof AppAuthDashboardLayoutIndexRoute
-  '/onboarding': typeof AppAuthOnboardingLayoutRouteWithChildren
   '/settings': typeof AppAuthSettingsLayoutIndexRoute
-  '/dashboard/checkout': typeof AppAuthDashboardLayoutCheckoutRoute
-  '/onboarding/username': typeof AppAuthOnboardingLayoutUsernameRoute
-  '/dashboard/settings/billing': typeof AppAuthDashboardLayoutSettingsBillingRoute
-  '/dashboard/settings': typeof AppAuthDashboardLayoutSettingsIndexRoute
 }
 export interface FileRoutesById {
   __root__: typeof rootRouteImport
@@ -160,19 +82,9 @@ export interface FileRoutesById {
   '/_app/login': typeof AppLoginRoute
   '/_app/_auth/': typeof AppAuthIndexRoute
   '/_app/_auth/chat/$threadId': typeof AppAuthChatThreadIdRoute
-  '/_app/_auth/dashboard': typeof AppAuthDashboardRouteWithChildren
-  '/_app/_auth/dashboard/_layout': typeof AppAuthDashboardLayoutRouteWithChildren
-  '/_app/_auth/onboarding': typeof AppAuthOnboardingRouteWithChildren
-  '/_app/_auth/onboarding/_layout': typeof AppAuthOnboardingLayoutRouteWithChildren
   '/_app/_auth/settings': typeof AppAuthSettingsRouteWithChildren
   '/_app/_auth/settings/_layout': typeof AppAuthSettingsLayoutRouteWithChildren
-  '/_app/_auth/dashboard/_layout/checkout': typeof AppAuthDashboardLayoutCheckoutRoute
-  '/_app/_auth/dashboard/_layout/settings': typeof AppAuthDashboardLayoutSettingsRouteWithChildren
-  '/_app/_auth/onboarding/_layout/username': typeof AppAuthOnboardingLayoutUsernameRoute
-  '/_app/_auth/dashboard/_layout/': typeof AppAuthDashboardLayoutIndexRoute
   '/_app/_auth/settings/_layout/': typeof AppAuthSettingsLayoutIndexRoute
-  '/_app/_auth/dashboard/_layout/settings/billing': typeof AppAuthDashboardLayoutSettingsBillingRoute
-  '/_app/_auth/dashboard/_layout/settings/': typeof AppAuthDashboardLayoutSettingsIndexRoute
 }
 export interface FileRouteTypes {
   fileRoutesByFullPath: FileRoutesByFullPath
@@ -181,29 +93,10 @@ export interface FileRouteTypes {
     | '/login'
     | '/'
     | '/chat/$threadId'
-    | '/dashboard'
-    | '/onboarding'
     | '/settings'
-    | '/dashboard/checkout'
-    | '/dashboard/settings'
-    | '/onboarding/username'
-    | '/dashboard/'
     | '/settings/'
-    | '/dashboard/settings/billing'
-    | '/dashboard/settings/'
   fileRoutesByTo: FileRoutesByTo
-  to:
-    | ''
-    | '/login'
-    | '/'
-    | '/chat/$threadId'
-    | '/dashboard'
-    | '/onboarding'
-    | '/settings'
-    | '/dashboard/checkout'
-    | '/onboarding/username'
-    | '/dashboard/settings/billing'
-    | '/dashboard/settings'
+  to: '' | '/login' | '/' | '/chat/$threadId' | '/settings'
   id:
     | '__root__'
     | '/_app'
@@ -211,19 +104,9 @@ export interface FileRouteTypes {
     | '/_app/login'
     | '/_app/_auth/'
     | '/_app/_auth/chat/$threadId'
-    | '/_app/_auth/dashboard'
-    | '/_app/_auth/dashboard/_layout'
-    | '/_app/_auth/onboarding'
-    | '/_app/_auth/onboarding/_layout'
     | '/_app/_auth/settings'
     | '/_app/_auth/settings/_layout'
-    | '/_app/_auth/dashboard/_layout/checkout'
-    | '/_app/_auth/dashboard/_layout/settings'
-    | '/_app/_auth/onboarding/_layout/username'
-    | '/_app/_auth/dashboard/_layout/'
     | '/_app/_auth/settings/_layout/'
-    | '/_app/_auth/dashboard/_layout/settings/billing'
-    | '/_app/_auth/dashboard/_layout/settings/'
   fileRoutesById: FileRoutesById
 }
 export interface RootRouteChildren {
@@ -260,20 +143,6 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuthSettingsRouteImport
       parentRoute: typeof AppAuthRoute
     }
-    '/_app/_auth/onboarding': {
-      id: '/_app/_auth/onboarding'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AppAuthOnboardingRouteImport
-      parentRoute: typeof AppAuthRoute
-    }
-    '/_app/_auth/dashboard': {
-      id: '/_app/_auth/dashboard'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppAuthDashboardRouteImport
-      parentRoute: typeof AppAuthRoute
-    }
     '/_app/_auth/': {
       id: '/_app/_auth/'
       path: '/'
@@ -287,20 +156,6 @@ declare module '@tanstack/react-router' {
       fullPath: '/settings'
       preLoaderRoute: typeof AppAuthSettingsLayoutRouteImport
       parentRoute: typeof AppAuthSettingsRoute
-    }
-    '/_app/_auth/onboarding/_layout': {
-      id: '/_app/_auth/onboarding/_layout'
-      path: '/onboarding'
-      fullPath: '/onboarding'
-      preLoaderRoute: typeof AppAuthOnboardingLayoutRouteImport
-      parentRoute: typeof AppAuthOnboardingRoute
-    }
-    '/_app/_auth/dashboard/_layout': {
-      id: '/_app/_auth/dashboard/_layout'
-      path: '/dashboard'
-      fullPath: '/dashboard'
-      preLoaderRoute: typeof AppAuthDashboardLayoutRouteImport
-      parentRoute: typeof AppAuthDashboardRoute
     }
     '/_app/_auth/chat/$threadId': {
       id: '/_app/_auth/chat/$threadId'
@@ -316,123 +171,8 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof AppAuthSettingsLayoutIndexRouteImport
       parentRoute: typeof AppAuthSettingsLayoutRoute
     }
-    '/_app/_auth/dashboard/_layout/': {
-      id: '/_app/_auth/dashboard/_layout/'
-      path: '/'
-      fullPath: '/dashboard/'
-      preLoaderRoute: typeof AppAuthDashboardLayoutIndexRouteImport
-      parentRoute: typeof AppAuthDashboardLayoutRoute
-    }
-    '/_app/_auth/onboarding/_layout/username': {
-      id: '/_app/_auth/onboarding/_layout/username'
-      path: '/username'
-      fullPath: '/onboarding/username'
-      preLoaderRoute: typeof AppAuthOnboardingLayoutUsernameRouteImport
-      parentRoute: typeof AppAuthOnboardingLayoutRoute
-    }
-    '/_app/_auth/dashboard/_layout/settings': {
-      id: '/_app/_auth/dashboard/_layout/settings'
-      path: '/settings'
-      fullPath: '/dashboard/settings'
-      preLoaderRoute: typeof AppAuthDashboardLayoutSettingsRouteImport
-      parentRoute: typeof AppAuthDashboardLayoutRoute
-    }
-    '/_app/_auth/dashboard/_layout/checkout': {
-      id: '/_app/_auth/dashboard/_layout/checkout'
-      path: '/checkout'
-      fullPath: '/dashboard/checkout'
-      preLoaderRoute: typeof AppAuthDashboardLayoutCheckoutRouteImport
-      parentRoute: typeof AppAuthDashboardLayoutRoute
-    }
-    '/_app/_auth/dashboard/_layout/settings/': {
-      id: '/_app/_auth/dashboard/_layout/settings/'
-      path: '/'
-      fullPath: '/dashboard/settings/'
-      preLoaderRoute: typeof AppAuthDashboardLayoutSettingsIndexRouteImport
-      parentRoute: typeof AppAuthDashboardLayoutSettingsRoute
-    }
-    '/_app/_auth/dashboard/_layout/settings/billing': {
-      id: '/_app/_auth/dashboard/_layout/settings/billing'
-      path: '/billing'
-      fullPath: '/dashboard/settings/billing'
-      preLoaderRoute: typeof AppAuthDashboardLayoutSettingsBillingRouteImport
-      parentRoute: typeof AppAuthDashboardLayoutSettingsRoute
-    }
   }
 }
-
-interface AppAuthDashboardLayoutSettingsRouteChildren {
-  AppAuthDashboardLayoutSettingsBillingRoute: typeof AppAuthDashboardLayoutSettingsBillingRoute
-  AppAuthDashboardLayoutSettingsIndexRoute: typeof AppAuthDashboardLayoutSettingsIndexRoute
-}
-
-const AppAuthDashboardLayoutSettingsRouteChildren: AppAuthDashboardLayoutSettingsRouteChildren =
-  {
-    AppAuthDashboardLayoutSettingsBillingRoute:
-      AppAuthDashboardLayoutSettingsBillingRoute,
-    AppAuthDashboardLayoutSettingsIndexRoute:
-      AppAuthDashboardLayoutSettingsIndexRoute,
-  }
-
-const AppAuthDashboardLayoutSettingsRouteWithChildren =
-  AppAuthDashboardLayoutSettingsRoute._addFileChildren(
-    AppAuthDashboardLayoutSettingsRouteChildren,
-  )
-
-interface AppAuthDashboardLayoutRouteChildren {
-  AppAuthDashboardLayoutCheckoutRoute: typeof AppAuthDashboardLayoutCheckoutRoute
-  AppAuthDashboardLayoutSettingsRoute: typeof AppAuthDashboardLayoutSettingsRouteWithChildren
-  AppAuthDashboardLayoutIndexRoute: typeof AppAuthDashboardLayoutIndexRoute
-}
-
-const AppAuthDashboardLayoutRouteChildren: AppAuthDashboardLayoutRouteChildren =
-  {
-    AppAuthDashboardLayoutCheckoutRoute: AppAuthDashboardLayoutCheckoutRoute,
-    AppAuthDashboardLayoutSettingsRoute:
-      AppAuthDashboardLayoutSettingsRouteWithChildren,
-    AppAuthDashboardLayoutIndexRoute: AppAuthDashboardLayoutIndexRoute,
-  }
-
-const AppAuthDashboardLayoutRouteWithChildren =
-  AppAuthDashboardLayoutRoute._addFileChildren(
-    AppAuthDashboardLayoutRouteChildren,
-  )
-
-interface AppAuthDashboardRouteChildren {
-  AppAuthDashboardLayoutRoute: typeof AppAuthDashboardLayoutRouteWithChildren
-}
-
-const AppAuthDashboardRouteChildren: AppAuthDashboardRouteChildren = {
-  AppAuthDashboardLayoutRoute: AppAuthDashboardLayoutRouteWithChildren,
-}
-
-const AppAuthDashboardRouteWithChildren =
-  AppAuthDashboardRoute._addFileChildren(AppAuthDashboardRouteChildren)
-
-interface AppAuthOnboardingLayoutRouteChildren {
-  AppAuthOnboardingLayoutUsernameRoute: typeof AppAuthOnboardingLayoutUsernameRoute
-}
-
-const AppAuthOnboardingLayoutRouteChildren: AppAuthOnboardingLayoutRouteChildren =
-  {
-    AppAuthOnboardingLayoutUsernameRoute: AppAuthOnboardingLayoutUsernameRoute,
-  }
-
-const AppAuthOnboardingLayoutRouteWithChildren =
-  AppAuthOnboardingLayoutRoute._addFileChildren(
-    AppAuthOnboardingLayoutRouteChildren,
-  )
-
-interface AppAuthOnboardingRouteChildren {
-  AppAuthOnboardingLayoutRoute: typeof AppAuthOnboardingLayoutRouteWithChildren
-}
-
-const AppAuthOnboardingRouteChildren: AppAuthOnboardingRouteChildren = {
-  AppAuthOnboardingLayoutRoute: AppAuthOnboardingLayoutRouteWithChildren,
-}
-
-const AppAuthOnboardingRouteWithChildren =
-  AppAuthOnboardingRoute._addFileChildren(AppAuthOnboardingRouteChildren)
 
 interface AppAuthSettingsLayoutRouteChildren {
   AppAuthSettingsLayoutIndexRoute: typeof AppAuthSettingsLayoutIndexRoute
@@ -462,16 +202,12 @@ const AppAuthSettingsRouteWithChildren = AppAuthSettingsRoute._addFileChildren(
 interface AppAuthRouteChildren {
   AppAuthIndexRoute: typeof AppAuthIndexRoute
   AppAuthChatThreadIdRoute: typeof AppAuthChatThreadIdRoute
-  AppAuthDashboardRoute: typeof AppAuthDashboardRouteWithChildren
-  AppAuthOnboardingRoute: typeof AppAuthOnboardingRouteWithChildren
   AppAuthSettingsRoute: typeof AppAuthSettingsRouteWithChildren
 }
 
 const AppAuthRouteChildren: AppAuthRouteChildren = {
   AppAuthIndexRoute: AppAuthIndexRoute,
   AppAuthChatThreadIdRoute: AppAuthChatThreadIdRoute,
-  AppAuthDashboardRoute: AppAuthDashboardRouteWithChildren,
-  AppAuthOnboardingRoute: AppAuthOnboardingRouteWithChildren,
   AppAuthSettingsRoute: AppAuthSettingsRouteWithChildren,
 }
 
