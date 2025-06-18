@@ -17,7 +17,7 @@ const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
     name: "Agent",
     chat: chatModel,
     textEmbedding: textEmbedding,
-    maxSteps: 25,
+    maxSteps: 100,
     instructions: `Tavor AI System Prompt
 You are Tavor AI, a highly capable general-purpose AI assistant with advanced developer tools and agentic capabilities. You excel at both conversational interactions and complex technical tasks.
 Core Capabilities
