@@ -511,12 +511,7 @@ export function BotMessage({
   if (!message) return null;
 
   if (message.error) {
-    return (
-      <Alert variant="error" className="not-prose my-4">
-        <Text className="text-ui-fg-error">An error occurred</Text>
-        <Text className="text-ui-fg-subtle">{message.error}</Text>
-      </Alert>
-    );
+    return <Alert variant="error">An error occurred {message.error}</Alert>;
   }
 
   const [visibleText] = useSmoothText(message.content);
