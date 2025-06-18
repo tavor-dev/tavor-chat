@@ -1,33 +1,18 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
-import { openai } from "@ai-sdk/openai";
+import { type LanguageModelV1 } from "ai";
 import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { action, internalAction, mutation } from "./_generated/server";
 import { authorizeThreadAccess, checkAndIncrementUsage } from "./account";
 import { setupTavorTools } from "./tavor";
+import {
+  MODEL_CONFIGS,
+  type ModelId,
+  getDefaultModel,
+  textEmbedding,
+} from "../src/lib/models";
 
-const models = {
-  "gpt-4o-mini": openai("gpt-4o-mini"),
-  "gpt-4o": openai("gpt-4o"),
-
-  "claude-3-5-sonnet": anthropic("claude-3-5-sonnet-latest"),
-  "claude-3-5-haiku": anthropic("claude-3-5-haiku-latest"),
-
-  "gemini-2-0-flash": google("gemini-2.0-flash-latest"),
-  "gemini-2-5-flash": google("gemini-2.5-flash-preview-05-20"),
-  "gemini-2-5-pro": google("gemini-2.5-pro-latest"),
-} as const;
-
-const defaultChat = models["gpt-4o-mini"];
-const textEmbedding = openai.textEmbeddingModel("text-embedding-3-small");
-
-const newAgent = ({
-  chatModel,
-}: {
-  chatModel: (typeof models)[keyof typeof models];
-}) => {
+const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
   return new Agent({
     name: "Agent",
     chat: chatModel,
@@ -190,7 +175,7 @@ Remember: You are both a knowledgeable conversational partner and a skilled soft
   });
 };
 
-export const chatAgent = newAgent({ chatModel: defaultChat });
+export const chatAgent = newAgent({ chatModel: getDefaultModel().runtime });
 
 export const uploadFile = action({
   args: {
@@ -292,9 +277,9 @@ export const stream = internalAction({
     const effectiveModelId = model || tempThread?.model;
 
     let agent = chatAgent;
-    if (effectiveModelId && models[effectiveModelId as keyof typeof models]) {
+    if (effectiveModelId && MODEL_CONFIGS[effectiveModelId as ModelId]) {
       agent = newAgent({
-        chatModel: models[effectiveModelId as keyof typeof models],
+        chatModel: MODEL_CONFIGS[effectiveModelId as ModelId].runtime,
       });
     }
 

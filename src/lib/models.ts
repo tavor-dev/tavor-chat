@@ -1,23 +1,29 @@
+import { anthropic } from "@ai-sdk/anthropic";
+import { google } from "@ai-sdk/google";
+import { openai } from "@ai-sdk/openai";
+import { type LanguageModelV1 } from "ai";
+
 export const MODEL_IDS = [
   "gpt-4o-mini",
   "gpt-4o",
+  "o3",
+  "o3-mini",
+  "o4-mini",
+  "gpt-4.1",
+  "gpt-4.1-mini",
+  "gpt-4.1-nano",
   "claude-3-5-sonnet",
   "claude-3-5-haiku",
+  "claude-3-7-sonnet",
   "claude-4-sonnet",
-  "claude-4-opus",
   "gemini-2-0-flash",
   "gemini-2-5-flash",
   "gemini-2-5-pro",
-  "deepseek-chat",
-  "deepseek-r1",
-  "llama-3-3-70b",
-  "mixtral-8x7b",
-  "qwen-2-5-72b",
 ] as const;
 
 export type ModelId = (typeof MODEL_IDS)[number];
 
-export const DEFAULT_MODEL_ID: ModelId = "gpt-4o-mini";
+export const DEFAULT_MODEL_ID: ModelId = "gemini-2-5-flash";
 
 export const MODEL_FEATURES = [
   "fast",
@@ -102,9 +108,9 @@ export const FEATURE_CONFIGS: Record<ModelFeature, ModelFeatureConfig> = {
 export interface ModelConfig {
   id: ModelId;
   name: string;
+  runtime: LanguageModelV1;
   provider: string;
   developer: string;
-  addedOn: Date;
   shortDescription: string;
   fullDescription: string;
   requiresPro: boolean;
@@ -116,13 +122,10 @@ export interface ModelConfig {
     maxOutputTokens: number;
   };
   features: ModelFeature[];
-  experimental?: boolean;
-  apiKeySupport?: "optional" | "required";
   statuspage?: {
     url: string;
     apiUrl: string;
   };
-  streamChunking?: "line" | "word";
 }
 
 export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
@@ -131,50 +134,47 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     name: "GPT-4o Mini",
     provider: "OpenAI",
     developer: "OpenAI",
-    addedOn: new Date("2024-07-18"),
-    shortDescription: "Faster, less precise GPT-4o",
+    shortDescription: "Swift and efficient GPT-4o variant",
     fullDescription:
-      "Like GPT-4o, but faster. This model sacrifices some of the original GPT-4o's precision for significantly reduced latency. It accepts both text and image inputs.",
+      "A streamlined version of GPT-4o optimized for rapid response times. Trades a bit of accuracy for impressive speed gains while maintaining multimodal capabilities.",
     requiresPro: false,
     disabled: false,
     premium: false,
-    modelPickerDefault: false,
+    modelPickerDefault: true,
     limits: {
       maxInputTokens: 128000,
       maxOutputTokens: 16384,
     },
     features: ["images", "parameters", "fast"],
-    experimental: false,
+    runtime: openai("gpt-4o-mini"),
   },
   "gpt-4o": {
     id: "gpt-4o",
     name: "GPT-4o",
     provider: "OpenAI",
     developer: "OpenAI",
-    addedOn: new Date("2024-05-13"),
-    shortDescription: "OpenAI's flagship; versatile and intelligent",
+    shortDescription: "OpenAI's premier all-purpose model",
     fullDescription:
-      "OpenAI's flagship non-reasoning model. Works with text and images. Relatively smart. Good at most things.",
+      "The crown jewel of OpenAI's standard offerings. Handles text and visual inputs with finesse. Well-rounded intelligence across diverse tasks.",
     requiresPro: true,
     disabled: false,
     premium: false,
-    modelPickerDefault: false,
+    modelPickerDefault: true,
     limits: {
       maxInputTokens: 128000,
       maxOutputTokens: 16384,
     },
     features: ["images", "parameters"],
-    experimental: false,
+    runtime: openai("gpt-4o"),
   },
   "claude-3-5-sonnet": {
     id: "claude-3-5-sonnet",
     name: "Claude 3.5 Sonnet",
     provider: "Anthropic",
     developer: "Anthropic",
-    addedOn: new Date("2024-06-20"),
-    shortDescription: "Anthropic's flagship model",
+    shortDescription: "Anthropic's powerhouse performer",
     fullDescription:
-      "Smart model for complex problems. Known for being good at code and math. Also kind of slow and expensive.",
+      "Exceptional at tackling intricate challenges. Particularly strong in programming and mathematical domains. Premium performance comes with higher latency and cost.",
     requiresPro: true,
     disabled: false,
     premium: true,
@@ -188,18 +188,16 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       url: "https://status.anthropic.com",
       apiUrl: "https://status.anthropic.com/api/v2/status.json",
     },
-    experimental: false,
-    apiKeySupport: "optional",
+    runtime: anthropic("claude-3-5-sonnet-latest"),
   },
   "claude-3-5-haiku": {
     id: "claude-3-5-haiku",
     name: "Claude 3.5 Haiku",
     provider: "Anthropic",
     developer: "Anthropic",
-    addedOn: new Date("2024-11-04"),
-    shortDescription: "Fast and affordable Claude model",
+    shortDescription: "Lightning-quick Claude variant",
     fullDescription:
-      "Claude 3.5 Haiku is the fastest and most affordable model in the Claude 3.5 family. It's optimized for speed while maintaining strong performance on many tasks.",
+      "The speedster of the Claude 3.5 lineup. Engineered for blazing-fast responses without breaking the bank, while still delivering solid results across various applications.",
     requiresPro: false,
     disabled: false,
     premium: false,
@@ -213,18 +211,39 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       url: "https://status.anthropic.com",
       apiUrl: "https://status.anthropic.com/api/v2/status.json",
     },
-    experimental: false,
-    apiKeySupport: "optional",
+    runtime: anthropic("claude-3-5-haiku-latest"),
+  },
+  "claude-3-7-sonnet": {
+    id: "claude-3-7-sonnet",
+    name: "Claude 3.7 Sonnet",
+    provider: "Anthropic",
+    developer: "Anthropic",
+    shortDescription: "Enhanced Claude iteration",
+    fullDescription:
+      "An intermediate evolution in the Claude 3 series. Brings incremental improvements in reasoning and comprehension while maintaining the reliable performance Claude is known for.",
+    requiresPro: true,
+    disabled: false,
+    premium: false,
+    modelPickerDefault: false,
+    limits: {
+      maxInputTokens: 200000,
+      maxOutputTokens: 8192,
+    },
+    features: ["images", "pdfs", "parameters"],
+    statuspage: {
+      url: "https://status.anthropic.com",
+      apiUrl: "https://status.anthropic.com/api/v2/status.json",
+    },
+    runtime: anthropic("claude-3-7-sonnet-latest"),
   },
   "claude-4-sonnet": {
     id: "claude-4-sonnet",
     name: "Claude 4 Sonnet",
     provider: "Anthropic",
     developer: "Anthropic",
-    addedOn: new Date("2025-05-22"),
-    shortDescription: "Anthropic's latest model",
+    shortDescription: "Anthropic's cutting-edge release",
     fullDescription:
-      "The latest model from Anthropic. Claude Sonnet 4 is a significant upgrade to Claude Sonnet 3.5, delivering superior coding and reasoning while responding more precisely to your instructions.",
+      "Anthropic's newest breakthrough. A substantial leap forward from Claude 3.5 Sonnet, offering enhanced programming abilities and logical reasoning with remarkably accurate instruction following.",
     requiresPro: true,
     disabled: false,
     premium: true,
@@ -238,43 +257,16 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       url: "https://status.anthropic.com",
       apiUrl: "https://status.anthropic.com/api/v2/status.json",
     },
-    experimental: false,
-    apiKeySupport: "optional",
-  },
-  "claude-4-opus": {
-    id: "claude-4-opus",
-    name: "Claude 4 Opus",
-    provider: "Anthropic",
-    developer: "Anthropic",
-    addedOn: new Date("2025-05-22"),
-    shortDescription: "Anthropic's most powerful model",
-    fullDescription:
-      "The latest and greatest from Anthropic. Very powerful, but with a cost to match.",
-    requiresPro: true,
-    disabled: false,
-    premium: true,
-    modelPickerDefault: false,
-    limits: {
-      maxInputTokens: 200000,
-      maxOutputTokens: 16384,
-    },
-    features: ["images", "pdfs", "parameters", "reasoning"],
-    statuspage: {
-      url: "https://status.anthropic.com",
-      apiUrl: "https://status.anthropic.com/api/v2/status.json",
-    },
-    experimental: false,
-    apiKeySupport: "required",
+    runtime: anthropic("claude-4-sonnet-latest"),
   },
   "gemini-2-0-flash": {
     id: "gemini-2-0-flash",
     name: "Gemini 2.0 Flash",
     provider: "Google",
     developer: "Google",
-    addedOn: new Date("2024-12-11"),
-    shortDescription: "Google's fast multimodal model",
+    shortDescription: "Google's rapid multimodal solution",
     fullDescription:
-      "Google's flagship model, known for speed and accuracy. Not quite as smart as Claude 3.5 Sonnet, but WAY faster and cheaper. Also has an insanely large context window.",
+      "Google's standout offering balancing velocity with precision. While not matching Claude 3.5 Sonnet's raw intelligence, it excels in speed and affordability with a massive context capacity.",
     requiresPro: false,
     disabled: false,
     premium: false,
@@ -283,20 +275,17 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxInputTokens: 1000000,
       maxOutputTokens: 8192,
     },
-    streamChunking: "word",
     features: ["images", "pdfs", "search", "fast"],
-    experimental: false,
-    apiKeySupport: "optional",
+    runtime: google("gemini-2.0-flash-latest"),
   },
   "gemini-2-5-flash": {
     id: "gemini-2-5-flash",
     name: "Gemini 2.5 Flash",
     provider: "Google",
     developer: "Google",
-    addedOn: new Date("2025-04-17"),
-    shortDescription: "Google's latest fast model",
+    shortDescription: "Google's newest speed demon",
     fullDescription:
-      "Google's latest fast model, known for speed and accuracy (and also web search!). Not quite as smart as Claude 3.5 Sonnet, but WAY faster and cheaper. Also has an insanely large context window.",
+      "Google's freshest high-velocity offering with integrated web search capabilities. Delivers exceptional responsiveness and value, though slightly behind Claude 3.5 Sonnet in raw cognitive power. Features enormous context handling.",
     requiresPro: false,
     disabled: false,
     premium: false,
@@ -305,20 +294,17 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxInputTokens: 1000000,
       maxOutputTokens: 65535,
     },
-    streamChunking: "word",
     features: ["images", "pdfs", "search", "fast"],
-    experimental: false,
-    apiKeySupport: "optional",
+    runtime: google("gemini-2.5-flash"),
   },
   "gemini-2-5-pro": {
     id: "gemini-2-5-pro",
     name: "Gemini 2.5 Pro",
     provider: "Google",
     developer: "Google",
-    addedOn: new Date("2025-03-25"),
-    shortDescription: "Google's most advanced model",
+    shortDescription: "Google's top-tier intelligence",
     fullDescription:
-      "Google's most advanced model, excelling at complex reasoning and problem-solving. Particularly strong at tackling difficult code challenges, mathematical proofs, and STEM problems.",
+      "Google's apex achievement in AI sophistication. Shines brightest when confronting elaborate logical puzzles and analytical tasks. Exceptional prowess in computational challenges, theoretical mathematics, and scientific domains.",
     requiresPro: true,
     disabled: false,
     premium: true,
@@ -327,7 +313,6 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxInputTokens: 200000,
       maxOutputTokens: 64000,
     },
-    streamChunking: "word",
     features: [
       "parameters",
       "images",
@@ -336,18 +321,35 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       "reasoning",
       "reasoningEffort",
     ],
-    experimental: false,
-    apiKeySupport: "optional",
+    runtime: google("gemini-2.5-pro"),
   },
-  "deepseek-chat": {
-    id: "deepseek-chat",
-    name: "DeepSeek Chat",
-    provider: "DeepSeek",
-    developer: "DeepSeek",
-    addedOn: new Date("2024-12-26"),
-    shortDescription: "DeepSeek's chat model",
+  o3: {
+    id: "o3",
+    name: "O3",
+    provider: "OpenAI",
+    developer: "OpenAI",
+    shortDescription: "Advanced reasoning powerhouse",
     fullDescription:
-      "DeepSeek's groundbreaking direct prediction model. Comparable performance to Claude 3.5 Sonnet. Just... slow.",
+      "OpenAI's breakthrough reasoning model. Designed for tackling the most complex analytical and problem-solving tasks with unprecedented depth and accuracy.",
+    requiresPro: true,
+    disabled: false,
+    premium: true,
+    modelPickerDefault: false,
+    limits: {
+      maxInputTokens: 128000,
+      maxOutputTokens: 16384,
+    },
+    features: ["reasoning", "reasoningEffort", "parameters"],
+    runtime: openai("o3"),
+  },
+  "o3-mini": {
+    id: "o3-mini",
+    name: "O3 Mini",
+    provider: "OpenAI",
+    developer: "OpenAI",
+    shortDescription: "Compact reasoning model",
+    fullDescription:
+      "A distilled version of O3 that brings advanced reasoning capabilities to a more accessible tier. Balances sophisticated analysis with improved efficiency.",
     requiresPro: true,
     disabled: false,
     premium: false,
@@ -356,89 +358,84 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxInputTokens: 128000,
       maxOutputTokens: 16384,
     },
-    features: ["parameters"],
-    experimental: false,
+    features: ["reasoning", "parameters", "fast"],
+    runtime: openai("o3-mini"),
   },
-  "deepseek-r1": {
-    id: "deepseek-r1",
-    name: "DeepSeek R1",
-    provider: "DeepSeek",
-    developer: "DeepSeek",
-    addedOn: new Date("2025-01-20"),
-    shortDescription: "DeepSeek's reasoning model",
+  "o4-mini": {
+    id: "o4-mini",
+    name: "O4 Mini",
+    provider: "OpenAI",
+    developer: "OpenAI",
+    shortDescription: "Next-gen compact model",
     fullDescription:
-      "The open source reasoning model that shook the whole industry. Very smart. Shows all of its thinking. Not the fastest.",
-    requiresPro: true,
+      "The evolution of OpenAI's efficient model line. Combines enhanced capabilities with remarkable speed, ideal for applications requiring quick, intelligent responses.",
+    requiresPro: false,
     disabled: false,
     premium: false,
-    modelPickerDefault: false,
+    modelPickerDefault: true,
     limits: {
       maxInputTokens: 128000,
       maxOutputTokens: 16384,
     },
-    features: ["parameters", "reasoning"],
-    experimental: false,
+    features: ["images", "parameters", "fast", "reasoning"],
+    runtime: openai("o4-mini"),
   },
-  "llama-3-3-70b": {
-    id: "llama-3-3-70b",
-    name: "Llama 3.3 70B",
-    provider: "Meta",
-    developer: "Meta",
-    addedOn: new Date("2024-12-06"),
-    shortDescription: "Fast open-source model",
+  "gpt-4.1": {
+    id: "gpt-4.1",
+    name: "GPT-4.1",
+    provider: "OpenAI",
+    developer: "OpenAI",
+    shortDescription: "Enhanced GPT-4 evolution",
     fullDescription:
-      "Industry-leading speed in an open source model. Not the smartest, but unbelievably fast.",
+      "The refined successor to GPT-4, incorporating architectural improvements and expanded capabilities. Delivers superior performance across creative and analytical tasks.",
     requiresPro: true,
     disabled: false,
     premium: false,
-    modelPickerDefault: false,
+    modelPickerDefault: true,
     limits: {
-      maxInputTokens: 128000,
-      maxOutputTokens: 32768,
+      maxInputTokens: 1000000,
+      maxOutputTokens: 16384,
     },
-    streamChunking: "line",
-    features: ["parameters", "fast"],
-    experimental: false,
+    features: ["images", "parameters"],
+    runtime: openai("gpt-4.1"),
   },
-  "mixtral-8x7b": {
-    id: "mixtral-8x7b",
-    name: "Mixtral 8x7B",
-    provider: "Mistral",
-    developer: "Mistral",
-    addedOn: new Date("2023-12-11"),
-    shortDescription: "Efficient mixture-of-experts model",
+  "gpt-4.1-mini": {
+    id: "gpt-4.1-mini",
+    name: "GPT-4.1 Mini",
+    provider: "OpenAI",
+    developer: "OpenAI",
+    shortDescription: "Efficient GPT-4.1 variant",
     fullDescription:
-      "A sparse mixture-of-experts model that outperforms Llama 2 70B on most benchmarks with 6x faster inference.",
+      "A streamlined iteration of GPT-4.1 focusing on accessibility and speed. Maintains core capabilities while optimizing for rapid deployment and cost-effectiveness.",
     requiresPro: false,
     disabled: false,
     premium: false,
     modelPickerDefault: false,
     limits: {
-      maxInputTokens: 32768,
-      maxOutputTokens: 32768,
+      maxInputTokens: 1000000,
+      maxOutputTokens: 16384,
     },
-    features: ["parameters", "fast"],
-    experimental: false,
+    features: ["images", "parameters", "fast"],
+    runtime: openai("gpt-4.1-mini"),
   },
-  "qwen-2-5-72b": {
-    id: "qwen-2-5-72b",
-    name: "Qwen 2.5 72B",
-    provider: "Alibaba",
-    developer: "Alibaba",
-    addedOn: new Date("2024-09-19"),
-    shortDescription: "Powerful open-source model",
+  "gpt-4.1-nano": {
+    id: "gpt-4.1-nano",
+    name: "GPT-4.1 Nano",
+    provider: "OpenAI",
+    developer: "OpenAI",
+    shortDescription: "Ultra-lightweight GPT variant",
     fullDescription:
-      "Alibaba's Qwen 2.5 is a powerful open-source model that excels at coding, mathematics, and multilingual tasks.",
-    requiresPro: true,
+      "The most compact member of the GPT-4.1 family. Engineered for maximum efficiency without sacrificing core intelligence, perfect for high-volume applications.",
+    requiresPro: false,
     disabled: false,
     premium: false,
     modelPickerDefault: false,
     limits: {
-      maxInputTokens: 128000,
-      maxOutputTokens: 8000,
+      maxInputTokens: 1000000,
+      maxOutputTokens: 16384,
     },
-    features: ["parameters"],
-    experimental: false,
+    features: ["parameters", "fast"],
+    runtime: openai("gpt-4.1-nano"),
   },
 };
 
@@ -483,3 +480,7 @@ export function getDefaultModel(
   const defaultModel = availableModels.find((m) => m.modelPickerDefault);
   return defaultModel || availableModels[0] || MODEL_CONFIGS[DEFAULT_MODEL_ID];
 }
+
+export const textEmbedding = openai.textEmbeddingModel(
+  "text-embedding-3-small",
+);
