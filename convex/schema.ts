@@ -72,6 +72,9 @@ const schema = defineSchema({
     isAnonymous: v.optional(v.boolean()),
     customerId: v.optional(v.string()),
     selectedModel: v.optional(v.string()),
+    // Fields for free tier usage tracking
+    messageCount: v.optional(v.number()),
+    usageResetTime: v.optional(v.number()),
   })
     .index("email", ["email"])
     .index("customerId", ["customerId"]),
@@ -169,6 +172,8 @@ const schema = defineSchema({
       "order",
       "stepOrder",
     ])
+    // Allows querying messages by threadId, order, and stepOrder
+    .index("byThreadIdOrderStepOrder", ["threadId", "order", "stepOrder"])
     // Allows text search on message content
     .searchIndex("text_search", {
       searchField: "text",
@@ -179,21 +184,14 @@ const schema = defineSchema({
 
   // Status: if it's done, it's deleted, then deltas are vacuumed
   streamingMessages: defineTable({
-    // extra metadata?
-    userId: v.optional(v.id("users")),
+    threadId: v.id("threads"),
+    order: v.number(),
+    stepOrder: v.number(),
+    userId: v.id("users"),
     agentName: v.optional(v.string()),
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
-    providerOptions: v.optional(vProviderOptions), // Sent to model
-
-    threadId: v.id("threads"),
-    order: v.number(),
-    /**
-     * The step order of the first message in the stream.
-     * If the stream ends up with both a tool call and a tool result,
-     * the stepOrder of the result will be +1 of the tool call.
-     */
-    stepOrder: v.number(),
+    providerOptions: v.optional(v.any()),
     state: v.union(
       v.object({
         kind: v.literal("streaming"),
@@ -205,8 +203,8 @@ const schema = defineSchema({
         endedAt: v.number(),
       }),
       v.object({
-        kind: v.literal("error"),
-        error: v.string(),
+        kind: v.literal("canceled"),
+        canceledAt: v.number(),
       }),
     ),
   })

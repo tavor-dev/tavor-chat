@@ -65,6 +65,38 @@ const handleUpdateSubscription = async (
   });
 };
 
+const handleInvoicePaymentSucceeded = async (
+  ctx: ActionCtx,
+  event: Stripe.InvoicePaymentSucceededEvent,
+) => {
+  const invoice = event.data.object;
+
+  const { customer: customerId, subscription: subscriptionId } = z
+    .object({
+      customer: z.string().nullable().optional(),
+      subscription: z.string().nullable().optional(),
+    })
+    .parse(invoice);
+
+  if (!customerId || !subscriptionId) {
+    return new Response(null, { status: 200 });
+  }
+
+  const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
+    customerId,
+  });
+
+  if (!user) {
+    console.error(`User not found for customer ID: ${customerId}`);
+    return new Response(null, { status: 200 });
+  }
+
+  const subscription = await stripe.subscriptions.retrieve(subscriptionId);
+  await handleUpdateSubscription(ctx, user, subscription);
+
+  return new Response(null);
+};
+
 const handleCheckoutSessionCompleted = async (
   ctx: ActionCtx,
   event: Stripe.CheckoutSessionCompletedEvent,
@@ -78,17 +110,16 @@ const handleCheckoutSessionCompleted = async (
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
     customerId,
   });
-  if (!user?.email) {
+  if (!user || !user.email) {
     throw new Error(ERRORS.SOMETHING_WENT_WRONG);
   }
 
   const freeSubscriptionStripeId =
-    user.subscription.planKey === PLANS.FREE
+    user.subscription && user.subscription.planKey === PLANS.FREE
       ? user.subscription.stripeId
       : undefined;
 
   const subscription = await stripe.subscriptions.retrieve(subscriptionId);
-
   await handleUpdateSubscription(ctx, user, subscription);
 
   await sendSubscriptionSuccessEmail({
@@ -96,20 +127,14 @@ const handleCheckoutSessionCompleted = async (
     subscriptionId,
   });
 
-  // Cancel free subscription. — User upgraded to a paid plan.
-  // Not required, but it's a good practice to keep just a single active plan.
-  const subscriptions = (
-    await stripe.subscriptions.list({ customer: customerId })
-  ).data.map((sub) => sub.items);
-
-  if (subscriptions.length > 1) {
-    const freeSubscription = subscriptions.find((sub) =>
-      sub.data.some(
-        ({ subscription }) => subscription === freeSubscriptionStripeId,
-      ),
-    );
-    if (freeSubscription) {
-      await stripe.subscriptions.cancel(freeSubscription?.data[0].subscription);
+  if (freeSubscriptionStripeId) {
+    try {
+      await stripe.subscriptions.cancel(freeSubscriptionStripeId);
+    } catch (error) {
+      console.warn(
+        `Could not cancel free subscription ${freeSubscriptionStripeId}:`,
+        error,
+      );
     }
   }
 
@@ -129,7 +154,7 @@ const handleCheckoutSessionCompletedError = async (
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
     customerId,
   });
-  if (!user?.email) throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+  if (!user || !user.email) throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
 
   await sendSubscriptionErrorEmail({
     email: user.email,
@@ -138,14 +163,49 @@ const handleCheckoutSessionCompletedError = async (
   return new Response(null);
 };
 
+const handleCheckoutSessionAsyncPaymentFailed = async (
+  ctx: ActionCtx,
+  event: Stripe.CheckoutSessionAsyncPaymentFailedEvent,
+) => {
+  const session = event.data.object;
+
+  const { customer: customerId, subscription: subscriptionId } = z
+    .object({
+      customer: z.string().nullable(),
+      subscription: z.string().nullable(),
+    })
+    .parse(session);
+
+  if (!customerId) {
+    console.error("Checkout session async payment failed without customer ID.");
+    return new Response(null);
+  }
+
+  const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
+    customerId,
+  });
+  if (!user || !user.email) {
+    return new Response(null);
+  }
+
+  // The subscription was not created, so no DB change is needed.
+  // We just notify the user that their payment failed.
+  await sendSubscriptionErrorEmail({
+    email: user.email,
+    subscriptionId: subscriptionId ?? "N/A",
+  });
+
+  return new Response(null);
+};
+
 const handleCustomerSubscriptionUpdated = async (
   ctx: ActionCtx,
   event: Stripe.CustomerSubscriptionUpdatedEvent,
 ) => {
-  const subscription = event.data.object;
-  const { customer: customerId } = z
-    .object({ customer: z.string() })
-    .parse(subscription);
+  const subscription = await stripe.subscriptions.retrieve(
+    event.data.object.id,
+  );
+  const customerId = subscription.customer as string;
 
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
     customerId,
@@ -170,7 +230,7 @@ const handleCustomerSubscriptionUpdatedError = async (
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
     customerId,
   });
-  if (!user?.email) throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+  if (!user || !user.email) throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
 
   await sendSubscriptionErrorEmail({
     email: user.email,
@@ -184,9 +244,33 @@ const handleCustomerSubscriptionDeleted = async (
   event: Stripe.CustomerSubscriptionDeletedEvent,
 ) => {
   const subscription = event.data.object;
-  await ctx.runMutation(internal.stripe.PREAUTH_deleteSubscription, {
-    subscriptionStripeId: subscription.id,
+  const customerId = subscription.customer as string;
+
+  const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
+    customerId,
   });
+
+  if (!user) {
+    console.warn(
+      `Received 'customer.subscription.deleted' for unknown customer: ${customerId}`,
+    );
+    return new Response(null, { status: 404 });
+  }
+
+  // Idempotency: check if the subscription is already deleted from our side.
+  if (user.subscription && user.subscription.stripeId === subscription.id) {
+    await ctx.runMutation(internal.stripe.PREAUTH_deleteSubscription, {
+      subscriptionStripeId: subscription.id,
+    });
+  }
+
+  // Downgrade user by creating a new free subscription.
+  await ctx.runAction(internal.stripe.PREAUTH_createFreeStripeSubscription, {
+    userId: user._id,
+    customerId,
+    currency: (subscription.items.data[0].price.currency as Currency) ?? "usd",
+  });
+
   return new Response(null);
 };
 
@@ -203,6 +287,20 @@ http.route({
          */
         case "checkout.session.completed": {
           return handleCheckoutSessionCompleted(ctx, event);
+        }
+
+        /**
+         * Occurs when a payment fails for a Checkout Session.
+         */
+        case "checkout.session.async_payment_failed": {
+          return handleCheckoutSessionAsyncPaymentFailed(ctx, event);
+        }
+
+        /**
+         * Occurs whenever an invoice payment succeeds.
+         */
+        case "invoice.payment_succeeded": {
+          return handleInvoicePaymentSucceeded(ctx, event);
         }
 
         /**

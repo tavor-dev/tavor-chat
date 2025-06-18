@@ -4,26 +4,23 @@ import {
   internalAction,
   internalMutation,
   internalQuery,
-} from "@cvx/_generated/server";
+} from "./_generated/server";
 import { v } from "convex/values";
-import { ERRORS } from "~/errors";
-import { auth } from "@cvx/auth";
-import { currencyValidator, intervalValidator, PLANS } from "@cvx/schema";
-import { api, internal } from "~/convex/_generated/api";
-import { SITE_URL, STRIPE_SECRET_KEY } from "@cvx/env";
+import { getAuthUserId } from "@convex-dev/auth/server";
+import { currencyValidator, intervalValidator, PLANS } from "./schema";
+import { api, internal } from "./_generated/api";
 import { asyncMap } from "convex-helpers";
 
-/**
- * TODO: Uncomment to require Stripe keys.
- * Also remove the `|| ''` from the Stripe constructor.
- */
-/*
-if (!STRIPE_SECRET_KEY) {
-  throw new Error(`Stripe - ${ERRORS.ENVS_NOT_INITIALIZED})`)
-}
-*/
+const ERRORS = {
+  STRIPE_CUSTOMER_NOT_FOUND: "Stripe customer not found for this user.",
+  STRIPE_SOMETHING_WENT_WRONG: "Something went wrong with Stripe.",
+  STRIPE_CHECKOUT_FAILED: "Could not create Stripe checkout session.",
+  PLAN_NOT_FOUND: "The target subscription plan could not be found.",
+  PRICE_NOT_FOUND: (planName: string) =>
+    `Price for plan '${planName}' not found for the specified interval and currency.`,
+};
 
-export const stripe = new Stripe(STRIPE_SECRET_KEY || "", {
+export const stripe = new Stripe(process.env.STRIPE_SECRET_KEY!, {
   apiVersion: "2024-06-20",
   typescript: true,
 });
@@ -70,13 +67,15 @@ export const PREAUTH_createStripeCustomer = internalAction({
     const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserById, {
       userId: args.userId,
     });
-    if (!user || user.customerId)
-      throw new Error(ERRORS.STRIPE_CUSTOMER_NOT_CREATED);
+    if (!user || user.customerId) {
+      console.error("User not found or already has a customer ID.");
+      return;
+    }
 
     const customer = await stripe.customers
       .create({ email: user.email, name: user.username })
       .catch((err) => console.error(err));
-    if (!customer) throw new Error(ERRORS.STRIPE_CUSTOMER_NOT_CREATED);
+    if (!customer) throw new Error("Stripe customer could not be created.");
 
     await ctx.runAction(internal.stripe.PREAUTH_createFreeStripeSubscription, {
       userId: args.userId,
@@ -105,24 +104,21 @@ export const PREAUTH_getUserByCustomerId = internalQuery({
       .withIndex("customerId", (q) => q.eq("customerId", args.customerId))
       .unique();
     if (!user) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+      return null;
     }
     const subscription = await ctx.db
       .query("subscriptions")
       .withIndex("userId", (q) => q.eq("userId", user._id))
       .unique();
     if (!subscription) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+      return { ...user, subscription: null };
     }
     const plan = await ctx.db.get(subscription.planId);
-    if (!plan) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
-    }
     return {
       ...user,
       subscription: {
         ...subscription,
-        planKey: plan.key,
+        planKey: plan?.key ?? null,
       },
     };
   },
@@ -147,7 +143,8 @@ export const PREAUTH_createSubscription = internalMutation({
       .withIndex("userId", (q) => q.eq("userId", args.userId))
       .unique();
     if (subscription) {
-      throw new Error("Subscription already exists");
+      console.warn("Subscription already exists, deleting old one.");
+      await ctx.db.delete(subscription._id);
     }
     await ctx.db.insert("subscriptions", {
       userId: args.userId,
@@ -180,23 +177,20 @@ export const PREAUTH_replaceSubscription = internalMutation({
     }),
   },
   handler: async (ctx, args) => {
-    const subscription = await ctx.db
-      .query("subscriptions")
-      .withIndex("userId", (q) => q.eq("userId", args.userId))
-      .unique();
-    if (!subscription) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
-    }
-    await ctx.db.delete(subscription._id);
     const plan = await ctx.db
       .query("plans")
       .withIndex("stripeId", (q) => q.eq("stripeId", args.input.planStripeId))
       .unique();
     if (!plan) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+      throw new Error(ERRORS.PLAN_NOT_FOUND);
     }
-    await ctx.db.insert("subscriptions", {
-      userId: args.userId,
+
+    const existingSubscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("userId", (q) => q.eq("userId", args.userId))
+      .unique();
+
+    const newSubscriptionData = {
       planId: plan._id,
       stripeId: args.subscriptionStripeId,
       priceStripeId: args.input.priceStripeId,
@@ -206,7 +200,16 @@ export const PREAUTH_replaceSubscription = internalMutation({
       currentPeriodStart: args.input.currentPeriodStart,
       currentPeriodEnd: args.input.currentPeriodEnd,
       cancelAtPeriodEnd: args.input.cancelAtPeriodEnd,
-    });
+    };
+
+    if (existingSubscription) {
+      await ctx.db.patch(existingSubscription._id, newSubscriptionData);
+    } else {
+      await ctx.db.insert("subscriptions", {
+        userId: args.userId,
+        ...newSubscriptionData,
+      });
+    }
   },
 });
 
@@ -220,7 +223,8 @@ export const PREAUTH_deleteSubscription = internalMutation({
       .withIndex("stripeId", (q) => q.eq("stripeId", args.subscriptionStripeId))
       .unique();
     if (!subscription) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+      // It might have been deleted already, which is fine.
+      return;
     }
     await ctx.db.delete(subscription._id);
   },
@@ -275,25 +279,30 @@ export const getCurrentUserSubscription = internalQuery({
     planId: v.id("plans"),
   },
   handler: async (ctx, args) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+      return { currentSubscription: null, newPlan: null };
     }
-    const [currentSubscription, newPlan] = await Promise.all([
+    const [currentSubscriptionDoc, newPlan] = await Promise.all([
       ctx.db
         .query("subscriptions")
         .withIndex("userId", (q) => q.eq("userId", userId))
         .unique(),
       ctx.db.get(args.planId),
     ]);
-    if (!currentSubscription) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+
+    if (!currentSubscriptionDoc) {
+      // User has no subscription record, which is a valid state for upgrading.
+      return { currentSubscription: null, newPlan };
     }
-    const currentPlan = await ctx.db.get(currentSubscription.planId);
+
+    const currentPlan = await ctx.db.get(currentSubscriptionDoc.planId);
+    // currentPlan can be null if plan was deleted/re-seeded.
+    // The calling function will handle this case.
     return {
       currentSubscription: {
-        ...currentSubscription,
-        plan: currentPlan,
+        ...currentSubscriptionDoc,
+        plan: currentPlan, // This will be null if plan not found
       },
       newPlan,
     };
@@ -311,36 +320,69 @@ export const createSubscriptionCheckout = action({
     currency: currencyValidator,
   },
   handler: async (ctx, args): Promise<string | undefined> => {
-    const user = await ctx.runQuery(api.app.getCurrentUser);
-    if (!user || !user.customerId) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+    // eslint-disable-next-line prefer-const
+    let user = await ctx.runQuery(api.app.getCurrentUser);
+    if (!user) {
+      throw new Error("User not found.");
+    }
+
+    if (!user.customerId) {
+      console.log("Stripe customer not found for user, creating a new one.");
+      const customer = await stripe.customers.create({
+        email: user.email,
+        name: user.name ?? user.username ?? undefined,
+      });
+
+      if (!customer) {
+        throw new Error("Failed to create Stripe customer.");
+      }
+
+      await ctx.runMutation(internal.stripe.PREAUTH_updateCustomerId, {
+        userId: user._id,
+        customerId: customer.id,
+      });
+      // Update the local user object to avoid a re-fetch
+      user.customerId = customer.id;
     }
 
     const { currentSubscription, newPlan } = await ctx.runQuery(
       internal.stripe.getCurrentUserSubscription,
       { planId: args.planId },
     );
-    if (!currentSubscription?.plan) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
-    }
-    if (currentSubscription.plan.key !== PLANS.FREE) {
+
+    // If user has a plan and it's not 'free', they are already on a paid plan.
+    if (
+      currentSubscription?.plan &&
+      currentSubscription.plan.key !== PLANS.FREE
+    ) {
+      console.log(
+        `User is already on plan '${currentSubscription.plan.key}'. Aborting.`,
+      );
       return;
     }
 
-    const price = newPlan?.prices[args.planInterval][args.currency];
+    if (!newPlan) {
+      throw new Error(ERRORS.PLAN_NOT_FOUND);
+    }
+
+    const price = newPlan.prices[args.planInterval][args.currency];
+    if (!price?.stripeId) {
+      throw new Error(ERRORS.PRICE_NOT_FOUND(newPlan.name));
+    }
 
     const checkout = await stripe.checkout.sessions.create({
       customer: user.customerId,
-      line_items: [{ price: price?.stripeId, quantity: 1 }],
+      line_items: [{ price: price.stripeId, quantity: 1 }],
       mode: "subscription",
       payment_method_types: ["card"],
-      success_url: `${SITE_URL}/dashboard/checkout`,
-      cancel_url: `${SITE_URL}/dashboard/settings/billing`,
+      success_url: `${process.env.SITE_URL!}/settings?tab=billing&checkout=success`,
+      cancel_url: `${process.env.SITE_URL!}/settings?tab=billing&checkout=cancel`,
     });
-    if (!checkout) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+
+    if (!checkout?.url) {
+      throw new Error(ERRORS.STRIPE_CHECKOUT_FAILED);
     }
-    return checkout.url || undefined;
+    return checkout.url;
   },
 });
 
@@ -352,18 +394,18 @@ export const createCustomerPortal = action({
     userId: v.id("users"),
   },
   handler: async (ctx) => {
-    const userId = await auth.getUserId(ctx);
+    const userId = await getAuthUserId(ctx);
     if (!userId) {
       return;
     }
     const user = await ctx.runQuery(api.app.getCurrentUser);
     if (!user || !user.customerId) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+      throw new Error(ERRORS.STRIPE_CUSTOMER_NOT_FOUND);
     }
 
     const customerPortal = await stripe.billingPortal.sessions.create({
       customer: user.customerId,
-      return_url: `${SITE_URL}/dashboard/settings/billing`,
+      return_url: `${process.env.SITE_URL!}/settings?tab=billing`,
     });
     if (!customerPortal) {
       throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
@@ -376,8 +418,8 @@ export const cancelCurrentUserSubscriptions = internalAction({
   args: {},
   handler: async (ctx) => {
     const user = await ctx.runQuery(api.app.getCurrentUser);
-    if (!user) {
-      throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+    if (!user || !user.customerId) {
+      throw new Error(ERRORS.STRIPE_CUSTOMER_NOT_FOUND);
     }
     const subscriptions = (
       await stripe.subscriptions.list({ customer: user.customerId })

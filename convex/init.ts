@@ -1,16 +1,26 @@
 import { asyncMap } from "convex-helpers";
-import { ERRORS } from "~/errors";
-import { internalAction, internalMutation } from "@cvx/_generated/server";
-import schema, {
+import {
+  internalAction,
+  internalMutation,
+  internalQuery,
+  QueryCtx,
+} from "./_generated/server";
+import {
   CURRENCIES,
   Currency,
   Interval,
   INTERVALS,
   PlanKey,
   PLANS,
-} from "@cvx/schema";
-import { internal } from "@cvx/_generated/api";
-import { stripe } from "@cvx/stripe";
+  v,
+} from "./schema";
+import { internal } from "./_generated/api";
+import { stripe } from "./stripe";
+import { Doc } from "./_generated/dataModel";
+
+const ERRORS = {
+  STRIPE_SOMETHING_WENT_WRONG: "Something went wrong with Stripe.",
+};
 
 const seedProducts = [
   {
@@ -31,7 +41,7 @@ const seedProducts = [
   {
     key: PLANS.PRO,
     name: "Pro",
-    description: "Access to all features and unlimited projects.",
+    description: "Higher limits and access to premium models.",
     prices: {
       [INTERVALS.MONTH]: {
         [CURRENCIES.USD]: 1990,
@@ -46,28 +56,30 @@ const seedProducts = [
 ];
 
 export const insertSeedPlan = internalMutation({
-  args: schema.tables.plans.validator,
+  args: {
+    stripeId: v.string(),
+    key: v.union(v.literal("free"), v.literal("pro")),
+    name: v.string(),
+    description: v.string(),
+    prices: v.object({
+      month: v.object({
+        usd: v.object({ stripeId: v.string(), amount: v.number() }),
+        eur: v.object({ stripeId: v.string(), amount: v.number() }),
+      }),
+      year: v.object({
+        usd: v.object({ stripeId: v.string(), amount: v.number() }),
+        eur: v.object({ stripeId: v.string(), amount: v.number() }),
+      }),
+    }),
+  },
   handler: async (ctx, args) => {
-    await ctx.db.insert("plans", {
-      stripeId: args.stripeId,
-      key: args.key,
-      name: args.name,
-      description: args.description,
-      prices: args.prices,
-    });
+    await ctx.db.insert("plans", args as Doc<"plans">);
   },
 });
 
-export default internalAction(async (_ctx) => {});
-
-export const testInit = internalAction(async (ctx) => {
-  /**
-   * Stripe Products.
-   */
-  const products = await stripe.products.list({
-    limit: 1,
-  });
-  if (products?.data?.length) {
+export default internalAction(async (ctx) => {
+  const plans = await ctx.runQuery(internal.init.getAll);
+  if (plans.length > 0) {
     console.info("🏃‍♂️ Skipping Stripe products creation and seeding.");
     return;
   }
@@ -90,6 +102,10 @@ export const testInit = internalAction(async (ctx) => {
       description: product.description,
     });
 
+    console.log(
+      `DEBUG: Created Stripe Product: ${product.name}, ID: ${stripeProduct.id}`,
+    );
+
     // Create Stripe price for the current product.
     const stripePrices = await Promise.all(
       pricesByInterval.map((price) => {
@@ -104,6 +120,16 @@ export const testInit = internalAction(async (ctx) => {
         });
       }),
     );
+
+    stripePrices.forEach((price) => {
+      const amount = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: price.currency,
+      }).format(price.unit_amount! / 100);
+      console.log(
+        `DEBUG:   - Created Price: ${amount}/${price.recurring?.interval}, ID: ${price.id}`,
+      );
+    });
 
     const getPrice = (currency: Currency, interval: Interval) => {
       const price = stripePrices.find(
@@ -144,7 +170,7 @@ export const testInit = internalAction(async (ctx) => {
   // Configure Customer Portal.
   await stripe.billingPortal.configurations.create({
     business_profile: {
-      headline: "Organization Name - Customer Portal",
+      headline: "Tavor Chat - Customer Portal",
     },
     features: {
       customer_update: {
@@ -169,4 +195,11 @@ export const testInit = internalAction(async (ctx) => {
   console.info(
     "🎉 Visit: https://dashboard.stripe.com/test/products to see your products.",
   );
+});
+
+// Need a new internal query to check for existing plans
+export const getAll = internalQuery({
+  handler: async (ctx: QueryCtx) => {
+    return await ctx.db.query("plans").collect();
+  },
 });

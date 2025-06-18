@@ -234,7 +234,7 @@ function RouteComponent() {
             </Tabs.Content>
 
             <Tabs.Content value="usage" className="mt-6">
-              <UsageStats userPlan={userPlan} />
+              <UsageStats />
             </Tabs.Content>
 
             <Tabs.Content value="billing" className="mt-6">

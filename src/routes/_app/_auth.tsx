@@ -25,6 +25,11 @@ import {
   PencilSquare,
   PlusMini,
   Trash,
+  Moon,
+  ArrowUpTray,
+  CreditCard,
+  ChartBar,
+  CogSixTooth,
 } from "@medusajs/icons";
 import {
   Avatar,
@@ -426,7 +431,7 @@ function AppSidebar() {
 
         {/* Delete confirmation prompt */}
         <Prompt open={deletePromptOpen} onOpenChange={setDeletePromptOpen}>
-          <Prompt.Content>
+          <Prompt.Content className="z-[9999]">
             <Prompt.Header>
               <Prompt.Title>Delete thread?</Prompt.Title>
               <Prompt.Description>
@@ -620,7 +625,24 @@ function AppSidebar() {
             </DropdownMenu.Trigger>
             <DropdownMenu.Content className="z-50">
               <Link to="/settings">
-                <DropdownMenu.Item>Settings</DropdownMenu.Item>
+                <DropdownMenu.Item className="flex items-center gap-2">
+                  <CogSixTooth /> Settings
+                </DropdownMenu.Item>
+              </Link>
+              <Link to="/settings?tab=billing">
+                <DropdownMenu.Item className="flex items-center gap-2">
+                  <CreditCard /> Billing
+                </DropdownMenu.Item>
+              </Link>
+              <Link to="/settings?tab=usage">
+                <DropdownMenu.Item className="flex items-center gap-2">
+                  <ChartBar /> Usage
+                </DropdownMenu.Item>
+              </Link>
+              <Link to="/settings?tab=theme">
+                <DropdownMenu.Item className="flex items-center gap-2">
+                  <Moon /> Theme
+                </DropdownMenu.Item>
               </Link>
               <DropdownMenu.Separator />
               <DropdownMenu.Item
@@ -628,9 +650,9 @@ function AppSidebar() {
                   clearThreadCache();
                   void signOut().then(() => navigate({ to: "/login" }));
                 }}
-                className="text-ui-fg-error"
+                className="text-ui-fg-error flex items-center gap-2"
               >
-                Sign out
+                <ArrowUpTray className="-rotate-90" /> Sign out
               </DropdownMenu.Item>
             </DropdownMenu.Content>
           </DropdownMenu>

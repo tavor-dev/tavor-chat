@@ -8,14 +8,51 @@ import {
   optimisticallySendMessage,
   useThreadMessages,
 } from "@convex-dev/agent/react";
-import { Doc, Id } from "@cvx/_generated/dataModel";
-import { Toaster } from "@medusajs/ui";
-import { useMutation } from "convex/react";
+import { Doc, type Id } from "@cvx/_generated/dataModel";
+import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
+import { useMutation, useQuery } from "convex/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import { AnswerSection } from "./AnswerSection";
-import { ChatPanel, ProcessedFile } from "./ChatPanel";
+import { ChatPanel, type ProcessedFile } from "./ChatPanel";
 import { UserMessage } from "./UserMessage";
+import { useNavigate } from "@tanstack/react-router";
+
+function UpgradeModal({
+  isOpen,
+  onOpenChange,
+}: {
+  isOpen: boolean;
+  onOpenChange: (isOpen: boolean) => void;
+}) {
+  const navigate = useNavigate();
+  const handleUpgrade = () => {
+    onOpenChange(false);
+    navigate({ to: "/settings", search: { tab: "billing" } });
+  };
+
+  return (
+    <Prompt open={isOpen} onOpenChange={onOpenChange}>
+      <Prompt.Content>
+        <Prompt.Header>
+          <Heading>Free message limit reached</Heading>
+        </Prompt.Header>
+        <div className="p-4">
+          <Text>
+            You&apos;ve used all your free messages for this period. Please
+            upgrade to the Pro plan to continue chatting.
+          </Text>
+        </div>
+        <Prompt.Footer>
+          <Prompt.Cancel onClick={() => onOpenChange(false)}>
+            Cancel
+          </Prompt.Cancel>
+          <Button onClick={handleUpgrade}>Upgrade to Pro</Button>
+        </Prompt.Footer>
+      </Prompt.Content>
+    </Prompt>
+  );
+}
 
 export type UIMessageWithFiles = UIMessage & {
   fileIds?: Id<"files">[];
@@ -26,6 +63,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollDownButton, setShowScrollDownButton] = useState(false);
   const userHasScrolledUp = useRef(false);
+  const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
 
   const [cachedMessages, setCachedMessages] = useState<
@@ -41,6 +79,9 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     { threadId },
     { initialNumItems: 50, stream: true },
   );
+
+  const activeStreams = useQuery(api.chat_engine.streams.list, { threadId });
+  const isStreaming = (activeStreams ?? []).length > 0;
 
   useEffect(() => {
     if (!messages.isLoading && messages.results) {
@@ -66,7 +107,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         error: originalMessage?.error,
       };
     });
-  }, [messages]);
+  }, [messages.results, cachedMessages, messages.isLoading]);
 
   const lastMessageContent = messagesToRender.at(-1)?.content;
 
@@ -106,7 +147,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     } else {
       setShowScrollDownButton(true);
     }
-  }, [lastMessageContent, scrollToBottom]);
+  }, [lastMessageContent, scrollToBottom, messagesToRender]);
 
   const sendMessage = useMutation(
     api.chat.streamAsynchronously,
@@ -127,6 +168,17 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         threadId,
         prompt,
         files: filesForBackend,
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      }).catch((error: any) => {
+        const errorMessage =
+          typeof error.data === "string"
+            ? error.data
+            : error.data?.message || error.message;
+        if (errorMessage?.includes("MESSAGE_LIMIT_EXCEEDED")) {
+          setShowUpgradeModal(true);
+        } else {
+          toast.error("An unexpected error occurred. Please try again later.");
+        }
       });
     },
     [sendMessage, threadId],
@@ -141,6 +193,10 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   return (
     <>
       <Toaster />
+      <UpgradeModal
+        isOpen={showUpgradeModal}
+        onOpenChange={setShowUpgradeModal}
+      />
       <div
         id="scroll-container"
         ref={scrollContainerRef}
@@ -183,6 +239,8 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         onInputHeightChange={setInputHeight}
         showScrollToBottomButton={showScrollDownButton}
         onScrollToBottom={handleScrollToBottomClick}
+        isStreaming={isStreaming}
+        threadId={threadId}
       />
     </>
   );

@@ -29,6 +29,7 @@ export const getByThreadId = query({
     await authorizeThreadAccess(ctx, threadId);
 
     const streams = await chatAgent.syncStreams(ctx, { threadId, streamArgs });
+    // console.log("streams", streams);
     const paginated = await chatAgent.listMessages(ctx, {
       threadId,
       paginationOpts,
@@ -118,6 +119,29 @@ export const stopGeneration = mutation({
   returns: v.null(),
   handler: async (ctx, { threadId }) => {
     await authorizeThreadAccess(ctx, threadId);
+
+    const streamingMessages = await ctx.db
+      .query("streamingMessages")
+      .withIndex("threadId_state_order_stepOrder", (q) =>
+        q.eq("threadId", threadId).eq("state.kind", "streaming"),
+      )
+      .order("desc")
+      .take(1);
+
+    if (streamingMessages.length > 0) {
+      const stream = streamingMessages[0];
+      const streamId = stream._id;
+
+      // Cancel the timeout function if it exists
+      if (stream.state.kind === "streaming" && stream.state.timeoutFnId) {
+        await ctx.scheduler.cancel(stream.state.timeoutFnId);
+      }
+
+      // Mark the stream as canceled
+      await ctx.db.patch(streamId, {
+        state: { kind: "canceled", canceledAt: Date.now() },
+      });
+    }
 
     return null;
   },

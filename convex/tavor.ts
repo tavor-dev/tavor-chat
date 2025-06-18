@@ -7,6 +7,8 @@ import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { Tavor } from "@tavor/sdk";
 
+export const DEFAULT_BOX_TIMEOUT = 60 * 60 * 6;
+
 /**
  * AI tools
  */
@@ -17,7 +19,7 @@ export const setupTavorTools = ({ threadId }: { threadId: Id<"threads"> }) => {
 
 Each chat thread generates an ephemeral sandbox to run the command, if you want to run multiple commands, chain them or write a script that you execute.
 
-The sandbox may get killed as it only lasts 24 hours, so files you create may be temporary, but should still last the current session.
+The sandbox may get killed as it only lasts a few hours, so files you create may be temporary, but should still last the current session.
 
 IMPORTANT: for commands that should run in the background (i.e. webservers etc), run them separately with background: true`,
       args: z.object({
@@ -164,7 +166,7 @@ export const ensureBox = internalAction({
       await ctx.runMutation(api.tavor.clearBox, { threadId });
     }
 
-    const box = await tavor.createBox({ timeout: 60 * 60 * 24 });
+    const box = await tavor.createBox({ timeout: DEFAULT_BOX_TIMEOUT });
     await box.waitUntilReady();
 
     await ctx.runMutation(api.tavor.setBox, { threadId, tavorBox: box.id });
