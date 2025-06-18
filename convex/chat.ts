@@ -4,12 +4,7 @@ import { openai } from "@ai-sdk/openai";
 import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
-import {
-  action,
-  internalAction,
-  mutation,
-  internalQuery,
-} from "./_generated/server";
+import { action, internalAction, mutation } from "./_generated/server";
 import { authorizeThreadAccess, checkAndIncrementUsage } from "./account";
 import { setupTavorTools } from "./tavor";
 
@@ -286,45 +281,6 @@ export const streamAsynchronously = mutation({
   },
 });
 
-export const getStreamingMessages = internalQuery({
-  args: { threadId: v.id("threads") },
-  handler: async (ctx, { threadId }) => {
-    return await ctx.db
-      .query("streamingMessages")
-      .withIndex("threadId_state_order_stepOrder", (q) =>
-        q.eq("threadId", threadId).eq("state.kind", "streaming"),
-      )
-      .order("desc")
-      .take(1);
-  },
-});
-
-export const getStreamById = internalQuery({
-  args: { streamId: v.id("streamingMessages") },
-  handler: async (ctx, { streamId }) => {
-    return await ctx.db.get(streamId);
-  },
-});
-
-export const getMessageByOrder = internalQuery({
-  args: {
-    threadId: v.id("threads"),
-    order: v.number(),
-    stepOrder: v.number(),
-  },
-  handler: async (ctx, { threadId, order, stepOrder }) => {
-    return await ctx.db
-      .query("messages")
-      .withIndex("byThreadIdOrderStepOrder", (q) =>
-        q
-          .eq("threadId", threadId)
-          .eq("order", order)
-          .eq("stepOrder", stepOrder),
-      )
-      .first();
-  },
-});
-
 export const stream = internalAction({
   args: {
     promptMessageId: v.id("messages"),
@@ -332,7 +288,6 @@ export const stream = internalAction({
     model: v.optional(v.string()),
   },
   handler: async (ctx, { promptMessageId, threadId, model }) => {
-    // Fetch thread and determine model
     const tempThread = await ctx.runQuery(api.threads.getById, { threadId });
     const effectiveModelId = model || tempThread?.model;
 
@@ -348,18 +303,20 @@ export const stream = internalAction({
       tools: setupTavorTools({ threadId }),
     });
 
-    // Get streaming result
     const result = await thread.streamText(
       { promptMessageId },
       { saveStreamDeltas: true },
     );
 
-    // Schedule thread title update
-    ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
-      threadId,
-    });
+    const metadata = await thread.getMetadata();
+    const existingTitle = metadata?.title;
 
-    // Consume the stream to finalize
+    if (!existingTitle || existingTitle === "New chat") {
+      ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
+        threadId,
+      });
+    }
+
     await result.consumeStream();
   },
 });

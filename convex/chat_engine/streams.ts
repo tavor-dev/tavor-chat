@@ -13,7 +13,7 @@ import schema from "@cvx/schema";
 
 const MAX_DELTAS_PER_REQUEST = 1000;
 const MAX_DELTAS_PER_STREAM = 100;
-const TIMEOUT_INTERVAL = 1000 * 60; // 1 minute
+const TIMEOUT_INTERVAL = 1000 * 60 * 5; // 5 minutes timeout
 
 const deltaValidator = schema.tables.streamDeltas.validator;
 
@@ -24,6 +24,7 @@ export const addDelta = mutation({
     const stream = await ctx.db.get(args.streamId);
     if (!stream || stream.state.kind !== "streaming") {
       // Stream has been canceled or finished
+      console.log(`Stream ${args.streamId} canceled while addDelta.`);
       return false;
     }
 
