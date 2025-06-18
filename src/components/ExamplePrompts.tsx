@@ -1,13 +1,13 @@
 import { useState } from "react";
-import { 
-  RocketLaunch, 
-  CodeCommit, 
-  ChartBar, 
-  Sparkles, 
-  Component, 
+import {
+  RocketLaunch,
+  CodeCommit,
+  ChartBar,
+  Sparkles,
+  Component,
   BugAntSolid,
   CloudArrowUp,
-  DocumentText
+  DocumentText,
 } from "@medusajs/icons";
 import { Button } from "@medusajs/ui";
 
@@ -26,50 +26,56 @@ const examplePrompts: ExamplePrompt[] = [
     id: "1",
     title: "Build a React Dashboard",
     description: "Create and deploy a complete analytics dashboard with charts",
-    prompt: "Build a React dashboard with charts showing sales data, deploy it in a container so I can preview it",
+    prompt:
+      "Build a React dashboard with charts showing sales data, deploy it in a container so I can preview it",
     icon: ChartBar,
-    category: "deploy"
+    category: "deploy",
   },
   {
-    id: "2", 
+    id: "2",
     title: "Debug Python Code",
     description: "Analyze and fix issues in your Python scripts",
-    prompt: "Help me debug this Python script that's throwing errors when processing CSV files",
+    prompt:
+      "Help me debug this Python script that's throwing errors when processing CSV files",
     icon: BugAntSolid,
-    category: "code"
+    category: "code",
   },
   {
     id: "3",
     title: "Deploy API Server",
     description: "Create and deploy a REST API with database integration",
-    prompt: "Create a Node.js API server with user authentication and deploy it in a sandbox container",
+    prompt:
+      "Create a Node.js API server with user authentication and deploy it in a sandbox container",
     icon: CloudArrowUp,
-    category: "deploy"
+    category: "deploy",
   },
   {
     id: "4",
     title: "Analyze Data Trends",
     description: "Process datasets and generate insights with visualizations",
-    prompt: "Analyze this sales data CSV and create interactive visualizations showing trends and patterns",
+    prompt:
+      "Analyze this sales data CSV and create interactive visualizations showing trends and patterns",
     icon: Sparkles,
-    category: "analyze"
+    category: "analyze",
   },
   {
     id: "5",
     title: "Generate Documentation",
     description: "Create comprehensive docs for your codebase",
-    prompt: "Generate API documentation with examples for my Express.js backend",
+    prompt:
+      "Generate API documentation with examples for my Express.js backend",
     icon: DocumentText,
-    category: "create"
+    category: "create",
   },
   {
     id: "6",
     title: "Code Review & Refactor",
     description: "Get detailed code reviews and refactoring suggestions",
-    prompt: "Review this React component and suggest improvements for readability and maintainability",
+    prompt:
+      "Review this React component and suggest improvements for readability and maintainability",
     icon: CodeCommit,
-    category: "code"
-  }
+    category: "code",
+  },
 ];
 
 const categoryColors = {
@@ -77,37 +83,41 @@ const categoryColors = {
     bg: "bg-ui-tag-blue-bg hover:bg-ui-tag-blue-bg-hover",
     border: "border-ui-tag-blue-border",
     text: "text-ui-tag-blue-text",
-    icon: "text-ui-tag-blue-icon"
+    icon: "text-ui-tag-blue-icon",
   },
   deploy: {
-    bg: "bg-ui-tag-green-bg hover:bg-ui-tag-green-bg-hover", 
+    bg: "bg-ui-tag-green-bg hover:bg-ui-tag-green-bg-hover",
     border: "border-ui-tag-green-border",
     text: "text-ui-tag-green-text",
-    icon: "text-ui-tag-green-icon"
+    icon: "text-ui-tag-green-icon",
   },
   analyze: {
     bg: "bg-ui-tag-purple-bg hover:bg-ui-tag-purple-bg-hover",
-    border: "border-ui-tag-purple-border", 
+    border: "border-ui-tag-purple-border",
     text: "text-ui-tag-purple-text",
-    icon: "text-ui-tag-purple-icon"
+    icon: "text-ui-tag-purple-icon",
   },
   create: {
     bg: "bg-ui-tag-orange-bg hover:bg-ui-tag-orange-bg-hover",
     border: "border-ui-tag-orange-border",
-    text: "text-ui-tag-orange-text", 
-    icon: "text-ui-tag-orange-icon"
-  }
+    text: "text-ui-tag-orange-text",
+    icon: "text-ui-tag-orange-icon",
+  },
 };
 
 interface ExamplePromptsProps {
   onPromptSelect: (prompt: string) => void;
 }
 
-export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) {
-  const [selectedCategory, _setSelectedCategory] = useState<string | null>(null);
+export default function ExamplePrompts({
+  onPromptSelect,
+}: ExamplePromptsProps) {
+  const [selectedCategory, _setSelectedCategory] = useState<string | null>(
+    null,
+  );
 
-  const filteredPrompts = selectedCategory 
-    ? examplePrompts.filter(p => p.category === selectedCategory)
+  const filteredPrompts = selectedCategory
+    ? examplePrompts.filter((p) => p.category === selectedCategory)
     : examplePrompts;
 
   return (
@@ -126,7 +136,7 @@ export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) 
           {filteredPrompts.map((example) => {
             const colors = categoryColors[example.category];
             const IconComponent = example.icon;
-            
+
             return (
               <button
                 key={example.id}
@@ -134,7 +144,9 @@ export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) 
                 className="group p-3 bg-ui-bg-component hover:bg-ui-bg-component-hover border border-ui-border-base rounded-md text-left transition-all duration-200 hover:border-ui-border-strong hover:shadow-sm"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`p-1.5 rounded ${colors.bg} ${colors.border} border shrink-0`}>
+                  <div
+                    className={`p-1.5 rounded ${colors.bg} ${colors.border} border shrink-0`}
+                  >
                     <IconComponent className={`w-3 h-3 ${colors.icon}`} />
                   </div>
                   <h3 className="font-medium text-ui-fg-base text-xs leading-tight group-hover:text-ui-fg-interactive transition-colors">
@@ -154,7 +166,7 @@ export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) 
           {filteredPrompts.map((example) => {
             const colors = categoryColors[example.category];
             const IconComponent = example.icon;
-            
+
             return (
               <button
                 key={example.id}
@@ -162,7 +174,9 @@ export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) 
                 className="group p-3 bg-ui-bg-component hover:bg-ui-bg-component-hover border border-ui-border-base rounded-md text-left transition-all duration-200 hover:border-ui-border-strong hover:shadow-sm"
               >
                 <div className="flex items-center gap-2 mb-2">
-                  <div className={`p-1.5 rounded ${colors.bg} ${colors.border} border shrink-0`}>
+                  <div
+                    className={`p-1.5 rounded ${colors.bg} ${colors.border} border shrink-0`}
+                  >
                     <IconComponent className={`w-3 h-3 ${colors.icon}`} />
                   </div>
                   <h3 className="font-medium text-ui-fg-base text-xs leading-tight group-hover:text-ui-fg-interactive transition-colors">
@@ -182,7 +196,7 @@ export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) 
           {filteredPrompts.map((example) => {
             const colors = categoryColors[example.category];
             const IconComponent = example.icon;
-            
+
             return (
               <button
                 key={example.id}
@@ -190,7 +204,9 @@ export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) 
                 className="group p-3 bg-ui-bg-component hover:bg-ui-bg-component-hover border border-ui-border-base rounded-md text-left transition-all duration-200 hover:border-ui-border-strong hover:shadow-sm"
               >
                 <div className="flex items-center gap-2.5 mb-2">
-                  <div className={`p-1.5 rounded ${colors.bg} ${colors.border} border shrink-0`}>
+                  <div
+                    className={`p-1.5 rounded ${colors.bg} ${colors.border} border shrink-0`}
+                  >
                     <IconComponent className={`w-4 h-4 ${colors.icon}`} />
                   </div>
                   <h3 className="font-medium text-ui-fg-base text-sm leading-tight group-hover:text-ui-fg-interactive transition-colors">
@@ -209,9 +225,11 @@ export default function ExamplePrompts({ onPromptSelect }: ExamplePromptsProps) 
       {/* Footer */}
       <div className="mt-6 text-center">
         <p className="text-xs text-ui-fg-subtle">
-          Tavor runs code, deploys apps, and creates live previews in secure containers.
+          Tavor runs code, deploys apps, and creates live previews in secure
+          containers.
         </p>
       </div>
     </div>
   );
 }
+

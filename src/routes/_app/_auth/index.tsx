@@ -105,7 +105,7 @@ function NewChatComponent() {
           </div>
 
           {/* Examples section - grows to fill remaining space */}
-          <div className="flex-1 flex items-center justify-center px-4 sm:px-8 pb-4">
+          <div className="flex-1 flex justify-start justify-center px-4 sm:px-8 pb-4 mt-12">
             <ExamplePrompts onPromptSelect={(prompt) => setInput(prompt)} />
           </div>
         </div>
