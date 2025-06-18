@@ -34,6 +34,7 @@ import type * as http from "../http.js";
 import type * as init from "../init.js";
 import type * as messages from "../messages.js";
 import type * as stripe from "../stripe.js";
+import type * as tavor from "../tavor.js";
 import type * as threads from "../threads.js";
 
 import type {
@@ -77,6 +78,7 @@ declare const fullApi: ApiFromModules<{
   init: typeof init;
   messages: typeof messages;
   stripe: typeof stripe;
+  tavor: typeof tavor;
   threads: typeof threads;
 }>;
 declare const fullApiWithMounts: typeof fullApi;

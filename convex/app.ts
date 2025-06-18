@@ -1,10 +1,41 @@
 import { getAuthUserId } from "@convex-dev/auth/server";
 import { internal } from "@cvx/_generated/api";
-import { mutation, query } from "@cvx/_generated/server";
+import { mutation, query, QueryCtx } from "@cvx/_generated/server";
 import { currencyValidator, PLANS } from "@cvx/schema";
 import { asyncMap } from "convex-helpers";
 import { v } from "convex/values";
 import { User } from "~/types";
+import { Id } from "./_generated/dataModel";
+
+export async function internalGetUserById(ctx: QueryCtx, userId: Id<"users">) {
+  const [user, subscription] = await Promise.all([
+    ctx.db.get(userId),
+    ctx.db
+      .query("subscriptions")
+      .withIndex("userId", (q) => q.eq("userId", userId))
+      .unique(),
+  ]);
+  if (!user) {
+    return;
+  }
+  const plan = subscription?.planId
+    ? await ctx.db.get(subscription.planId)
+    : undefined;
+  const avatarUrl = user.imageId
+    ? await ctx.storage.getUrl(user.imageId)
+    : user.image;
+  return {
+    ...user,
+    avatarUrl: avatarUrl || undefined,
+    subscription:
+      subscription && plan
+        ? {
+            ...subscription,
+            planKey: plan.key,
+          }
+        : undefined,
+  };
+}
 
 export const getCurrentUser = query({
   args: {},
@@ -13,33 +44,16 @@ export const getCurrentUser = query({
     if (!userId) {
       return;
     }
-    const [user, subscription] = await Promise.all([
-      ctx.db.get(userId),
-      ctx.db
-        .query("subscriptions")
-        .withIndex("userId", (q) => q.eq("userId", userId))
-        .unique(),
-    ]);
-    if (!user) {
-      return;
-    }
-    const plan = subscription?.planId
-      ? await ctx.db.get(subscription.planId)
-      : undefined;
-    const avatarUrl = user.imageId
-      ? await ctx.storage.getUrl(user.imageId)
-      : user.image;
-    return {
-      ...user,
-      avatarUrl: avatarUrl || undefined,
-      subscription:
-        subscription && plan
-          ? {
-              ...subscription,
-              planKey: plan.key,
-            }
-          : undefined,
-    };
+    return internalGetUserById(ctx, userId);
+  },
+});
+
+export const getUserById = query({
+  args: {
+    userId: v.id("users"),
+  },
+  handler: async (ctx, { userId }): Promise<User | undefined> => {
+    return internalGetUserById(ctx, userId);
   },
 });
 
