@@ -19,16 +19,22 @@ Each chat thread generates an ephemeral sandbox to run the command, if you want 
 
 The sandbox may get killed as it only lasts 24 hours, so files you create may be temporary, but should still last the current session.
 
-IMPORTANT: for commands that should run in the background (i.e. webservers etc, make sure you run them with nohup so you don't await execution)`,
+IMPORTANT: for commands that should run in the background (i.e. webservers etc), run them separately with background: true`,
       args: z.object({
         command: z.string().describe("The command to execute inside sandbox"),
+        background: z
+          .optional(z.boolean())
+          .describe(
+            "true if the command should run in the background (don't expect output)",
+          ),
       }),
-      handler: async (ctx, { command }) => {
+      handler: async (ctx, { command, background }) => {
         await validateToolThread(ctx, threadId);
 
         return await ctx.runAction(internal.tavor.runCommandInBox, {
           threadId,
           command,
+          background,
         });
       },
     }),
@@ -74,9 +80,10 @@ export const runCommandInBox = internalAction({
   args: {
     threadId: v.id("threads"),
     command: v.string(),
+    background: v.optional(v.boolean()),
   },
   returns: v.string(),
-  handler: async (ctx, { threadId, command }) => {
+  handler: async (ctx, { threadId, command, background }) => {
     const thread = await ctx.runQuery(api.threads.getById, { threadId });
     invariant(thread, "expected thread to be present");
 
@@ -90,7 +97,17 @@ export const runCommandInBox = internalAction({
 
     let output = "";
 
-    const result = await box.run(command);
+    const commandPromise = box.run(command);
+
+    if (background) {
+      await new Promise((resolve) => {
+        setTimeout(resolve, 3000);
+      });
+
+      return "running in background";
+    }
+
+    const result = await commandPromise;
 
     if (result.stdout) output += result.stdout;
     if (result.stderr) output += `STDERR:\n${result.stderr}`;
