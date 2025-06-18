@@ -103,8 +103,6 @@ interface ChatPanelProps {
   isLoading: boolean;
   showScrollToBottomButton: boolean;
   onScrollToBottom?: () => void;
-  input: string;
-  setInput: (input: string) => void;
 }
 
 export function ChatPanel({
@@ -113,14 +111,13 @@ export function ChatPanel({
   onInputHeightChange,
   showScrollToBottomButton,
   onScrollToBottom,
-  input,
-  setInput,
 }: ChatPanelProps) {
   const uploadFile = useAction(api.chat.uploadFile);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const [files, setFiles] = useState<ProcessedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [input, setInput] = useState("");
   // const [showFilePreview, setShowFilePreview] = useState<string | null>(null);
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));

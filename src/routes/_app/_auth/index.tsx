@@ -118,10 +118,9 @@ function NewChatComponent() {
           isLoading={isLoading}
           showScrollToBottomButton={false}
           onInputHeightChange={() => {}}
-          input={input}
-          setInput={setInput}
         />
       </div>
     </div>
   );
 }
+

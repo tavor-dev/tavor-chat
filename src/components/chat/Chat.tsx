@@ -235,10 +235,8 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         isLoading={messages.isLoading}
         onInputHeightChange={setInputHeight}
         showScrollToBottomButton={showScrollDownButton}
-        onScrollToBottom={handleScrollToBottomClick} input={""} setInput={function (_input: string): void {
-          throw new Error("Function not implemented.");
-        } }      />
+        onScrollToBottom={handleScrollToBottomClick}
+      />
     </>
   );
 }
-
