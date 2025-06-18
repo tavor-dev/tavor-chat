@@ -104,9 +104,9 @@ interface ChatPanelProps {
   isLoading: boolean;
   showScrollToBottomButton: boolean;
   onScrollToBottom?: () => void;
-  isStreaming?: boolean; // New prop
-  threadId: Id<"threads">; // New prop
-  inputRef?: React.RefObject<HTMLTextAreaElement>; // <-- add this
+  isStreaming?: boolean;
+  threadId: Id<"threads">;
+  inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
 export function ChatPanel({
@@ -134,15 +134,26 @@ export function ChatPanel({
   // const [showFilePreview, setShowFilePreview] = useState<string | null>(null);
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
+  const { data: thread } = useQuery(
+    convexQuery(api.threads.getById, { threadId }),
+  );
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
+  const updateThread = useMutation(api.threads.update);
 
-  const selectedModelId = (user?.selectedModel ??
+  const selectedModelId = (thread?.model ??
+    user?.selectedModel ??
     getDefaultModel("Free").id) as ModelId;
   const setSelectedModel = useCallback(
     (selectedModel: ModelId) => {
       updateUserPreferences({ selectedModel });
+      if (threadId) {
+        updateThread({
+          threadId,
+          patch: { model: selectedModel },
+        });
+      }
     },
-    [updateUserPreferences],
+    [updateUserPreferences, updateThread, threadId],
   );
 
   const availableModels = getAvailableModels("Free");

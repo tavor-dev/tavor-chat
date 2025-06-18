@@ -25,7 +25,7 @@ IMPORTANT: for commands that should run in the background (i.e. webservers etc),
       args: z.object({
         command: z.string().describe("The command to execute inside sandbox"),
         background: z
-          .optional(z.boolean())
+          .boolean()
           .describe(
             "true if the command should run in the background (don't expect output)",
           ),
