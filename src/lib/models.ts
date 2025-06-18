@@ -276,7 +276,7 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxOutputTokens: 8192,
     },
     features: ["images", "pdfs", "search", "fast"],
-    runtime: google("gemini-2.0-flash-latest"),
+    runtime: google("gemini-2.0-flash"),
   },
   "gemini-2-5-flash": {
     id: "gemini-2-5-flash",
