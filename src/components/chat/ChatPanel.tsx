@@ -140,9 +140,11 @@ export function ChatPanel({
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
   const updateThread = useMutation(api.threads.update);
 
+  const userPlan = user?.subscription?.planKey || "free";
+
   const selectedModelId = (thread?.model ??
     user?.selectedModel ??
-    getDefaultModel("Free").id) as ModelId;
+    getDefaultModel(userPlan).id) as ModelId;
   const setSelectedModel = useCallback(
     (selectedModel: ModelId) => {
       updateUserPreferences({ selectedModel });
@@ -156,7 +158,7 @@ export function ChatPanel({
     [updateUserPreferences, updateThread, threadId],
   );
 
-  const availableModels = getAvailableModels("Free");
+  const availableModels = getAvailableModels(userPlan);
   const modelsByProvider = availableModels.reduce(
     (acc, model) => {
       if (!acc[model.provider]) {

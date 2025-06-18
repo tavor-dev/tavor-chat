@@ -35,7 +35,7 @@ export const Route = createFileRoute("/_app/_auth/settings/_layout")({
 function RouteComponent() {
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
   const navigate = useNavigate({ from: Route.fullPath });
-  const { tab } = Route.useSearch(); // Get current tab from URL
+  const { tab } = Route.useSearch();
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
@@ -47,16 +47,14 @@ function RouteComponent() {
     });
   };
 
-  // Handle tab changes by updating URL
   const handleTabChange = (newTab: string) => {
     navigate({
       search: (prev: Record<string, unknown>) => ({ ...prev, tab: newTab }),
-      replace: true, // Use replace to avoid cluttering browser history
+      replace: true,
     });
   };
 
-  // This would ideally come from the user object or other app state
-  const userPlan = "Free";
+  const userPlan = user?.subscription?.planKey || "free";
   const availableModels = getAvailableModels(userPlan);
   const defaultModel = getDefaultModel(userPlan);
 
@@ -70,8 +68,8 @@ function RouteComponent() {
       </div>
       <div className="w-full">
         <Tabs
-          value={tab} // Use the tab from URL
-          onValueChange={handleTabChange} // Handle tab changes
+          value={tab}
+          onValueChange={handleTabChange}
           orientation="vertical"
           className="sm:tabs-horizontal tabs-vertical"
         >
