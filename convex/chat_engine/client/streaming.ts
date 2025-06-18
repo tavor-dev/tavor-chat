@@ -95,11 +95,19 @@ export class DeltaStreamer {
     this.#nextStepOrder = (metadata.stepOrder ?? 0) + 1;
   }
   public async addParts(parts: TextStreamPart[]) {
+    if (!this.metadata.userId) {
+      throw new Error("userId is required to create a stream");
+    }
+    // Assert that userId is defined
+    const metadataWithUserId = {
+      ...this.metadata,
+      userId: this.metadata.userId as Id<"users">,
+    };
     if (!this.streamId) {
       this.streamId = await this.ctx.runMutation(
         this.component.chat_engine.streams.create,
         {
-          ...this.metadata,
+          ...metadataWithUserId,
           order: this.#nextOrder,
           stepOrder: this.#nextStepOrder,
         },

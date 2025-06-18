@@ -80,6 +80,9 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     { initialNumItems: 50, stream: true },
   );
 
+  const activeStreams = useQuery(api.chat_engine.streams.list, { threadId });
+  const isStreaming = (activeStreams ?? []).length > 0;
+
   useEffect(() => {
     if (!messages.isLoading && messages.results) {
       cacheThreadMessages(threadId, messages.results);
@@ -236,8 +239,9 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         onInputHeightChange={setInputHeight}
         showScrollToBottomButton={showScrollDownButton}
         onScrollToBottom={handleScrollToBottomClick}
+        isStreaming={isStreaming}
+        threadId={threadId}
       />
     </>
   );
 }
-

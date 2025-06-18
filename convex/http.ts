@@ -159,8 +159,7 @@ const handleCheckoutSessionCompletedError = async (
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
     customerId,
   });
-  if (!user || !user.email)
-    throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+  if (!user || !user.email) throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
 
   await sendSubscriptionErrorEmail({
     email: user.email,
@@ -236,8 +235,7 @@ const handleCustomerSubscriptionUpdatedError = async (
   const user = await ctx.runQuery(internal.stripe.PREAUTH_getUserByCustomerId, {
     customerId,
   });
-  if (!user || !user.email)
-    throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
+  if (!user || !user.email) throw new Error(ERRORS.STRIPE_SOMETHING_WENT_WRONG);
 
   await sendSubscriptionErrorEmail({
     email: user.email,
@@ -302,7 +300,7 @@ http.route({
         case "checkout.session.async_payment_failed": {
           return handleCheckoutSessionAsyncPaymentFailed(ctx, event);
         }
-        
+
         /**
          * Occurs whenever an invoice payment succeeds.
          */

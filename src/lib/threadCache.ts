@@ -103,7 +103,7 @@ export async function initThreadCache(
   }
   sessionStorage.setItem(CACHE_INITIALIZED_KEY, "true");
 
-  console.log("Initializing thread cache in the background...");
+  // console.log("Initializing thread cache in the background...");
 
   try {
     // 1. Fetch the 10 most recent threads for the user
@@ -115,7 +115,7 @@ export async function initThreadCache(
     });
 
     if (!recentThreads.page.length) {
-      console.log("No threads to cache.");
+      // console.log("No threads to cache.");
       return;
     }
 
@@ -139,7 +139,7 @@ export async function initThreadCache(
       }
     }
 
-    console.log(`Successfully cached ${recentThreads.page.length} threads.`);
+    // console.log(`Successfully cached ${recentThreads.page.length} threads.`);
   } catch (error) {
     console.error("Error initializing thread cache:", error);
     sessionStorage.removeItem(CACHE_INITIALIZED_KEY);

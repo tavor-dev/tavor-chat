@@ -25,7 +25,8 @@ export function UsageStats() {
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
-      month: "long", day: "numeric"
+      month: "long",
+      day: "numeric",
     });
   };
 
@@ -92,8 +93,7 @@ export function UsageStats() {
               <div className="flex justify-between text-xs text-ui-fg-muted">
                 <span>{usagePercentage.toFixed(1)}% used</span>
                 <span>
-                  {(messagesLimit - messagesUsed).toLocaleString()}{" "}
-                  remaining
+                  {(messagesLimit - messagesUsed).toLocaleString()} remaining
                 </span>
               </div>
             </div>
@@ -120,15 +120,15 @@ export function UsageStats() {
               <MessageSquare className="h-4 w-4 text-ui-tag-red-text mt-0.5" />
               <div>
                 <Text
-                   size="small"
-                   weight="plus"
-                   className="text-ui-tag-red-text mb-1"
-                 >
+                  size="small"
+                  weight="plus"
+                  className="text-ui-tag-red-text mb-1"
+                >
                   Usage limit approaching
                 </Text>
                 <Text size="small" className="text-ui-tag-red-text">
                   You've used {usagePercentage.toFixed(1)}% of your monthly
-                   message limit. Consider upgrading to avoid interruptions.
+                  message limit. Consider upgrading to avoid interruptions.
                 </Text>
               </div>
             </div>

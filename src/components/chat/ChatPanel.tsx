@@ -28,6 +28,7 @@ import {
 import TextareaAutosize, {
   type TextareaHeightChangeMeta,
 } from "react-textarea-autosize";
+import { Id } from "@cvx/_generated/dataModel";
 
 const MAX_FILES = 3;
 const MAX_IMAGE_SIZE_MB = 2;
@@ -103,6 +104,8 @@ interface ChatPanelProps {
   isLoading: boolean;
   showScrollToBottomButton: boolean;
   onScrollToBottom?: () => void;
+  isStreaming?: boolean; // New prop
+  threadId: Id<"threads">; // New prop
 }
 
 export function ChatPanel({
@@ -111,7 +114,15 @@ export function ChatPanel({
   onInputHeightChange,
   showScrollToBottomButton,
   onScrollToBottom,
+  isStreaming = false,
+  threadId,
 }: ChatPanelProps) {
+  const stopGeneration = useMutation(api.messages.stopGeneration);
+
+  const handleStop = useCallback(() => {
+    stopGeneration({ threadId });
+  }, [stopGeneration, threadId]);
+
   const uploadFile = useAction(api.chat.uploadFile);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
@@ -290,6 +301,10 @@ export function ChatPanel({
 
   const formSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
+    if (isStreaming) {
+      toast.error("Please wait for the current response to finish.");
+      return;
+    }
     if (input.trim() === "" && files.length === 0) return;
 
     // Filter out files with errors and processing files
@@ -465,7 +480,7 @@ export function ChatPanel({
               placeholder="Ask a question..."
               spellCheck={false}
               value={input}
-              disabled={isLoading}
+              // disabled={isLoading || isStreaming}
               className="resize-none w-full min-h-12 bg-transparent border-0 p-4 text-base placeholder:text-ui-fg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-ui-fg-base max-h-64"
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -488,6 +503,7 @@ export function ChatPanel({
                     type="button"
                     variant="transparent"
                     onClick={() => fileInputRef.current?.click()}
+                    disabled={isStreaming} // Disable when streaming
                   >
                     <PaperClip className="text-ui-fg-muted" />
                   </IconButton>
@@ -534,23 +550,29 @@ export function ChatPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                <IconButton
-                  type={isLoading ? "button" : "submit"}
-                  className={cn(
-                    isLoading && "animate-pulse",
-                    input.length === 0 &&
-                      files.length === 0 &&
-                      !isLoading &&
-                      "",
-                  )}
-                  disabled={
-                    (input.length === 0 && files.length === 0) ||
-                    isLoading ||
-                    files.some((file) => file.isProcessing || file.error)
-                  }
-                >
-                  {isLoading ? <SquareRedSolid /> : <ArrowUpMini />}
-                </IconButton>
+                {isStreaming ? (
+                  <IconButton type="button" onClick={handleStop} className="">
+                    <SquareRedSolid />
+                  </IconButton>
+                ) : (
+                  <IconButton
+                    type={isLoading ? "button" : "submit"}
+                    className={cn(
+                      isLoading && "animate-pulse",
+                      input.length === 0 &&
+                        files.length === 0 &&
+                        !isLoading &&
+                        "",
+                    )}
+                    disabled={
+                      (input.length === 0 && files.length === 0) ||
+                      isLoading ||
+                      files.some((file) => file.isProcessing || file.error)
+                    }
+                  >
+                    {isLoading ? <SquareRedSolid /> : <ArrowUpMini />}
+                  </IconButton>
+                )}
               </div>
             </div>
           </div>

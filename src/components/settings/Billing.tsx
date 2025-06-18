@@ -62,11 +62,15 @@ export function Billing() {
               <Heading level="h3">Your plan</Heading>
               <Badge color={isPro ? "purple" : "blue"}>{planName}</Badge>
             </div>
-            <Text size="small" className="text-ui-fg-muted">{planDescription}</Text>
+            <Text size="small" className="text-ui-fg-muted">
+              {planDescription}
+            </Text>
             <ul className="space-y-2 text-sm text-ui-fg-subtle">
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-ui-fg-interactive" />
-                <span>{isPro ? "Access to all models" : "Access to standard models"}</span>
+                <span>
+                  {isPro ? "Access to all models" : "Access to standard models"}
+                </span>
               </li>
               <li className="flex items-center gap-2">
                 <Check className="h-4 w-4 text-ui-fg-interactive" />

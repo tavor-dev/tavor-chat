@@ -101,8 +101,10 @@ export default internalAction(async (ctx) => {
       name: product.name,
       description: product.description,
     });
-    
-    console.log(`DEBUG: Created Stripe Product: ${product.name}, ID: ${stripeProduct.id}`);
+
+    console.log(
+      `DEBUG: Created Stripe Product: ${product.name}, ID: ${stripeProduct.id}`,
+    );
 
     // Create Stripe price for the current product.
     const stripePrices = await Promise.all(
@@ -118,10 +120,15 @@ export default internalAction(async (ctx) => {
         });
       }),
     );
-      
-    stripePrices.forEach(price => {
-        const amount = new Intl.NumberFormat('en-US', { style: 'currency', currency: price.currency }).format(price.unit_amount! / 100);
-        console.log(`DEBUG:   - Created Price: ${amount}/${price.recurring?.interval}, ID: ${price.id}`);
+
+    stripePrices.forEach((price) => {
+      const amount = new Intl.NumberFormat("en-US", {
+        style: "currency",
+        currency: price.currency,
+      }).format(price.unit_amount! / 100);
+      console.log(
+        `DEBUG:   - Created Price: ${amount}/${price.recurring?.interval}, ID: ${price.id}`,
+      );
     });
 
     const getPrice = (currency: Currency, interval: Interval) => {
@@ -196,4 +203,3 @@ export const getAll = internalQuery({
     return await ctx.db.query("plans").collect();
   },
 });
-
