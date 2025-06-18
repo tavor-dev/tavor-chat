@@ -187,11 +187,11 @@ const schema = defineSchema({
     threadId: v.id("threads"),
     order: v.number(),
     stepOrder: v.number(),
-    userId: v.id("users"),
+    userId: v.optional(v.id("users")),
     agentName: v.optional(v.string()),
     model: v.optional(v.string()),
     provider: v.optional(v.string()),
-    providerOptions: v.optional(v.any()),
+    providerOptions: v.optional(vProviderOptions),
     state: v.union(
       v.object({
         kind: v.literal("streaming"),
@@ -201,6 +201,10 @@ const schema = defineSchema({
       v.object({
         kind: v.literal("finished"),
         endedAt: v.number(),
+      }),
+      v.object({
+        kind: v.literal("error"),
+        error: v.string(),
       }),
       v.object({
         kind: v.literal("canceled"),
