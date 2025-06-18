@@ -115,9 +115,9 @@ export function ChatPanel({
   const uploadFile = useAction(api.chat.uploadFile);
   const inputRef = useRef<HTMLTextAreaElement>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-  const [input, setInput] = useState("");
   const [files, setFiles] = useState<ProcessedFile[]>([]);
   const [isDragging, setIsDragging] = useState(false);
+  const [input, setInput] = useState("");
   // const [showFilePreview, setShowFilePreview] = useState<string | null>(null);
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
@@ -462,7 +462,7 @@ export function ChatPanel({
               name="input"
               rows={2}
               tabIndex={0}
-              placeholder="Ask a question or drop a file..."
+              placeholder="Ask a question..."
               spellCheck={false}
               value={input}
               disabled={isLoading}
@@ -510,7 +510,7 @@ export function ChatPanel({
                     <Select.Trigger className="w-48 bg-ui-bg-field border-ui-border-base">
                       <Select.Value placeholder="Select a model" />
                     </Select.Trigger>
-                    <Select.Content className="bg-ui-bg-component border-ui-border-base">
+                    <Select.Content className="bg-ui-bg-component border-ui-border-base max-h-80">
                       {Object.entries(modelsByProvider).map(
                         ([provider, models]) => (
                           <Select.Group key={provider}>

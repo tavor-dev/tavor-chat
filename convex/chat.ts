@@ -5,8 +5,8 @@ import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
 import { action, internalAction, mutation } from "./_generated/server";
-import { authorizeThreadAccess, getUserId } from "./account";
-import { setupTavorTools } from "./tavor";
+import { authorizeThreadAccess, checkAndIncrementUsage, getUserId } from "./account";
+import { z } from "zod";
 
 const models = {
   "gpt-4o-mini": openai("gpt-4o-mini"),
@@ -80,6 +80,9 @@ export const streamAsynchronously = mutation({
   returns: v.object({ messageId: v.id("messages") }),
   handler: async (ctx, { prompt, threadId, model, files }) => {
     await authorizeThreadAccess(ctx, threadId);
+
+    // This will throw if the user is over their limit
+    await checkAndIncrementUsage(ctx);
 
     const safeFiles = files || [];
     const parsedFiles = await Promise.all(
