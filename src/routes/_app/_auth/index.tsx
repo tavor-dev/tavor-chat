@@ -22,7 +22,6 @@ function NewChatComponent() {
   const sendMessage = useMutation(api.chat.streamAsynchronously);
 
   const [isLoading, setIsLoading] = useState(false);
-  const [_input, setInput] = useState("");
   const inputRef = useRef<HTMLTextAreaElement>(null);
   useEffect(() => {
     inputRef.current?.focus();
@@ -86,7 +85,7 @@ function NewChatComponent() {
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col min-h-full">
           {/* Header section */}
-          <div className="flex-shrink-0 pt-8 pb-4 px-4 sm:px-8 mt-40">
+          <div className="flex-shrink-0 pt-8 pb-4 px-4 sm:px-8 mt-20 md:mt-40">
             <div className="w-full flex justify-center flex-col items-center gap-4">
               <Logo />
               <h1 className="text-xl sm:text-2xl font-semibold text-ui-fg-base text-center">
@@ -109,8 +108,8 @@ function NewChatComponent() {
           </div>
 
           {/* Examples section - grows to fill remaining space */}
-          <div className="flex-1 flex justify-start justify-center px-4 sm:px-8 pb-4 mt-12">
-            <ExamplePrompts onPromptSelect={(prompt) => setInput(prompt)} />
+          <div className="flex-1 flex justify-center px-4 sm:px-8 pb-4 mt-0 md:mt-12">
+            <ExamplePrompts onPromptSelect={(prompt) => handleSubmit(prompt, [])} />
           </div>
         </div>
       </div>

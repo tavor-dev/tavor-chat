@@ -1,38 +1,18 @@
-import { anthropic } from "@ai-sdk/anthropic";
-import { google } from "@ai-sdk/google";
-import { openai } from "@ai-sdk/openai";
+import { type LanguageModelV1 } from "ai";
 import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
 import { v } from "convex/values";
 import { api, internal } from "./_generated/api";
-import {
-  action,
-  internalAction,
-  mutation,
-  internalQuery,
-} from "./_generated/server";
+import { action, internalAction, mutation } from "./_generated/server";
 import { authorizeThreadAccess, checkAndIncrementUsage } from "./account";
 import { setupTavorTools } from "./tavor";
+import {
+  MODEL_CONFIGS,
+  type ModelId,
+  getDefaultModel,
+  textEmbedding,
+} from "../src/lib/models";
 
-const models = {
-  "gpt-4o-mini": openai("gpt-4o-mini"),
-  "gpt-4o": openai("gpt-4o"),
-
-  "claude-3-5-sonnet": anthropic("claude-3-5-sonnet-latest"),
-  "claude-3-5-haiku": anthropic("claude-3-5-haiku-latest"),
-
-  "gemini-2-0-flash": google("gemini-2.0-flash-latest"),
-  "gemini-2-5-flash": google("gemini-2.5-flash-preview-05-20"),
-  "gemini-2-5-pro": google("gemini-2.5-pro-latest"),
-} as const;
-
-const defaultChat = models["gpt-4o-mini"];
-const textEmbedding = openai.textEmbeddingModel("text-embedding-3-small");
-
-const newAgent = ({
-  chatModel,
-}: {
-  chatModel: (typeof models)[keyof typeof models];
-}) => {
+const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
   return new Agent({
     name: "Agent",
     chat: chatModel,
@@ -195,7 +175,7 @@ Remember: You are both a knowledgeable conversational partner and a skilled soft
   });
 };
 
-export const chatAgent = newAgent({ chatModel: defaultChat });
+export const chatAgent = newAgent({ chatModel: getDefaultModel().runtime });
 
 export const uploadFile = action({
   args: {
@@ -286,45 +266,6 @@ export const streamAsynchronously = mutation({
   },
 });
 
-export const getStreamingMessages = internalQuery({
-  args: { threadId: v.id("threads") },
-  handler: async (ctx, { threadId }) => {
-    return await ctx.db
-      .query("streamingMessages")
-      .withIndex("threadId_state_order_stepOrder", (q) =>
-        q.eq("threadId", threadId).eq("state.kind", "streaming"),
-      )
-      .order("desc")
-      .take(1);
-  },
-});
-
-export const getStreamById = internalQuery({
-  args: { streamId: v.id("streamingMessages") },
-  handler: async (ctx, { streamId }) => {
-    return await ctx.db.get(streamId);
-  },
-});
-
-export const getMessageByOrder = internalQuery({
-  args: {
-    threadId: v.id("threads"),
-    order: v.number(),
-    stepOrder: v.number(),
-  },
-  handler: async (ctx, { threadId, order, stepOrder }) => {
-    return await ctx.db
-      .query("messages")
-      .withIndex("byThreadIdOrderStepOrder", (q) =>
-        q
-          .eq("threadId", threadId)
-          .eq("order", order)
-          .eq("stepOrder", stepOrder),
-      )
-      .first();
-  },
-});
-
 export const stream = internalAction({
   args: {
     promptMessageId: v.id("messages"),
@@ -332,14 +273,13 @@ export const stream = internalAction({
     model: v.optional(v.string()),
   },
   handler: async (ctx, { promptMessageId, threadId, model }) => {
-    // Fetch thread and determine model
     const tempThread = await ctx.runQuery(api.threads.getById, { threadId });
     const effectiveModelId = model || tempThread?.model;
 
     let agent = chatAgent;
-    if (effectiveModelId && models[effectiveModelId as keyof typeof models]) {
+    if (effectiveModelId && MODEL_CONFIGS[effectiveModelId as ModelId]) {
       agent = newAgent({
-        chatModel: models[effectiveModelId as keyof typeof models],
+        chatModel: MODEL_CONFIGS[effectiveModelId as ModelId].runtime,
       });
     }
 
@@ -348,18 +288,20 @@ export const stream = internalAction({
       tools: setupTavorTools({ threadId }),
     });
 
-    // Get streaming result
     const result = await thread.streamText(
       { promptMessageId },
       { saveStreamDeltas: true },
     );
 
-    // Schedule thread title update
-    ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
-      threadId,
-    });
+    const metadata = await thread.getMetadata();
+    const existingTitle = metadata?.title;
 
-    // Consume the stream to finalize
+    if (!existingTitle || existingTitle === "New chat") {
+      ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
+        threadId,
+      });
+    }
+
     await result.consumeStream();
   },
 });

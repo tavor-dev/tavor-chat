@@ -172,8 +172,6 @@ const schema = defineSchema({
       "order",
       "stepOrder",
     ])
-    // Allows querying messages by threadId, order, and stepOrder
-    .index("byThreadIdOrderStepOrder", ["threadId", "order", "stepOrder"])
     // Allows text search on message content
     .searchIndex("text_search", {
       searchField: "text",
