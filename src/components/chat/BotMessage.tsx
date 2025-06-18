@@ -387,13 +387,7 @@ EnhancedMarkdown.displayName = "EnhancedMarkdown";
 
 // URL Preview Component with proper navigation handling
 const URLPreviewWithNavigation = memo(
-  ({
-    urls,
-    currentIndex,
-  }: {
-    urls: string[];
-    currentIndex: number;
-  }) => {
+  ({ urls, currentIndex }: { urls: string[]; currentIndex: number }) => {
     const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
     const [key, setKey] = useState(0);
     const iframeRef = useRef<HTMLIFrameElement>(null);

@@ -65,6 +65,8 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const userHasScrolledUp = useRef(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
+  const [localIsLoading, setLocalIsLoading] = useState(false);
+  const [localIsStreaming, setLocalIsStreaming] = useState(false);
 
   const [cachedMessages, setCachedMessages] = useState<
     Doc<"messages">[] | null
@@ -81,7 +83,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   );
 
   const activeStreams = useQuery(api.chat_engine.streams.list, { threadId });
-  const isStreaming = (activeStreams ?? []).length > 0;
+  // const isStreaming = (activeStreams ?? []).length > 0;
 
   useEffect(() => {
     if (!messages.isLoading && messages.results) {
@@ -160,6 +162,9 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
       userHasScrolledUp.current = false;
       setShowScrollDownButton(false);
 
+      setLocalIsLoading(true);
+      setLocalIsStreaming(true);
+
       const filesForBackend = files.map((f) => ({
         fileId: f.fileId,
       })) as { fileId: Id<"files"> }[];
@@ -170,6 +175,8 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         files: filesForBackend,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }).catch((error: any) => {
+        setLocalIsLoading(false);
+        setLocalIsStreaming(false);
         const errorMessage =
           typeof error.data === "string"
             ? error.data
@@ -189,6 +196,13 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     setShowScrollDownButton(false);
     scrollToBottom("smooth");
   }, [scrollToBottom]);
+
+  useEffect(() => {
+    if (!messages.isLoading && (!activeStreams || activeStreams.length === 0)) {
+      setLocalIsLoading(false);
+      setLocalIsStreaming(false);
+    }
+  }, [messages.isLoading, activeStreams]);
 
   return (
     <>
@@ -235,11 +249,11 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
       </div>
       <ChatPanel
         handleSubmit={handleSubmit}
-        isLoading={messages.isLoading}
+        isLoading={localIsLoading}
+        isStreaming={localIsStreaming}
         onInputHeightChange={setInputHeight}
         showScrollToBottomButton={showScrollDownButton}
         onScrollToBottom={handleScrollToBottomClick}
-        isStreaming={isStreaming}
         threadId={threadId}
       />
     </>
