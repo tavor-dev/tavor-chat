@@ -77,7 +77,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const messages = useThreadMessages(
     api.messages.getByThreadId,
     { threadId },
-    { initialNumItems: 50, stream: true },
+    { initialNumItems: 50000, stream: true }, // temp hack to eliminate pagination, will need heuristic
   );
 
   const activeStreams = useQuery(api.chat_engine.streams.list, { threadId });
