@@ -441,7 +441,7 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
 
 export function isModelAvailable(
   modelId: ModelId,
-  userPlan: "Free" | "Pro" | "Premium" = "Free",
+  userPlan: "free" | "pro" | "premium" = "free",
   apiCredits: number = 0,
 ): boolean {
   const model = MODEL_CONFIGS[modelId];
@@ -451,7 +451,7 @@ export function isModelAvailable(
 
   if (!model.requiresPro) return true;
 
-  if (userPlan === "Pro" || userPlan === "Premium") return true;
+  if (userPlan === "pro" || userPlan === "premium") return true;
 
   if (apiCredits > 0) return true;
 
@@ -459,7 +459,7 @@ export function isModelAvailable(
 }
 
 export function getAvailableModels(
-  userPlan: "Free" | "Pro" | "Premium" = "Free",
+  userPlan: "free" | "pro" | "premium" = "free",
   apiCredits: number = 0,
 ): ModelConfig[] {
   return MODEL_IDS.filter((id) =>
@@ -474,7 +474,7 @@ export function getModelsByFeature(feature: ModelFeature): ModelConfig[] {
 }
 
 export function getDefaultModel(
-  userPlan: "Free" | "Pro" | "Premium" = "Free",
+  userPlan: "free" | "pro" | "premium" = "free",
 ): ModelConfig {
   const availableModels = getAvailableModels(userPlan);
   const defaultModel = availableModels.find((m) => m.modelPickerDefault);
