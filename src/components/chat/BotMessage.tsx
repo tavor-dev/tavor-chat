@@ -170,13 +170,25 @@ const ToolStatus = memo(
           {hasOutput && isExpanded && (
             <div className="border-t border-ui-border-base">
               <div className="p-4 pt-3">
-                <div className="rounded-md overflow-hidden">
-                  <CodeBlock
+                <div className="rounded-md overflow-hidden flex flex-col gap-4">
+<CodeBlock
                     snippets={[
                       {
                         language: "bash",
+                        label: "Command",
+                        code: String(command).trim(),
+                        hideLineNumbers: true,
+                      },
+                    ]}
+                  >
+                    <CodeBlock.Body />
+                  </CodeBlock>
+                  <CodeBlock
+                    snippets={[
+                      {
+                        language: "json",
                         label: "Output",
-                        code: String(invocation.result).trim(),
+                        code: prettyPrintJson(invocation.result),
                         hideLineNumbers: true,
                       },
                     ]}
@@ -487,6 +499,24 @@ const URLPreviewWithNavigation = memo(
 URLPreviewWithNavigation.displayName = "URLPreviewWithNavigation";
 
 // --- Main BotMessage Component ---
+
+function prettyPrintJson(data: unknown) {
+  if (typeof data === "string") {
+    try {
+      // Try to parse the string as JSON
+      const parsed = JSON.parse(data);
+      // If parsing succeeds, pretty-print it
+      return JSON.stringify(parsed, null, 2);
+    } catch {
+      // If parsing fails, just return the original string
+      return data.trim();
+    }
+  }
+  if (typeof data === "object" && data !== null) {
+    return JSON.stringify(data, null, 2);
+  }
+  return String(data).trim();
+}
 
 export function BotMessage({
   message,
