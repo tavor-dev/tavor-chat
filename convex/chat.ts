@@ -16,6 +16,7 @@ import {
 } from "./account";
 import { setupTavorTools } from "./tavor";
 import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
+import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 
 const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
   return new Agent({
@@ -311,16 +312,24 @@ export const stream = internalAction({
       tools: setupTavorTools({ threadId }),
     });
 
-    const addReasoning = {
-      ...(effectiveModel?.developer === "Anthropic" &&
-      effectiveModel.features.includes("reasoning")
-        ? {
-            anthropic: {
-              thinking: { type: "enabled", budgetTokens: 9000 },
-            },
-          }
-        : {}),
-    };
+    const addReasoning = {} as Record<
+      string,
+      AnthropicProviderOptions | GoogleGenerativeAIProviderOptions | never
+    >;
+    if (effectiveModel?.features?.includes("reasoning")) {
+      if (effectiveModel.developer === "Anthropic") {
+        addReasoning.anthropic = {
+          thinking: { type: "enabled", budgetTokens: 9000 },
+        } satisfies AnthropicProviderOptions;
+      } else if (effectiveModel.developer === "Google") {
+        addReasoning.google = {
+          thinkingConfig: {
+            includeThoughts: true,
+            // thinkingBudget: 2048, // Optional
+          },
+        } satisfies GoogleGenerativeAIProviderOptions;
+      }
+    }
 
     const result = await thread.streamText(
       {
