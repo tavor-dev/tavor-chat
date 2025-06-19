@@ -12,6 +12,7 @@ const MAX_OUTPUT_LENGTH = 1000;
 
 /**
  * Truncate text to a maximum length and add ellipsis if truncated
+ * Shows the LAST characters rather than first, as important info is usually at the end
  */
 function truncateOutput(
   text: string,
@@ -21,10 +22,10 @@ function truncateOutput(
     return text;
   }
   return (
-    text.substring(0, maxLength) +
-    "...\n[Output truncated - showing first " +
+    "[Output truncated - showing last " +
     maxLength +
-    " characters]"
+    " characters]\n..." +
+    text.substring(text.length - maxLength)
   );
 }
 
