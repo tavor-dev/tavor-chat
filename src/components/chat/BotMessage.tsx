@@ -9,6 +9,7 @@ import {
   Spinner,
   ArrowPath,
   ComputerDesktop,
+  LightBulb,
 } from "@medusajs/icons";
 import { Smartphone, ChevronLeft, ChevronRight, Share } from "lucide-react";
 import { Alert, CodeBlock, Text, Button } from "@medusajs/ui";
@@ -147,11 +148,11 @@ const ToolStatus = memo(
                 <code className="rounded bg-ui-bg-base-pressed px-2 py-1 font-mono text-xs text-ui-fg-subtle max-w-md truncate">
                   {command}
                 </code>
-                {hasOutput && (
-                  <span className="text-xs text-ui-fg-muted select-none">
-                    Click to {isExpanded ? "hide" : "view"} output
-                  </span>
-                )}
+                {/* {hasOutput && ( */}
+                {/*   <span className="text-xs text-ui-fg-muted select-none"> */}
+                {/*     Click to {isExpanded ? "hide" : "view"} output */}
+                {/*   </span> */}
+                {/* )} */}
               </div>
             </div>
 
@@ -509,6 +510,130 @@ const URLPreviewWithNavigation = memo(
 );
 URLPreviewWithNavigation.displayName = "URLPreviewWithNavigation";
 
+const ReasoningStatus = memo(
+  ({
+    part,
+  }: {
+    part: Extract<UIMessageWithFiles["parts"][0], { type: "reasoning" }>;
+  }) => {
+    const [isExpanded, setIsExpanded] = useState(false);
+    const reasoning = part.reasoning;
+
+    if (!reasoning?.trim()) return null;
+
+    return (
+      <div className="not-prose my-6">
+        <div
+          className={cn(
+            "rounded-xl border transition-all duration-200",
+            "border-ui-border-base bg-ui-bg-subtle hover:bg-ui-bg-base",
+            "shadow-sm",
+          )}
+        >
+          {/* Header */}
+          <div
+            className="flex items-center gap-3 p-5 cursor-pointer"
+            onClick={() => setIsExpanded(!isExpanded)}
+          >
+            <div className="flex-shrink-0">
+              <LightBulb className="h-5 w-5 text-ui-fg-interactive" />
+            </div>
+
+            <div className="flex-1 min-w-0">
+              <div className="flex items-center gap-2 mb-1">
+                <span className="text-base font-medium text-ui-fg-interactive">
+                  Reasoning
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                <span className="text-sm text-ui-fg-muted">
+                  See the thinking process
+                </span>
+                {/* <span className="text-xs text-ui-fg-muted select-none"> */}
+                {/*   Click to {isExpanded ? "hide" : "view"} reasoning */}
+                {/* </span> */}
+              </div>
+            </div>
+
+            <div className="flex-shrink-0">
+              {isExpanded ? (
+                <ChevronUpMini className="h-5 w-5 text-ui-fg-muted" />
+              ) : (
+                <ChevronDownMini className="h-5 w-5 text-ui-fg-muted" />
+              )}
+            </div>
+          </div>
+
+          {/* Expandable Reasoning Content */}
+          {isExpanded && (
+            <div className="border-t border-ui-border-base">
+              <div className="p-5 pt-4">
+                <div className="prose prose-sm dark:prose-invert max-w-none">
+                  <div className="rounded-lg p-0">
+                    <ReactMarkdown
+                      remarkPlugins={[remarkGfm]}
+                      components={{
+                        p: ({ node, ...props }) => (
+                          <Text
+                            className="text-ui-fg-base mb-3 last:mb-0"
+                            {...props}
+                          />
+                        ),
+                        ul: ({ node, ...props }) => (
+                          <ul
+                            className="list-disc list-inside space-y-1 text-ui-fg-base"
+                            {...props}
+                          />
+                        ),
+                        ol: ({ node, ...props }) => (
+                          <ol
+                            className="list-decimal list-inside space-y-1 text-ui-fg-base"
+                            {...props}
+                          />
+                        ),
+                        li: ({ node, ...props }) => (
+                          <li className="text-ui-fg-base" {...props} />
+                        ),
+                        strong: ({ node, ...props }) => (
+                          <strong
+                            className="font-semibold text-ui-fg-base"
+                            {...props}
+                          />
+                        ),
+                        em: ({ node, ...props }) => (
+                          <em className="italic text-ui-fg-base" {...props} />
+                        ),
+                        code: ({ node, className, children, ...props }) => {
+                          const inline = !className?.includes("language-");
+                          if (inline) {
+                            return (
+                              <code
+                                {...props}
+                                className="rounded bg-ui-bg-base-pressed px-2 py-1 font-mono text-sm text-ui-fg-subtle"
+                              >
+                                {children}
+                              </code>
+                            );
+                          }
+                          return <code className={className}>{children}</code>;
+                        },
+                      }}
+                    >
+                      {reasoning}
+                    </ReactMarkdown>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+        </div>
+      </div>
+    );
+  },
+);
+ReasoningStatus.displayName = "ReasoningStatus";
+
 // --- Main BotMessage Component ---
 
 function prettyPrintJson(data: unknown) {
@@ -571,14 +696,6 @@ export function BotMessage({
         {message.parts.map((part, index) => {
           if (part.type === "tool-invocation") {
             return <ToolStatus key={`part-${index}`} part={part} />;
-          } else if (part.type === "reasoning") {
-            return (
-              <EnhancedMarkdown
-                key={`part-${index}`}
-                content={part.reasoning}
-                useSmoothText={true}
-              />
-            );
           } else if (part.type === "text") {
             return (
               <EnhancedMarkdown
@@ -587,6 +704,8 @@ export function BotMessage({
                 useSmoothText={true}
               />
             );
+          } else if (part.type === "reasoning") {
+            return <ReasoningStatus key={`part-${index}`} part={part} />;
           }
           return null;
         })}
