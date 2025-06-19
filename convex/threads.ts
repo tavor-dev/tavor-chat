@@ -4,6 +4,7 @@ import { api, internal } from "./_generated/api";
 import {
   action,
   internalAction,
+  internalMutation,
   internalQuery,
   mutation,
   query,
@@ -191,6 +192,19 @@ export const deleteThread = action({
     });
 
     return null;
+  },
+});
+
+export const updateGeneratingStatus = internalMutation({
+  args: {
+    threadId: v.id("threads"),
+    generating: v.boolean(),
+  },
+  handler: async (ctx, { threadId, generating }) => {
+    await ctx.db.patch(threadId, {
+      generating,
+      ...(!generating ? { cancelRequested: false } : {}),
+    });
   },
 });
 

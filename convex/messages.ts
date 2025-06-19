@@ -14,6 +14,8 @@ import { vStreamArgs } from "./chat_engine/validators";
 import { Id } from "./_generated/dataModel";
 import { vFullMessageDoc } from "./schema";
 import { deleteMessage } from "./chat_engine/messages";
+import invariant from "tiny-invariant";
+import { ERRORS } from "~/errors";
 
 /**
  * Get messages by thread ID with pagination and streaming support
@@ -118,7 +120,10 @@ export const stopGeneration = mutation({
   },
   returns: v.null(),
   handler: async (ctx, { threadId }) => {
-    await authorizeThreadAccess(ctx, threadId);
+    const thread = await authorizeThreadAccess(ctx, threadId);
+    invariant(thread, ERRORS.THREADS_NOT_ALLOWED);
+
+    await ctx.db.patch(threadId, { cancelRequested: true });
 
     const streamingMessages = await ctx.db
       .query("streamingMessages")

@@ -81,8 +81,10 @@ export class DeltaStreamer {
       userId: Id<"users"> | undefined;
       order: number | undefined;
       stepOrder: number | undefined;
-      abortSignal: AbortSignal | undefined;
     },
+    // I don't make the rules but.. if passing abortSignal in the metadata
+    // it somehow doesn't make this execute properly
+    abortSignal: AbortSignal | undefined,
   ) {
     this.options =
       typeof options === "boolean"
@@ -96,8 +98,8 @@ export class DeltaStreamer {
     this.#nextOrder = metadata.order ?? 0;
     this.#nextStepOrder = (metadata.stepOrder ?? 0) + 1;
     this.abortController = new AbortController();
-    if (metadata.abortSignal) {
-      metadata.abortSignal.addEventListener("abort", () => {
+    if (abortSignal) {
+      abortSignal.addEventListener("abort", () => {
         this.abortController.abort();
       });
     }
