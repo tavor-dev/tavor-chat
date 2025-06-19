@@ -297,9 +297,12 @@ export const stream = internalAction({
     }
 
     let agent = chatAgent;
-    if (effectiveModelId && MODEL_CONFIGS[effectiveModelId as ModelId]) {
+    const effectiveModel = effectiveModelId
+      ? MODEL_CONFIGS[effectiveModelId as ModelId]
+      : undefined;
+    if (effectiveModel) {
       agent = newAgent({
-        chatModel: MODEL_CONFIGS[effectiveModelId as ModelId].runtime,
+        chatModel: effectiveModel.runtime,
       });
     }
 
@@ -308,8 +311,22 @@ export const stream = internalAction({
       tools: setupTavorTools({ threadId }),
     });
 
+    const addReasoning = {
+      ...(effectiveModel?.developer === "Anthropic" &&
+      effectiveModel.features.includes("reasoning")
+        ? {
+            anthropic: {
+              thinking: { type: "enabled", budgetTokens: 9000 },
+            },
+          }
+        : {}),
+    };
+
     const result = await thread.streamText(
-      { promptMessageId },
+      {
+        promptMessageId,
+        providerOptions: addReasoning,
+      },
       { saveStreamDeltas: true },
     );
 

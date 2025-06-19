@@ -257,7 +257,7 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       url: "https://status.anthropic.com",
       apiUrl: "https://status.anthropic.com/api/v2/status.json",
     },
-    runtime: anthropic("claude-sonnet-4-20250514"),
+    runtime: anthropic("claude-sonnet-4-20250514", { sendReasoning: true }),
   },
   "gemini-2-0-flash": {
     id: "gemini-2-0-flash",
