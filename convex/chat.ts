@@ -16,6 +16,8 @@ import {
 } from "./account";
 import { setupTavorTools } from "./tavor";
 import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
+import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 
 const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
   return new Agent({
@@ -270,6 +272,11 @@ export const streamAsynchronously = mutation({
       skipEmbeddings: true,
     });
 
+    await ctx.db.patch(threadId, {
+      generating: true,
+      cancelRequested: false,
+    });
+
     await ctx.scheduler.runAfter(0, internal.chat.stream, {
       threadId,
       promptMessageId: messageId,
@@ -297,9 +304,12 @@ export const stream = internalAction({
     }
 
     let agent = chatAgent;
-    if (effectiveModelId && MODEL_CONFIGS[effectiveModelId as ModelId]) {
+    const effectiveModel = effectiveModelId
+      ? MODEL_CONFIGS[effectiveModelId as ModelId]
+      : undefined;
+    if (effectiveModel) {
       agent = newAgent({
-        chatModel: MODEL_CONFIGS[effectiveModelId as ModelId].runtime,
+        chatModel: effectiveModel.runtime,
       });
     }
 
@@ -308,20 +318,78 @@ export const stream = internalAction({
       tools: setupTavorTools({ threadId }),
     });
 
-    const result = await thread.streamText(
-      { promptMessageId },
-      { saveStreamDeltas: true },
-    );
-
-    const metadata = await thread.getMetadata();
-    const existingTitle = metadata?.title;
-
-    if (!existingTitle || existingTitle === "New chat") {
-      ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
-        threadId,
-      });
+    const addReasoning = {} as Record<
+      string,
+      | AnthropicProviderOptions
+      | GoogleGenerativeAIProviderOptions
+      | OpenAIResponsesProviderOptions
+      | never
+    >;
+    if (effectiveModel?.features?.includes("reasoning")) {
+      if (effectiveModel.developer === "Anthropic") {
+        addReasoning.anthropic = {
+          thinking: { type: "enabled", budgetTokens: 9000 },
+        } satisfies AnthropicProviderOptions;
+      } else if (effectiveModel.developer === "Google") {
+        addReasoning.google = {
+          thinkingConfig: {
+            includeThoughts: true,
+            // thinkingBudget: 2048, // Optional
+          },
+        } satisfies GoogleGenerativeAIProviderOptions;
+      } else if (effectiveModel.developer === "OpenAI") {
+        addReasoning.openai = {
+          reasoningSummary: "auto",
+        } satisfies OpenAIResponsesProviderOptions;
+      }
     }
 
-    await result.consumeStream();
+    const abortController = new AbortController();
+
+    const checkCancellation = async () => {
+      const thread = await ctx.runQuery(internal.threads.getById, { threadId });
+      if (thread?.cancelRequested) {
+        abortController.abort();
+        clearInterval(checkInterval);
+
+        await ctx.runMutation(internal.threads.updateGeneratingStatus, {
+          threadId,
+          generating: false,
+        });
+      }
+    };
+
+    const checkInterval = setInterval(() => {
+      checkCancellation().catch(console.error);
+    }, 500);
+
+    try {
+      const result = await thread.streamText(
+        {
+          promptMessageId,
+          providerOptions: addReasoning,
+          abortSignal: abortController.signal,
+        },
+        { saveStreamDeltas: true },
+      );
+
+      const metadata = await thread.getMetadata();
+      const existingTitle = metadata?.title;
+
+      if (!existingTitle || existingTitle === "New chat") {
+        ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
+          threadId,
+        });
+      }
+
+      await result.consumeStream();
+    } finally {
+      clearInterval(checkInterval);
+
+      await ctx.runMutation(internal.threads.updateGeneratingStatus, {
+        threadId,
+        generating: false,
+      });
+    }
   },
 });

@@ -101,21 +101,17 @@ export interface ProcessedFile {
 interface ChatPanelProps {
   handleSubmit: (prompt: string, files: ProcessedFile[]) => void;
   onInputHeightChange: (height: number, meta: TextareaHeightChangeMeta) => void;
-  isLoading: boolean;
   showScrollToBottomButton: boolean;
   onScrollToBottom?: () => void;
-  isStreaming?: boolean;
   threadId: Id<"threads">;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
 export function ChatPanel({
   handleSubmit,
-  isLoading,
   onInputHeightChange,
   showScrollToBottomButton,
   onScrollToBottom,
-  isStreaming = false,
   threadId,
   inputRef: inputRefProp, // <-- get from props
 }: ChatPanelProps) {
@@ -139,6 +135,8 @@ export function ChatPanel({
   );
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
   const updateThread = useMutation(api.threads.update);
+
+  const isGenerating = thread?.generating;
 
   const userPlan = user?.subscription?.planKey || "free";
 
@@ -316,7 +314,7 @@ export function ChatPanel({
 
   const formSubmit = (e: FormEvent<HTMLFormElement>) => {
     e.preventDefault();
-    if (isStreaming) {
+    if (isGenerating) {
       toast.error("Please wait for the current response to finish.");
       return;
     }
@@ -495,7 +493,6 @@ export function ChatPanel({
               placeholder="Ask a question..."
               spellCheck={false}
               value={input}
-              // disabled={isLoading || isStreaming}
               className="resize-none w-full min-h-12 bg-transparent border-0 p-4 text-base placeholder:text-ui-fg-muted focus-visible:outline-none disabled:cursor-not-allowed disabled:opacity-50 text-ui-fg-base max-h-64"
               onChange={(e) => setInput(e.target.value)}
               onKeyDown={(e) => {
@@ -518,7 +515,7 @@ export function ChatPanel({
                     type="button"
                     variant="transparent"
                     onClick={() => fileInputRef.current?.click()}
-                    disabled={isStreaming} // Disable when streaming
+                    disabled={isGenerating} // Disable when streaming
                   >
                     <PaperClip className="text-ui-fg-muted" />
                   </IconButton>
@@ -565,27 +562,27 @@ export function ChatPanel({
                 </div>
               </div>
               <div className="flex items-center gap-2">
-                {isStreaming ? (
+                {isGenerating ? (
                   <IconButton type="button" onClick={handleStop} className="">
                     <SquareRedSolid />
                   </IconButton>
                 ) : (
                   <IconButton
-                    type={isLoading ? "button" : "submit"}
+                    type={isGenerating ? "button" : "submit"}
                     className={cn(
-                      isLoading && "animate-pulse",
+                      isGenerating && "animate-pulse",
                       input.length === 0 &&
                         files.length === 0 &&
-                        !isLoading &&
+                        !isGenerating &&
                         "",
                     )}
                     disabled={
                       (input.length === 0 && files.length === 0) ||
-                      isLoading ||
+                      isGenerating ||
                       files.some((file) => file.isProcessing || file.error)
                     }
                   >
-                    {isLoading ? <SquareRedSolid /> : <ArrowUpMini />}
+                    {isGenerating ? <SquareRedSolid /> : <ArrowUpMini />}
                   </IconButton>
                 )}
               </div>

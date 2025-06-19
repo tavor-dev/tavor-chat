@@ -538,30 +538,39 @@ export class Agent<AgentTools extends ToolSet> {
     const trackUsage = usageHandler ?? this.options.usageHandler;
     const streamer =
       threadId && options?.saveStreamDeltas
-        ? new DeltaStreamer(api, ctx, options.saveStreamDeltas, {
-            threadId,
-            userId,
-            agentName: this.options.name,
-            model: aiArgs.model.modelId,
-            provider: aiArgs.model.provider,
-            providerOptions: aiArgs.providerOptions,
-            order,
-            stepOrder,
-            abortSignal: aiArgs.abortSignal,
-          })
+        ? new DeltaStreamer(
+            api,
+            ctx,
+            options.saveStreamDeltas,
+            {
+              threadId,
+              userId,
+              agentName: this.options.name,
+              model: aiArgs.model.modelId,
+              provider: aiArgs.model.provider,
+              providerOptions: aiArgs.providerOptions,
+              order,
+              stepOrder,
+            },
+            aiArgs.abortSignal,
+          )
         : undefined;
+
+    const abortSignal = streamer?.abortController.signal ?? aiArgs.abortSignal;
 
     const result = streamText({
       // Can be overridden
       maxSteps: this.options.maxSteps,
       ...aiArgs,
       tools,
-      abortSignal: streamer?.abortController.signal ?? aiArgs.abortSignal,
+      abortSignal,
       experimental_transform: mergeTransforms(
         options?.saveStreamDeltas,
         args.experimental_transform,
       ),
       onChunk: async (event) => {
+        if (abortSignal?.aborted) return;
+
         await streamer?.addParts([event.chunk]);
         // console.log("onChunk", chunk);
         return args.onChunk?.(event);
@@ -577,6 +586,8 @@ export class Agent<AgentTools extends ToolSet> {
         return args.onError?.(error);
       },
       onStepFinish: async (step) => {
+        if (abortSignal?.aborted) return;
+
         // console.log("onStepFinish", step);
         // TODO: compare delta to the output. internally drop the deltas when committing
         if (threadId && messageId) {

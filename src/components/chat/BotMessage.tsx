@@ -571,6 +571,14 @@ export function BotMessage({
         {message.parts.map((part, index) => {
           if (part.type === "tool-invocation") {
             return <ToolStatus key={`part-${index}`} part={part} />;
+          } else if (part.type === "reasoning") {
+            return (
+              <EnhancedMarkdown
+                key={`part-${index}`}
+                content={part.reasoning}
+                useSmoothText={true}
+              />
+            );
           } else if (part.type === "text") {
             return (
               <EnhancedMarkdown

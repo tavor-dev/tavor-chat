@@ -10,13 +10,15 @@ import {
 } from "@convex-dev/agent/react";
 import { Doc, type Id } from "@cvx/_generated/dataModel";
 import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
-import { useMutation, useQuery } from "convex/react";
+import { useMutation } from "convex/react";
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { api } from "../../../convex/_generated/api";
 import { AnswerSection } from "./AnswerSection";
 import { ChatPanel, type ProcessedFile } from "./ChatPanel";
 import { UserMessage } from "./UserMessage";
 import { useNavigate } from "@tanstack/react-router";
+import { convexQuery } from "@convex-dev/react-query";
+import { useQuery } from "@tanstack/react-query";
 
 function UpgradeModal({
   isOpen,
@@ -65,8 +67,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
   const userHasScrolledUp = useRef(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
-  const [localIsLoading, setLocalIsLoading] = useState(false);
-  const [localIsStreaming, setLocalIsStreaming] = useState(false);
 
   const [cachedMessages, setCachedMessages] = useState<
     Doc<"messages">[] | null
@@ -82,8 +82,10 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     { initialNumItems: 50000, stream: true }, // temp hack to eliminate pagination, will need heuristic
   );
 
-  const activeStreams = useQuery(api.chat_engine.streams.list, { threadId });
-  // const isStreaming = (activeStreams ?? []).length > 0;
+  const { data: thread } = useQuery(
+    convexQuery(api.threads.getByIdForCurrentUser, { threadId }),
+  );
+  const isGenerating = thread?.generating;
 
   useEffect(() => {
     if (!messages.isLoading && messages.results) {
@@ -162,9 +164,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
       userHasScrolledUp.current = false;
       setShowScrollDownButton(false);
 
-      setLocalIsLoading(true);
-      setLocalIsStreaming(true);
-
       const filesForBackend = files.map((f) => ({
         fileId: f.fileId,
       })) as { fileId: Id<"files"> }[];
@@ -175,8 +174,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
         files: filesForBackend,
         // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }).catch((error: any) => {
-        setLocalIsLoading(false);
-        setLocalIsStreaming(false);
         const errorMessage =
           typeof error.data === "string"
             ? error.data
@@ -196,13 +193,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     setShowScrollDownButton(false);
     scrollToBottom("smooth");
   }, [scrollToBottom]);
-
-  useEffect(() => {
-    if (!messages.isLoading && (!activeStreams || activeStreams.length === 0)) {
-      setLocalIsLoading(false);
-      setLocalIsStreaming(false);
-    }
-  }, [messages.isLoading, activeStreams]);
 
   return (
     <>
@@ -238,7 +228,7 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
               )}
             </div>
           ))}
-        {messages.isLoading && messagesToRender.at(-1)?.role === "user" && (
+        {isGenerating && messagesToRender.at(-1)?.role === "user" && (
           <div
             data-role="assistant"
             className="group/message chat-section max-w-3xl mx-auto mb-8 px-4 flex flex-col gap-4"
@@ -249,8 +239,6 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
       </div>
       <ChatPanel
         handleSubmit={handleSubmit}
-        isLoading={localIsLoading}
-        isStreaming={localIsStreaming}
         onInputHeightChange={setInputHeight}
         showScrollToBottomButton={showScrollDownButton}
         onScrollToBottom={handleScrollToBottomClick}

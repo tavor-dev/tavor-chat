@@ -120,7 +120,6 @@ function NewChatComponent() {
       <div className="flex-shrink-0">
         <ChatPanel
           handleSubmit={handleSubmit}
-          isLoading={isLoading}
           showScrollToBottomButton={false}
           onInputHeightChange={() => {}}
           threadId={"" as Id<"threads">}
