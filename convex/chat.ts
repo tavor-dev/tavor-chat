@@ -17,6 +17,7 @@ import {
 import { setupTavorTools } from "./tavor";
 import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
+import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 
 const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
   return new Agent({
@@ -314,7 +315,10 @@ export const stream = internalAction({
 
     const addReasoning = {} as Record<
       string,
-      AnthropicProviderOptions | GoogleGenerativeAIProviderOptions | never
+      | AnthropicProviderOptions
+      | GoogleGenerativeAIProviderOptions
+      | OpenAIResponsesProviderOptions
+      | never
     >;
     if (effectiveModel?.features?.includes("reasoning")) {
       if (effectiveModel.developer === "Anthropic") {
@@ -328,6 +332,10 @@ export const stream = internalAction({
             // thinkingBudget: 2048, // Optional
           },
         } satisfies GoogleGenerativeAIProviderOptions;
+      } else if (effectiveModel.developer === "OpenAI") {
+        addReasoning.openai = {
+          reasoningSummary: "auto",
+        } satisfies OpenAIResponsesProviderOptions;
       }
     }
 

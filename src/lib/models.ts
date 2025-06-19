@@ -340,7 +340,7 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxOutputTokens: 16384,
     },
     features: ["reasoning", "reasoningEffort", "parameters"],
-    runtime: openai("o3"),
+    runtime: openai.responses("o3"),
   },
   "o3-mini": {
     id: "o3-mini",
@@ -359,7 +359,7 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxOutputTokens: 16384,
     },
     features: ["reasoning", "parameters", "fast"],
-    runtime: openai("o3-mini"),
+    runtime: openai.responses("o3-mini"),
   },
   "o4-mini": {
     id: "o4-mini",
@@ -378,7 +378,7 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
       maxOutputTokens: 16384,
     },
     features: ["images", "parameters", "fast", "reasoning"],
-    runtime: openai("o4-mini"),
+    runtime: openai.responses("o4-mini"),
   },
   "gpt-4.1": {
     id: "gpt-4.1",
