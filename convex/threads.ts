@@ -9,7 +9,11 @@ import {
   query,
 } from "./_generated/server";
 import { chatAgent } from "./chat";
-import { authorizeThreadAccess, getUserId } from "./account";
+import {
+  authorizeThreadAccess,
+  getUserId,
+  validateCanUseModel,
+} from "./account";
 import { partial } from "convex-helpers/validators";
 import { assert, pick } from "convex-helpers";
 import { Doc, Id } from "./_generated/dataModel";
@@ -117,6 +121,11 @@ export const create = mutation({
     { title, model, forkParentId, forkParentMessageId },
   ): Promise<Id<"threads">> => {
     const userId = await getUserId(ctx);
+
+    if (model) {
+      await validateCanUseModel(ctx, model, userId);
+    }
+
     const newThread = await ctx.runMutation(
       api.chat_engine.threads.createThread,
       {
@@ -157,6 +166,11 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const thread = await ctx.db.get(args.threadId);
     assert(thread, `Thread ${args.threadId} not found`);
+
+    if (args.patch.model) {
+      await validateCanUseModel(ctx, args.patch.model);
+    }
+
     await ctx.db.patch(args.threadId, args.patch);
     return (await ctx.db.get(args.threadId))!;
   },

@@ -9,7 +9,11 @@ import {
 } from "../src/lib/models";
 import { internal } from "./_generated/api";
 import { action, internalAction, mutation } from "./_generated/server";
-import { authorizeThreadAccess, checkAndIncrementUsage } from "./account";
+import {
+  authorizeThreadAccess,
+  checkAndIncrementUsage,
+  validateCanUseModel,
+} from "./account";
 import { setupTavorTools } from "./tavor";
 
 const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
@@ -230,6 +234,10 @@ export const streamAsynchronously = mutation({
       );
     }
 
+    if (model) {
+      await validateCanUseModel(ctx, model);
+    }
+
     await checkAndIncrementUsage(ctx);
 
     const safeFiles = files || [];
@@ -277,6 +285,10 @@ export const stream = internalAction({
       threadId,
     });
     const effectiveModelId = model || tempThread?.model;
+
+    if (effectiveModelId && tempThread && tempThread.userId) {
+      await validateCanUseModel(ctx, effectiveModelId, tempThread.userId);
+    }
 
     let agent = chatAgent;
     if (effectiveModelId && MODEL_CONFIGS[effectiveModelId as ModelId]) {
