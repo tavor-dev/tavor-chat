@@ -109,7 +109,9 @@ function NewChatComponent() {
 
           {/* Examples section - grows to fill remaining space */}
           <div className="flex-1 flex justify-center px-4 sm:px-8 pb-4 mt-0 md:mt-12">
-            <ExamplePrompts onPromptSelect={(prompt) => handleSubmit(prompt, [])} />
+            <ExamplePrompts
+              onPromptSelect={(prompt) => handleSubmit(prompt, [])}
+            />
           </div>
         </div>
       </div>
