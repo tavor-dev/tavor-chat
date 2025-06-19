@@ -1,5 +1,5 @@
 import type { EmbeddingModelV1, LanguageModelV1 } from "@ai-sdk/provider";
-import { api } from "@cvx/_generated/api";
+import { api, internal } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
 import type { MessageDoc, ThreadDoc } from "@cvx/schema";
 import type {
@@ -1095,7 +1095,7 @@ export class Agent<AgentTools extends ToolSet> {
             ? (args.userId ??
               (args.threadId &&
                 (
-                  await ctx.runQuery(api.threads.getById, {
+                  await ctx.runQuery(internal.threads.getById, {
                     threadId: args.threadId,
                   })
                 )?.userId))
@@ -1114,6 +1114,23 @@ export class Agent<AgentTools extends ToolSet> {
       contextMessages.unshift(
         ...searchMessages.filter((m) => !included?.has(m._id)),
       );
+    }
+    const withCache = contextMessages.filter(
+      (m) => m.message?.providerOptions?.anthropic?.cacheControl,
+    );
+    if (withCache.length > 4) {
+      // keep the four most recent cached blocks
+      let seen = 0;
+      for (let i = 0; i < contextMessages.length; i++) {
+        if (seen >= withCache.length - 4) break;
+        if (
+          contextMessages[i]?.message?.providerOptions?.anthropic?.cacheControl
+        ) {
+          delete contextMessages[i]!.message!.providerOptions!.anthropic!
+            .cacheControl;
+          seen++;
+        }
+      }
     }
     // Ensure we don't include tool messages without a corresponding tool call
     return filterOutOrphanedToolMessages(
@@ -1134,7 +1151,7 @@ export class Agent<AgentTools extends ToolSet> {
     ctx: RunQueryCtx,
     args: { threadId: Id<"threads"> },
   ): Promise<ThreadDoc> {
-    const thread = await ctx.runQuery(api.threads.getById, {
+    const thread = await ctx.runQuery(internal.threads.getById, {
       threadId: args.threadId,
     });
     if (!thread) {
@@ -1453,7 +1470,7 @@ export class Agent<AgentTools extends ToolSet> {
       argsUserId ??
       (threadId &&
         (
-          await ctx.runQuery(api.threads.getById, {
+          await ctx.runQuery(internal.threads.getById, {
             threadId,
           })
         )?.userId);

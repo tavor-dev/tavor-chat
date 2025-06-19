@@ -135,7 +135,7 @@ export function ChatPanel({
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
   const { data: thread } = useQuery(
-    convexQuery(api.threads.getById, { threadId }),
+    convexQuery(api.threads.getByIdForCurrentUser, { threadId }),
   );
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
   const updateThread = useMutation(api.threads.update);

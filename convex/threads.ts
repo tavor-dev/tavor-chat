@@ -1,12 +1,24 @@
 import { paginationOptsValidator, PaginationResult } from "convex/server";
 import { ThreadDoc, v } from "./schema";
-import { api } from "./_generated/api";
-import { action, internalAction, mutation, query } from "./_generated/server";
+import { api, internal } from "./_generated/api";
+import {
+  action,
+  internalAction,
+  internalQuery,
+  mutation,
+  query,
+} from "./_generated/server";
 import { chatAgent } from "./chat";
-import { authorizeThreadAccess, getUserId } from "./account";
+import {
+  authorizeThreadAccess,
+  getUserId,
+  validateCanUseModel,
+} from "./account";
 import { partial } from "convex-helpers/validators";
 import { assert, pick } from "convex-helpers";
 import { Doc, Id } from "./_generated/dataModel";
+import invariant from "tiny-invariant";
+import { ERRORS } from "~/errors";
 
 /**
  * List all threads for the current user with pagination
@@ -33,11 +45,11 @@ export const list = query({
 /**
  * Get a thread by ID
  */
-export const getById = query({
+export const getById = internalQuery({
   args: {
     threadId: v.id("threads"),
   },
-  handler: async (ctx, args) => {
+  handler: async (ctx, args): Promise<ThreadDoc | null> => {
     return await ctx.db.get(args.threadId);
   },
 });
@@ -46,8 +58,12 @@ export const getByIdForCurrentUser = query({
   args: {
     threadId: v.id("threads"),
   },
-  handler: async (ctx, args) => {
-    const thread = await authorizeThreadAccess(ctx, args.threadId);
+  handler: async (ctx, { threadId }): Promise<ThreadDoc> => {
+    const userId = await getUserId(ctx);
+    invariant(userId, ERRORS.AUTH_NOT_AUTHENTICATED);
+
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
+    invariant(thread?.userId === userId, ERRORS.THREADS_NOT_ALLOWED);
 
     return thread;
   },
@@ -105,6 +121,11 @@ export const create = mutation({
     { title, model, forkParentId, forkParentMessageId },
   ): Promise<Id<"threads">> => {
     const userId = await getUserId(ctx);
+
+    if (model) {
+      await validateCanUseModel(ctx, model, userId);
+    }
+
     const newThread = await ctx.runMutation(
       api.chat_engine.threads.createThread,
       {
@@ -145,6 +166,11 @@ export const update = mutation({
   handler: async (ctx, args) => {
     const thread = await ctx.db.get(args.threadId);
     assert(thread, `Thread ${args.threadId} not found`);
+
+    if (args.patch.model) {
+      await validateCanUseModel(ctx, args.patch.model);
+    }
+
     await ctx.db.patch(args.threadId, args.patch);
     return (await ctx.db.get(args.threadId))!;
   },

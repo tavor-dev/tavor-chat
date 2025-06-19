@@ -73,7 +73,7 @@ export const PREAUTH_createStripeCustomer = internalAction({
     }
 
     const customer = await stripe.customers
-      .create({ email: user.email, name: user.username })
+      .create({ email: user.email, name: user.name })
       .catch((err) => console.error(err));
     if (!customer) throw new Error("Stripe customer could not be created.");
 
@@ -330,7 +330,7 @@ export const createSubscriptionCheckout = action({
       console.log("Stripe customer not found for user, creating a new one.");
       const customer = await stripe.customers.create({
         email: user.email,
-        name: user.name ?? user.username ?? undefined,
+        name: user.name ?? undefined,
       });
 
       if (!customer) {

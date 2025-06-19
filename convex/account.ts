@@ -4,11 +4,13 @@ import {
   MutationCtx,
   ActionCtx,
   mutation,
+  internalQuery,
 } from "./_generated/server";
 import { getAuthUserId } from "@convex-dev/auth/server";
-import { api } from "./_generated/api";
+import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { ThreadDoc } from "./schema";
+import { MODEL_CONFIGS, type ModelId } from "../src/lib/models";
 
 // Free tier limits
 export const FREE_TIER_MESSAGE_LIMIT = 50;
@@ -32,15 +34,7 @@ export async function authorizeThreadAccess(
   ctx: QueryCtx | MutationCtx | ActionCtx,
   threadId: Id<"threads">,
 ): Promise<ThreadDoc> {
-  const userId = await getUserId(ctx);
-
-  const thread = await ctx.runQuery(api.threads.getById, { threadId });
-
-  if (!thread || thread.userId !== userId) {
-    throw new Error("Unauthorized");
-  }
-
-  return thread;
+  return await ctx.runQuery(api.threads.getByIdForCurrentUser, { threadId });
 }
 
 /**
@@ -99,6 +93,69 @@ export const updateUserPreferences = mutation({
     if (!userId) {
       return;
     }
+
+    if (args.selectedModel) {
+      await validateCanUseModel(ctx, args.selectedModel, userId);
+    }
+
     ctx.db.patch(userId, args);
   },
 });
+
+/**
+ * Internal query to validate if a user can use a specific model
+ */
+export const validateModelAccess = internalQuery({
+  args: {
+    model: v.string(),
+    userId: v.optional(v.id("users")),
+  },
+  handler: async (ctx, { model, userId }) => {
+    const modelConfig = MODEL_CONFIGS[model as ModelId];
+
+    if (!modelConfig || !modelConfig.requiresPro) {
+      return { allowed: true };
+    }
+
+    const effectiveUserId = userId ?? (await getUserId(ctx));
+
+    const subscription = await ctx.db
+      .query("subscriptions")
+      .withIndex("userId", (q) => q.eq("userId", effectiveUserId))
+      .first();
+
+    const plan = subscription ? await ctx.db.get(subscription.planId) : null;
+
+    if (!plan || plan.key === "free") {
+      return {
+        allowed: false,
+        error: `The ${modelConfig.name} model requires a Pro subscription. Please upgrade to access this model.`,
+      };
+    }
+
+    return { allowed: true };
+  },
+});
+
+/**
+ * Validates if a user can use a specific model based on their subscription
+ * Works in queries, mutations, and actions
+ * @param ctx - The action/query/mutation context
+ * @param model - The model ID to validate
+ * @param userId - Optional user ID, if not provided will get from auth
+ * @throws Error if the user cannot use the model
+ */
+export async function validateCanUseModel(
+  ctx: QueryCtx | MutationCtx | ActionCtx,
+  model: string,
+  userId?: Id<"users"> | null,
+): Promise<void> {
+  const result = await ctx.runQuery(internal.account.validateModelAccess, {
+    model,
+    userId: userId ?? undefined,
+  });
+
+  if (!result.allowed) {
+    throw new Error(result.error);
+  }
+}

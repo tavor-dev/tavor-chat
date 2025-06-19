@@ -20,12 +20,8 @@ import { typedV } from "convex-helpers/validators";
 
 export const CURRENCIES = {
   USD: "usd",
-  EUR: "eur",
 } as const;
-export const currencyValidator = v.union(
-  v.literal(CURRENCIES.USD),
-  v.literal(CURRENCIES.EUR),
-);
+export const currencyValidator = v.union(v.literal(CURRENCIES.USD));
 export type Currency = Infer<typeof currencyValidator>;
 
 export const INTERVALS = {
@@ -54,7 +50,6 @@ const priceValidator = v.object({
 });
 const pricesValidator = v.object({
   [CURRENCIES.USD]: priceValidator,
-  [CURRENCIES.EUR]: priceValidator,
 });
 
 const schema = defineSchema({
@@ -62,7 +57,6 @@ const schema = defineSchema({
 
   users: defineTable({
     name: v.optional(v.string()),
-    username: v.optional(v.string()),
     imageId: v.optional(v.id("_storage")),
     image: v.optional(v.string()),
     email: v.optional(v.string()),

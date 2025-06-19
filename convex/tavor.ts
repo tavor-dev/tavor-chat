@@ -1,11 +1,11 @@
+import { Tavor } from "@tavor/sdk";
+import { v } from "convex/values";
 import invariant from "tiny-invariant";
 import { z } from "zod";
-import { v } from "convex/values";
-import { internalAction, mutation } from "./_generated/server";
-import { createTool, ToolCtx } from "./chat_engine/client";
-import { api, internal } from "./_generated/api";
+import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
-import { Tavor } from "@tavor/sdk";
+import { internalAction, internalMutation } from "./_generated/server";
+import { createTool, ToolCtx } from "./chat_engine/client";
 
 export const DEFAULT_BOX_TIMEOUT = 60 * 60 * 6;
 
@@ -59,14 +59,14 @@ IMPORTANT: for commands that should run in the background (i.e. webservers etc),
 };
 
 async function validateToolThread(ctx: ToolCtx, threadId: Id<"threads">) {
-  const thread = await ctx.runQuery(api.threads.getById, { threadId });
+  const thread = await ctx.runQuery(internal.threads.getById, { threadId });
   if (!thread) {
     throw new Error("couldn't find thread");
   }
   if (!thread.userId) {
     throw new Error("no user associated");
   }
-  const user = await ctx.runQuery(api.app.getUserById, {
+  const user = await ctx.runQuery(internal.app.getUserById, {
     userId: thread.userId,
   });
   if (!user) {
@@ -86,7 +86,7 @@ export const runCommandInBox = internalAction({
   },
   returns: v.string(),
   handler: async (ctx, { threadId, command, background }) => {
-    const thread = await ctx.runQuery(api.threads.getById, { threadId });
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
     invariant(thread, "expected thread to be present");
 
     const tavorBox = await ctx.runAction(internal.tavor.ensureBox, {
@@ -126,25 +126,25 @@ export const runCommandInBox = internalAction({
   },
 });
 
-export const clearBox = mutation({
+export const clearBox = internalMutation({
   args: {
     threadId: v.id("threads"),
   },
   handler: async (ctx, { threadId }) => {
-    const thread = await ctx.runQuery(api.threads.getById, { threadId });
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
     invariant(thread, "expected thread to be present");
 
     await ctx.db.patch(threadId, { tavorBox: undefined });
   },
 });
 
-export const setBox = mutation({
+export const setBox = internalMutation({
   args: {
     threadId: v.id("threads"),
     tavorBox: v.string(),
   },
   handler: async (ctx, { threadId, tavorBox }) => {
-    const thread = await ctx.runQuery(api.threads.getById, { threadId });
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
     invariant(thread, "expected thread to be present");
 
     await ctx.db.patch(threadId, { tavorBox });
@@ -157,7 +157,7 @@ export const ensureBox = internalAction({
   },
   returns: v.string(),
   handler: async (ctx, { threadId }) => {
-    const thread = await ctx.runQuery(api.threads.getById, { threadId });
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
     invariant(thread, "expected thread to be present");
 
     const tavor = new Tavor();
@@ -171,13 +171,16 @@ export const ensureBox = internalAction({
         return box.id;
       }
 
-      await ctx.runMutation(api.tavor.clearBox, { threadId });
+      await ctx.runMutation(internal.tavor.clearBox, { threadId });
     }
 
     const box = await tavor.createBox({ timeout: DEFAULT_BOX_TIMEOUT });
     await box.waitUntilReady();
 
-    await ctx.runMutation(api.tavor.setBox, { threadId, tavorBox: box.id });
+    await ctx.runMutation(internal.tavor.setBox, {
+      threadId,
+      tavorBox: box.id,
+    });
 
     return box.id;
   },
@@ -190,7 +193,7 @@ export const getPreviewUrl = internalAction({
   },
   returns: v.string(),
   handler: async (ctx, { threadId, port }) => {
-    const thread = await ctx.runQuery(api.threads.getById, { threadId });
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
     invariant(thread, "expected thread to be present");
 
     if (!thread.tavorBox) {
