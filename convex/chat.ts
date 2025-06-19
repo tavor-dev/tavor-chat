@@ -15,6 +15,7 @@ import {
   validateCanUseModel,
 } from "./account";
 import { setupTavorTools } from "./tavor";
+import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 
 const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
   return new Agent({
@@ -256,6 +257,11 @@ export const streamAsynchronously = mutation({
           ...parsedFiles.map((f) => f.imagePart ?? f.filePart),
           { type: "text", text: prompt },
         ],
+        providerOptions: {
+          anthropic: {
+            cacheControl: { type: "ephemeral" },
+          } as AnthropicProviderOptions,
+        },
       },
       metadata: {
         fileIds:

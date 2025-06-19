@@ -1115,6 +1115,23 @@ export class Agent<AgentTools extends ToolSet> {
         ...searchMessages.filter((m) => !included?.has(m._id)),
       );
     }
+    const withCache = contextMessages.filter(
+      (m) => m.message?.providerOptions?.anthropic?.cacheControl,
+    );
+    if (withCache.length > 4) {
+      // keep the four most recent cached blocks
+      let seen = 0;
+      for (let i = 0; i < contextMessages.length; i++) {
+        if (seen >= withCache.length - 4) break;
+        if (
+          contextMessages[i]?.message?.providerOptions?.anthropic?.cacheControl
+        ) {
+          delete contextMessages[i]!.message!.providerOptions!.anthropic!
+            .cacheControl;
+          seen++;
+        }
+      }
+    }
     // Ensure we don't include tool messages without a corresponding tool call
     return filterOutOrphanedToolMessages(
       contextMessages.sort((a, b) =>
