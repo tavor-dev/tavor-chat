@@ -26,7 +26,9 @@ export function callAll<Args extends unknown[]>(
  * Locales.
  */
 export function getLocaleCurrency() {
-  return CURRENCIES.USD;
+  return navigator.languages.includes("en-US")
+    ? CURRENCIES.USD
+    : CURRENCIES.EUR;
 }
 
 export const useSignOut = () => {
