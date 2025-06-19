@@ -98,19 +98,19 @@ export function toUIMessages(
       }
       // update it to the last message's id
       assistantMessage.id = message.id ?? message._id;
-      if (message.text) {
-        assistantMessage.parts.push({
-          type: "text",
-          text: message.text,
-        });
-        assistantMessage.content += message.text;
-      }
       if (message.reasoning) {
         assistantMessage.parts.push({
           type: "reasoning",
           reasoning: message.reasoning,
           details: message.reasoningDetails ?? [],
         });
+      }
+      if (message.text) {
+        assistantMessage.parts.push({
+          type: "text",
+          text: message.text,
+        });
+        assistantMessage.content += message.text;
       }
       for (const source of message.sources ?? []) {
         assistantMessage.parts.push({
