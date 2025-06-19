@@ -8,6 +8,25 @@ import { internalAction, internalMutation } from "./_generated/server";
 import { createTool, ToolCtx } from "./chat_engine/client";
 
 export const DEFAULT_BOX_TIMEOUT = 60 * 60 * 6;
+const MAX_OUTPUT_LENGTH = 1000;
+
+/**
+ * Truncate text to a maximum length and add ellipsis if truncated
+ */
+function truncateOutput(
+  text: string,
+  maxLength: number = MAX_OUTPUT_LENGTH,
+): string {
+  if (text.length <= maxLength) {
+    return text;
+  }
+  return (
+    text.substring(0, maxLength) +
+    "...\n[Output truncated - showing first " +
+    maxLength +
+    " characters]"
+  );
+}
 
 /**
  * AI tools
@@ -21,7 +40,11 @@ Each chat thread generates an ephemeral sandbox to run the command, if you want 
 
 The sandbox may get killed as it only lasts a few hours, so files you create may be temporary, but should still last the current session.
 
-IMPORTANT: for commands that should run in the background (i.e. webservers etc), run them separately with background: true`,
+IMPORTANT: for commands that should run in the background (i.e. webservers etc), run them separately with background: true
+
+Note: Command output is limited to ${MAX_OUTPUT_LENGTH} characters to prevent overwhelming responses.
+
+Returns JSON with: { output: string, exitCode: number, success: boolean, background: boolean }`,
       args: z.object({
         command: z.string().describe("The command to execute inside sandbox"),
         background: z
@@ -97,31 +120,39 @@ export const runCommandInBox = internalAction({
     const box = await tavor.getBox(tavorBox);
     await box.refresh();
 
-    const commandPromise = box.run(command);
-
     if (background) {
+      // Start the command in background
+      // const commandPromise = box.run(command);
+
       // TODO: kinda hack, ensure command gets scheduled by convex before function shuts down
       await new Promise((resolve) => {
         setTimeout(resolve, 3000);
       });
 
       return JSON.stringify({
-        stdout: "",
-        stderr: "",
         output: "Command is running in the background",
+        exit_code: 0,
         success: true,
+        background: true,
       });
     }
 
-    const result = await commandPromise;
-    const output =
-      result.stdout + (result.stderr ? `STDERR:\n${result.stderr}` : "");
+    const result = await box.run(command);
+
+    // Create a clean, single output combining stdout and stderr if present
+    let combinedOutput = result.stdout || "";
+    if (result.stderr) {
+      combinedOutput += (combinedOutput ? "\n" : "") + result.stderr;
+    }
+
+    const truncatedOutput = truncateOutput(combinedOutput);
+    const success = result.exitCode === 0;
 
     return JSON.stringify({
-      stdout: result.stdout || "",
-      stderr: result.stderr || "",
-      output: output || "",
-      success: !result.stderr,
+      output: truncatedOutput,
+      exit_code: result.exitCode,
+      success: success,
+      background: false,
     });
   },
 });
