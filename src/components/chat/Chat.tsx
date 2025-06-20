@@ -16,6 +16,7 @@ import { UserMessage } from "./UserMessage";
 import { useNavigate } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
+import { useMaxStepsReached } from "@/hooks/use-max-steps-reached";
 
 function UpgradeModal({
   isOpen,
@@ -83,6 +84,11 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
     convexQuery(api.threads.getByIdForCurrentUser, { threadId }),
   );
   const isGenerating = thread?.generating;
+
+  const hitMaxSteps = useMaxStepsReached(
+    messages.results,
+    !!thread?.generating,
+  );
 
   useEffect(() => {
     if (!messages.isLoading && messages.results) {
@@ -231,6 +237,13 @@ export function Chat({ threadId }: { threadId: Id<"threads"> }) {
             className="group/message chat-section max-w-3xl mx-auto mb-8 px-4 flex flex-col gap-4"
           >
             <AnswerSection isLoading={true} />
+          </div>
+        )}
+        {hitMaxSteps && (
+          <div className="chat-section max-w-3xl mx-auto mb-8 px-4 flex items-center gap-2 text-sm text-ui-fg-base">
+            ⚠️ Halted after the maximum&nbsp;tool steps. Type&nbsp;
+            <kbd className="rounded bg-gray-400 px-1">continue</kbd>&nbsp;to
+            keep going.
           </div>
         )}
       </div>
