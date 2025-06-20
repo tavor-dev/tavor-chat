@@ -154,7 +154,7 @@ export function applyDeltasToStreamMessage(
     }
     switch (part.type) {
       case "text-delta":
-        currentMessage.text += part.textDelta;
+        currentMessage.text = (currentMessage.text ?? "") + part.textDelta;
         if (lastContent?.type === "text") {
           lastContent.text += part.textDelta;
         } else {
@@ -190,7 +190,8 @@ export function applyDeltasToStreamMessage(
         contentToAdd = part;
         break;
       case "reasoning":
-        currentMessage.reasoning += part.textDelta;
+        currentMessage.reasoning =
+          (currentMessage.reasoning ?? "") + part.textDelta;
         if (lastContent?.type === "reasoning") {
           lastContent.text += part.textDelta;
         } else {
