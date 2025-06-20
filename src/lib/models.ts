@@ -18,6 +18,7 @@ export const MODEL_IDS = [
   "claude-4-sonnet",
   "gemini-2-0-flash",
   "gemini-2-5-flash",
+  "gemini-2-5-flash-lite",
   "gemini-2-5-pro",
 ] as const;
 
@@ -297,6 +298,24 @@ export const MODEL_CONFIGS: Record<ModelId, ModelConfig> = {
     features: ["images", "pdfs", "search", "fast"],
     runtime: google("gemini-2.5-flash"),
   },
+  "gemini-2-5-flash-lite": {
+    id: "gemini-2-5-flash-lite",
+    name: "Gemini 2.5 Flash Lite (preview)",
+    provider: "Google",
+    developer: "Google",
+    shortDescription: "Google's newest (smaller) speed demon",
+    fullDescription: "Smaller, even faster version of Gemini's 2.5 flash.",
+    requiresPro: false,
+    disabled: false,
+    premium: false,
+    modelPickerDefault: true,
+    limits: {
+      maxInputTokens: 1000000,
+      maxOutputTokens: 65535,
+    },
+    features: ["images", "pdfs", "search", "fast"],
+    runtime: google("gemini-2.5-flash-lite-preview-06-17"),
+  },
   "gemini-2-5-pro": {
     id: "gemini-2-5-pro",
     name: "Gemini 2.5 Pro",
@@ -480,6 +499,8 @@ export function getDefaultModel(
   const defaultModel = availableModels.find((m) => m.modelPickerDefault);
   return defaultModel || availableModels[0] || MODEL_CONFIGS[DEFAULT_MODEL_ID];
 }
+
+export const fastCheap = MODEL_CONFIGS["gemini-2-5-flash-lite"].runtime;
 
 export const textEmbedding = openai.textEmbeddingModel(
   "text-embedding-3-small",

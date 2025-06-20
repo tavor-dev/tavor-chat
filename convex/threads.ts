@@ -1,6 +1,7 @@
 import { paginationOptsValidator, PaginationResult } from "convex/server";
 import { ThreadDoc, v } from "./schema";
 import { api, internal } from "./_generated/api";
+import { z } from "zod";
 import {
   action,
   internalAction,
@@ -20,6 +21,7 @@ import { assert, pick } from "convex-helpers";
 import { Doc, Id } from "./_generated/dataModel";
 import invariant from "tiny-invariant";
 import { ERRORS } from "~/errors";
+import { fastCheap } from "~/src/lib/models";
 
 /**
  * List all threads for the current user with pagination
@@ -217,15 +219,22 @@ export const maybeUpdateThreadTitle = internalAction({
 
     if (!existingTitle || existingTitle === "New chat") {
       try {
-        const { text } = await thread.generateText(
+        const { object } = await thread.generateObject(
           {
+            model: fastCheap,
+            schema: z.object({
+              title: z.string().max(40).describe("the short title"),
+            }),
             prompt:
               "Generate a concise, descriptive title (max 40 characters) for this conversation based on the messages so far. Return only the title text, no quotes or punctuation at the end.",
           },
           { storageOptions: { saveMessages: "none" } },
         );
 
-        const cleanTitle = text.trim().replace(/["']/g, "").slice(0, 40);
+        const cleanTitle = object.title
+          .trim()
+          .replace(/["']/g, "")
+          .slice(0, 40);
 
         if (cleanTitle && cleanTitle.length > 0) {
           await thread.updateMetadata({ title: cleanTitle });
