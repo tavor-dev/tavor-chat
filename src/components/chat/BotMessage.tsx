@@ -1,5 +1,5 @@
 import { cn } from "@/lib/utils";
-import { useSmoothText as useSmoothTextHook } from "@convex-dev/agent/react";
+import { useSmoothText as useSmoothTextHook } from "@/lib/agent";
 import {
   CheckCircleSolid,
   ChevronDownMini,
