@@ -3,7 +3,7 @@ import { Tooltip, TooltipProvider } from "@medusajs/ui";
 import { ChannelsSolid, ArrowPath, Pencil } from "@medusajs/icons";
 import { useMutation } from "convex/react";
 import { api } from "@cvx/_generated/api";
-import { UIMessage } from "@convex-dev/agent/react";
+import { UIMessage } from "@/lib/agent";
 import { useCallback } from "react";
 import { Id } from "@cvx/_generated/dataModel";
 import { useNavigate } from "@tanstack/react-router";

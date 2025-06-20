@@ -11,8 +11,8 @@ import {
   FileUIPart,
   toUIFilePart,
 } from "@cvx/chat_engine/mapping";
-import { MessageDoc } from "@cvx/schema";
-import { MessageStatus } from "@cvx/chat_engine/validators";
+import type { MessageDoc } from "@cvx/schema";
+import type { MessageStatus } from "@cvx/chat_engine/validators";
 
 export type UIMessage = AIUIMessage & {
   key: string;

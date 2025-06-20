@@ -2,12 +2,9 @@ import {
   cacheThreadMessages,
   getCachedThreadMessages,
 } from "@/lib/threadCache";
-import { toUIMessages, type UIMessage } from "@/lib/toUIMessages";
+import { toUIMessages, type UIMessage } from "@/lib/agent/toUIMessages";
 import { cn } from "@/lib/utils";
-import {
-  optimisticallySendMessage,
-  useThreadMessages,
-} from "@convex-dev/agent/react";
+import { optimisticallySendMessage, useThreadMessages } from "@/lib/agent";
 import { Doc, type Id } from "@cvx/_generated/dataModel";
 import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
 import { useMutation } from "convex/react";
