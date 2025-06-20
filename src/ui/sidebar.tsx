@@ -186,7 +186,7 @@ function Sidebar({
           data-sidebar="sidebar"
           data-slot="sidebar"
           data-mobile="true"
-          className="bg-ui-bg-component text-ui-fg-base w-[16rem] p-0 [&>button]:hidden"
+          className="bg-ui-bg-component text-ui-fg-base w-[16rem] p-0"
           style={
             {
               "--sidebar-width": "16rem",

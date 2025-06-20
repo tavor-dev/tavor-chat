@@ -19,7 +19,7 @@ import {
   useConvexPaginatedQuery,
 } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
-import { Id } from "@cvx/_generated/dataModel";
+import { Doc, Id } from "@cvx/_generated/dataModel";
 import {
   EllipsisHorizontal,
   PencilSquare,
@@ -53,15 +53,31 @@ import {
 } from "@tanstack/react-router";
 import { useAction, useConvex, useMutation } from "convex/react";
 import { Pin, PinOff } from "lucide-react";
-import React, { useEffect, useMemo } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 
 const THREADS_PAGE_SIZE = 20;
 
+type Thread = Doc<"threads">;
+
+interface AppContextType {
+  openRenameDrawer: (thread: Thread) => void;
+}
+
+const AppContext = React.createContext<AppContextType | null>(null);
+
+const useApp = () => {
+  const context = React.useContext(AppContext);
+  if (!context) {
+    throw new Error("useApp must be used within an AppProvider");
+  }
+  return context;
+};
+
 export const Route = createFileRoute("/_app/_auth")({
-  component: AuthLayout,
+  component: AuthRoute,
 });
 
-function AuthLayout() {
+function AuthRoute() {
   const { isAuthenticated, isLoading } = useConvexAuth();
   const navigate = useNavigate();
   const convex = useConvex();
@@ -90,21 +106,137 @@ function AuthLayout() {
 
   return (
     <SidebarProvider>
+      <AuthLayout />
+    </SidebarProvider>
+  );
+}
+
+function AuthLayout() {
+  const [threadToRename, setThreadToRename] = useState<Thread | null>(null);
+  const { isMobile, setOpenMobile } = useSidebar();
+
+  const openRenameDrawer = (thread: Thread) => {
+    if (isMobile) {
+      setOpenMobile(false);
+    }
+    setThreadToRename(thread);
+  };
+
+  const closeRenameDrawer = () => setThreadToRename(null);
+
+  const updateThread = useMutation(api.threads.update);
+  const handleRenameThread = async (
+    threadId: Id<"threads">,
+    newTitle: string,
+  ) => {
+    try {
+      await updateThread({ threadId, patch: { title: newTitle.trim() } });
+      toast.success("Thread renamed");
+      return true;
+    } catch (error) {
+      console.error("Failed to rename thread:", error);
+      toast.error("Failed to rename thread");
+      return false;
+    }
+  };
+
+  return (
+    <AppContext.Provider value={{ openRenameDrawer }}>
       <AppSidebar />
-      <div className="fixed left-1.5 z-50 p-1 top-2">
+      <div className="fixed left-1.5 z-10 p-1 top-2">
         <SidebarTrigger className="ml-0" />
       </div>
       <SidebarInset className="border-ui-bg-base md:peer-data-[variant=inset]:peer-data-[state=collapsed]:m-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:rounded-none transition-all">
         <Outlet />
       </SidebarInset>
       <Toaster />
-    </SidebarProvider>
+      <RenameDrawer
+        thread={threadToRename}
+        onClose={closeRenameDrawer}
+        onRename={handleRenameThread}
+      />
+    </AppContext.Provider>
+  );
+}
+
+function RenameDrawer({
+  thread,
+  onClose,
+  onRename,
+}: {
+  thread: Thread | null;
+  onClose: () => void;
+  onRename: (
+    threadId: Id<"threads">,
+    newTitle: string,
+  ) => Promise<boolean>;
+}) {
+  const [newTitle, setNewTitle] = useState("");
+  const [isRenaming, setIsRenaming] = useState(false);
+
+  useEffect(() => {
+    if (thread) {
+      setNewTitle(thread.title || "");
+    }
+  }, [thread]);
+
+  const handleRename = async () => {
+    if (!thread || !newTitle.trim() || newTitle === thread.title) return;
+    setIsRenaming(true);
+    const success = await onRename(thread._id, newTitle);
+    setIsRenaming(false);
+    if (success) onClose();
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent) => {
+    if (e.key === "Enter") handleRename();
+    else if (e.key === "Escape") onClose();
+  };
+
+  return (
+    <Drawer open={!!thread} onOpenChange={(open) => !open && onClose()}>
+      <Drawer.Content className="z-50">
+        <Drawer.Header>
+          <Drawer.Title>Rename thread</Drawer.Title>
+        </Drawer.Header>
+        <Drawer.Body className="space-y-4">
+          <div className="w-full max-w-md">
+            <Input
+              placeholder="Enter thread name"
+              value={newTitle}
+              onChange={(e) => setNewTitle(e.target.value)}
+              onKeyDown={handleKeyDown}
+              disabled={isRenaming}
+              autoFocus
+              className="w-full text-base"
+            />
+          </div>
+        </Drawer.Body>
+        <Drawer.Footer>
+          <Button variant="secondary" onClick={onClose} disabled={isRenaming}>
+            Cancel
+          </Button>
+          <Button
+            onClick={handleRename}
+            isLoading={isRenaming}
+            disabled={
+              !thread ||
+              !newTitle.trim() ||
+              newTitle === thread.title ||
+              isRenaming
+            }
+          >
+            {isRenaming ? "Renaming..." : "Rename"}
+          </Button>
+        </Drawer.Footer>
+      </Drawer.Content>
+    </Drawer>
   );
 }
 
 function AppSidebar() {
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
-  const { isMobile, setOpen } = useSidebar();
+  const { isMobile, setOpenMobile } = useSidebar();
   const navigate = useNavigate();
   const router = useRouter();
   const { signOut } = useAuthActions();
@@ -196,7 +328,7 @@ function AppSidebar() {
   async function handleNewChat() {
     try {
       navigate({ to: "/" });
-      if (isMobile) setOpen(false); // Close only on mobile
+      if (isMobile) setOpenMobile(false);
     } catch (error) {
       console.error("Failed to create new chat:", error);
     }
@@ -204,7 +336,7 @@ function AppSidebar() {
 
   const handleNavigation = (threadId: Id<"threads">) => {
     navigate({ to: "/chat/$threadId", params: { threadId } });
-    if (isMobile) setOpen(false); // Close only on mobile
+    if (isMobile) setOpenMobile(false);
   };
 
   const handlePinThread = async (
@@ -237,21 +369,6 @@ function AppSidebar() {
     } catch (error) {
       console.error("Failed to delete thread:", error);
       toast.error("Failed to delete thread");
-    }
-  };
-
-  const handleRenameThread = async (
-    threadId: Id<"threads">,
-    newTitle: string,
-  ) => {
-    try {
-      await updateThread({ threadId, patch: { title: newTitle.trim() } });
-      toast.success("Thread renamed");
-      return true;
-    } catch (error) {
-      console.error("Failed to rename thread:", error);
-      toast.error("Failed to rename thread");
-      return false;
     }
   };
 
@@ -313,39 +430,11 @@ function AppSidebar() {
 
   const ThreadItem = ({ thread }: { thread: (typeof threads)[0] }) => {
     const [deletePromptOpen, setDeletePromptOpen] = React.useState(false);
-    const [renameDrawerOpen, setRenameDrawerOpen] = React.useState(false);
-    const [newTitle, setNewTitle] = React.useState(thread.title || "");
-    const [isRenaming, setIsRenaming] = React.useState(false);
     const [dropdownOpen, setDropdownOpen] = React.useState(false);
+    const { openRenameDrawer } = useApp();
 
     // Check if this thread is currently active
     const isActive = currentThreadId === thread._id;
-
-    // Keep input in sync if thread changes
-    React.useEffect(() => {
-      setNewTitle(thread.title || "");
-    }, [thread.title]);
-
-    const handleRename = async () => {
-      if (!newTitle.trim() || newTitle === thread.title) return;
-
-      setIsRenaming(true);
-      const success = await handleRenameThread(thread._id, newTitle);
-      setIsRenaming(false);
-
-      if (success) {
-        setRenameDrawerOpen(false);
-      }
-    };
-
-    const handleKeyDown = (e: React.KeyboardEvent) => {
-      if (e.key === "Enter") {
-        handleRename();
-      } else if (e.key === "Escape") {
-        setRenameDrawerOpen(false);
-        setNewTitle(thread.title || "");
-      }
-    };
 
     return (
       <>
@@ -389,8 +478,8 @@ function AppSidebar() {
                     className="gap-x-2"
                     onClick={(e) => {
                       e.stopPropagation();
-                      setRenameDrawerOpen(true);
                       setDropdownOpen(false);
+                      openRenameDrawer(thread);
                     }}
                   >
                     <PencilSquare className="text-ui-fg-subtle h-4 w-4" />
@@ -455,49 +544,6 @@ function AppSidebar() {
             </Prompt.Footer>
           </Prompt.Content>
         </Prompt>
-
-        {/* Rename drawer */}
-        <Drawer open={renameDrawerOpen} onOpenChange={setRenameDrawerOpen}>
-          <Drawer.Content>
-            <Drawer.Header>
-              <Drawer.Title>Rename thread</Drawer.Title>
-            </Drawer.Header>
-            <Drawer.Body className="space-y-4">
-              <div className="w-full max-w-md">
-                <Input
-                  placeholder="Enter thread name"
-                  value={newTitle}
-                  onChange={(e) => setNewTitle(e.target.value)}
-                  onKeyDown={handleKeyDown}
-                  disabled={isRenaming}
-                  autoFocus
-                  className="w-full text-base"
-                />
-              </div>
-            </Drawer.Body>
-            <Drawer.Footer>
-              <Button
-                variant="secondary"
-                onClick={() => {
-                  setRenameDrawerOpen(false);
-                  setNewTitle(thread.title || "");
-                }}
-                disabled={isRenaming}
-              >
-                Cancel
-              </Button>
-              <Button
-                onClick={handleRename}
-                isLoading={isRenaming}
-                disabled={
-                  !newTitle.trim() || newTitle === thread.title || isRenaming
-                }
-              >
-                {isRenaming ? "Renaming..." : "Rename"}
-              </Button>
-            </Drawer.Footer>
-          </Drawer.Content>
-        </Drawer>
       </>
     );
   };
@@ -518,7 +564,7 @@ function AppSidebar() {
           className="w-full my-4 flex justify-start items-center"
           onClick={handleNewChat}
         >
-          <div className="flex items-center justify-center rounded-md bg-ui-tag-purple-border p-1 mr-1 -ml-2">
+          <div className="flex items-center justify-center rounded-md shadow-lg border-r-ui-bg-switch-off border p-1 mr-1 -ml-2">
             <PlusMini />
           </div>
           New chat

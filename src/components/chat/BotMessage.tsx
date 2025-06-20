@@ -10,9 +10,10 @@ import {
   ArrowPath,
   ComputerDesktop,
   LightBulb,
+  Link,
 } from "@medusajs/icons";
-import { Smartphone, ChevronLeft, ChevronRight, Share } from "lucide-react";
-import { Alert, CodeBlock, Text, Button } from "@medusajs/ui";
+import { Smartphone, Share } from "lucide-react";
+import { Alert, CodeBlock, Text, Button, Copy, Tooltip } from "@medusajs/ui";
 import React, { memo, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
@@ -207,147 +208,6 @@ const ToolStatus = memo(
 );
 ToolStatus.displayName = "ToolStatus";
 
-// URL Preview Component with Navigation
-const URLPreview = memo(
-  ({
-    url,
-    urls,
-    currentIndex,
-  }: {
-    url: string;
-    urls: string[];
-    currentIndex: number;
-  }) => {
-    const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
-    const [key, setKey] = useState(0);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-
-    const handleRefresh = () => {
-      setKey((prev) => prev + 1);
-    };
-
-    const handleOpenInNewTab = () => {
-      window.open(url, "_blank");
-    };
-
-    const getIframeWidth = () => {
-      return viewMode === "mobile" ? "w-80" : "w-full";
-    };
-
-    const canNavigate = urls.length > 1;
-
-    return (
-      <div className="not-prose my-6">
-        <div className="rounded-lg border border-ui-border-base bg-ui-bg-base shadow-sm overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-ui-border-base bg-ui-bg-subtle">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-ui-tag-red-icon"></div>
-              <div className="w-3 h-3 rounded-full bg-ui-tag-orange-icon"></div>
-              <div className="w-3 h-3 rounded-full bg-ui-tag-green-icon"></div>
-              <div className="ml-2 px-3 py-1 bg-ui-bg-base rounded-md">
-                <Text className="text-xs text-ui-fg-subtle font-mono truncate max-w-xs">
-                  {url}
-                </Text>
-              </div>
-              {canNavigate && (
-                <div className="ml-2 px-2 py-1 bg-ui-bg-base-pressed rounded-md">
-                  <Text className="text-xs text-ui-fg-muted">
-                    {currentIndex + 1} of {urls.length}
-                  </Text>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1">
-              {canNavigate && (
-                <>
-                  <Button
-                    variant="transparent"
-                    size="small"
-                    onClick={() => {
-                      // This would need to be handled by parent component
-                      // For now, just a placeholder
-                    }}
-                    disabled={currentIndex === 0}
-                    className="p-1 h-8 w-8"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="transparent"
-                    size="small"
-                    onClick={() => {
-                      // This would need to be handled by parent component
-                      // For now, just a placeholder
-                    }}
-                    disabled={currentIndex === urls.length - 1}
-                    className="p-1 h-8 w-8"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleRefresh}
-                className="p-1 h-8 w-8"
-              >
-                <ArrowPath className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleOpenInNewTab}
-                className="p-1 h-8 w-8"
-              >
-                <Share className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "mobile" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("mobile")}
-                className="p-1 h-8 w-8"
-              >
-                <Smartphone className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "desktop" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("desktop")}
-                className="p-1 h-8 w-8"
-              >
-                <ComputerDesktop className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Iframe Container */}
-          <div className="p-4 bg-ui-bg-base">
-            <div
-              className={cn(
-                "mx-auto transition-all duration-300 ease-in-out",
-                getIframeWidth(),
-              )}
-            >
-              <iframe
-                key={key}
-                ref={iframeRef}
-                src={url}
-                className="w-full h-96 rounded-lg border border-ui-border-base"
-                title="URL Preview"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  },
-);
-URLPreview.displayName = "URLPreview";
-
 // Enhanced ReactMarkdown component with URL detection and navigation
 const EnhancedMarkdown = memo(
   ({
@@ -441,52 +301,70 @@ const URLPreviewWithNavigation = memo(
               {/* <div className="w-3 h-3 rounded-full bg-ui-tag-red-icon"></div> */}
               {/* <div className="w-3 h-3 rounded-full bg-ui-tag-orange-icon"></div> */}
               {/* <div className="w-3 h-3 rounded-full bg-ui-tag-green-icon"></div> */}
-              <div className="ml-2 px-3 py-1 bg-ui-bg-base rounded-md">
-                <Text className="text-xs text-ui-fg-subtle font-mono truncate max-w-xs">
+              {/* <div className="ml-2 px-3 py-1 bg-ui-bg-base rounded-md"> */}
+
+                {/* <Text className="text-xs text-ui-fg-subtle font-mono truncate max-w-xs">
                   {currentUrl}
-                </Text>
-              </div>
+                </Text> */}
+              {/* </div> */}
             </div>
 
             <div className="flex items-center gap-1">
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleOpenInNewTab}
-                className="p-1 h-8 w-8"
-              >
-                <Share className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleRefresh}
-                className="p-1 h-8 w-8"
-              >
-                <ArrowPath className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant={viewMode === "mobile" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("mobile")}
-                className="p-1 h-8 w-8"
-              >
-                <Smartphone className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "desktop" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("desktop")}
-                className="p-1 h-8 w-8"
-              >
-                <ComputerDesktop className="h-4 w-4" />
-              </Button>
+              <Copy content={currentUrl}>
+                <Button
+                  variant="transparent"
+                  size="small"
+                  onClick={handleOpenInNewTab}
+                  className="p-1 h-8 w-8"
+                >
+                  <Link className="h-4 w-4" />
+                </Button>
+              </Copy>
+              <Tooltip content="Open link in a new tab">
+                <Button
+                  variant="transparent"
+                  size="small"
+                  onClick={handleOpenInNewTab}
+                  className="p-1 h-8 w-8"
+                >
+                  <Share className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+              <Tooltip content="Refresh">
+                <Button
+                  variant="transparent"
+                  size="small"
+                  onClick={handleRefresh}
+                  className="p-1 h-8 w-8"
+                >
+                  <ArrowPath className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+              <Tooltip content="Mobile view">
+                <Button
+                  variant={viewMode === "mobile" ? "primary" : "transparent"}
+                  size="small"
+                  onClick={() => setViewMode("mobile")}
+                  className="p-1 h-8 w-8"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+              <Tooltip content="Desktop view">
+                <Button
+                  variant={viewMode === "desktop" ? "primary" : "transparent"}
+                  size="small"
+                  onClick={() => setViewMode("desktop")}
+                  className="p-1 h-8 w-8"
+                >
+                  <ComputerDesktop className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             </div>
           </div>
 
           {/* Iframe Container */}
-          <div className="p-4 bg-ui-bg-base">
+          <div className="bg-ui-bg-base">
             <div
               className={cn(
                 "mx-auto transition-all duration-300 ease-in-out",
@@ -497,7 +375,7 @@ const URLPreviewWithNavigation = memo(
                 key={`${key}-${currentIndex}`}
                 ref={iframeRef}
                 src={currentUrl}
-                className="w-full h-96 rounded-lg border border-ui-border-base"
+                className="w-full h-[40rem] rounded-lg"
                 title="URL Preview"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
               />
