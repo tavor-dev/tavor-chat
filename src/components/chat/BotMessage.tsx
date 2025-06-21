@@ -1,5 +1,4 @@
 import { cn } from "@/lib/utils";
-import { useSmoothText as useSmoothTextHook } from "@/lib/agent";
 import {
   CheckCircleSolid,
   ChevronDownMini,
@@ -10,16 +9,19 @@ import {
   ArrowPath,
   ComputerDesktop,
   LightBulb,
+  Link,
 } from "@medusajs/icons";
-import { Smartphone, ChevronLeft, ChevronRight, Share } from "lucide-react";
-import { Alert, CodeBlock, Text, Button } from "@medusajs/ui";
+import { Smartphone, Share } from "lucide-react";
+import { Alert, Text, Button, Copy, Tooltip } from "@medusajs/ui";
 import React, { memo, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
 import { UIMessageWithFiles } from "./Chat";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 /**
- * A custom component that wraps the Medusa UI CodeBlock.
+ * A custom component that uses react-syntax-highlighter.
  * This is used as the override for the `<pre>` tag in ReactMarkdown.
  */
 const CustomCodeBlock = memo(
@@ -29,8 +31,6 @@ const CustomCodeBlock = memo(
     children,
     ...props
   }: React.HTMLAttributes<HTMLPreElement> & { node?: unknown }) => {
-    // The `children` of a <pre> tag is a <code> element.
-    // We need to extract its props to get the language and content.
     const codeElement = React.Children.only(children) as React.ReactElement<{
       className?: string;
       children: React.ReactNode;
@@ -39,28 +39,40 @@ const CustomCodeBlock = memo(
     const { className: codeClassName, children: codeContent } =
       codeElement.props;
 
-    // Extract language from className (e.g., "language-js")
     const match = /language-(\w+)/.exec(codeClassName || "");
     const language = match ? match[1] : "text";
     const codeText = String(codeContent).replace(/\n$/, "");
 
+    const handleCopy = () => {
+      navigator.clipboard.writeText(codeText);
+    };
+
     return (
-      // The `not-prose` class is important to prevent Tailwind Typography
-      // from styling the code block, so we can use Medusa's styles.
-      <pre className="not-prose my-4" {...props}>
-        <CodeBlock
-          snippets={[
-            {
-              language: language,
-              label: language, // Medusa uses this for the header
-              code: codeText,
-            },
-          ]}
+      <div className="not-prose my-4 rounded-lg overflow-hidden border border-ui-border-base">
+        <div className="flex items-center justify-between px-4 py-2 bg-ui-bg-component-hover">
+          <Text size="small" className="text-ui-fg-muted">
+            {language}
+          </Text>
+          <Tooltip content="Copy code">
+            <Button
+              variant="transparent"
+              size="small"
+              onClick={handleCopy}
+              className="p-1 h-8 w-8"
+            >
+              <Copy content={codeText} />
+            </Button>
+          </Tooltip>
+        </div>
+        <SyntaxHighlighter
+          {...props}
+          style={vscDarkPlus}
+          language={language}
+          PreTag="div"
         >
-          <CodeBlock.Header />
-          <CodeBlock.Body />
-        </CodeBlock>
-      </pre>
+          {codeText}
+        </SyntaxHighlighter>
+      </div>
     );
   },
 );
@@ -148,11 +160,6 @@ const ToolStatus = memo(
                 <code className="rounded bg-ui-bg-base-pressed px-2 py-1 font-mono text-xs text-ui-fg-subtle max-w-md truncate">
                   {command}
                 </code>
-                {/* {hasOutput && ( */}
-                {/*   <span className="text-xs text-ui-fg-muted select-none"> */}
-                {/*     Click to {isExpanded ? "hide" : "view"} output */}
-                {/*   </span> */}
-                {/* )} */}
               </div>
             </div>
 
@@ -169,33 +176,32 @@ const ToolStatus = memo(
 
           {/* Expandable Output */}
           {hasOutput && isExpanded && (
-            <div className="border-t border-ui-border-base">
-              <div className="p-4 pt-3">
-                <div className="rounded-md overflow-hidden flex flex-col gap-4">
-                  <CodeBlock
-                    snippets={[
-                      {
-                        language: "bash",
-                        label: "Command",
-                        code: String(command).trim(),
-                        hideLineNumbers: true,
-                      },
-                    ]}
+            <div className="border-t border-ui-border-base p-4">
+              <div className="space-y-4">
+                <div className="bg-ui-bg-base-pressed rounded-lg overflow-hidden border border-ui-border-base">
+                  <div className="px-4 py-2 bg-ui-bg-subtle text-sm font-semibold">
+                    Command
+                  </div>
+                  <SyntaxHighlighter
+                    language="bash"
+                    style={vscDarkPlus}
+                    PreTag="div"
                   >
-                    <CodeBlock.Body />
-                  </CodeBlock>
-                  <CodeBlock
-                    snippets={[
-                      {
-                        language: "json",
-                        label: "Output",
-                        code: prettyPrintJson(invocation.result),
-                        hideLineNumbers: true,
-                      },
-                    ]}
+                    {String(command).trim()}
+                  </SyntaxHighlighter>
+                </div>
+
+                <div className="bg-ui-bg-base-pressed rounded-lg overflow-hidden border border-ui-border-base">
+                  <div className="px-4 py-2 bg-ui-bg-subtle text-sm font-semibold">
+                    Output
+                  </div>
+                  <SyntaxHighlighter
+                    language="json"
+                    style={vscDarkPlus}
+                    PreTag="div"
                   >
-                    <CodeBlock.Body />
-                  </CodeBlock>
+                    {prettyPrintJson(invocation.result)}
+                  </SyntaxHighlighter>
                 </div>
               </div>
             </div>
@@ -207,206 +213,51 @@ const ToolStatus = memo(
 );
 ToolStatus.displayName = "ToolStatus";
 
-// URL Preview Component with Navigation
-const URLPreview = memo(
-  ({
-    url,
-    urls,
-    currentIndex,
-  }: {
-    url: string;
-    urls: string[];
-    currentIndex: number;
-  }) => {
-    const [viewMode, setViewMode] = useState<"desktop" | "mobile">("desktop");
-    const [key, setKey] = useState(0);
-    const iframeRef = useRef<HTMLIFrameElement>(null);
-
-    const handleRefresh = () => {
-      setKey((prev) => prev + 1);
-    };
-
-    const handleOpenInNewTab = () => {
-      window.open(url, "_blank");
-    };
-
-    const getIframeWidth = () => {
-      return viewMode === "mobile" ? "w-80" : "w-full";
-    };
-
-    const canNavigate = urls.length > 1;
-
-    return (
-      <div className="not-prose my-6">
-        <div className="rounded-lg border border-ui-border-base bg-ui-bg-base shadow-sm overflow-hidden">
-          {/* Header */}
-          <div className="flex items-center justify-between p-4 border-b border-ui-border-base bg-ui-bg-subtle">
-            <div className="flex items-center gap-2">
-              <div className="w-3 h-3 rounded-full bg-ui-tag-red-icon"></div>
-              <div className="w-3 h-3 rounded-full bg-ui-tag-orange-icon"></div>
-              <div className="w-3 h-3 rounded-full bg-ui-tag-green-icon"></div>
-              <div className="ml-2 px-3 py-1 bg-ui-bg-base rounded-md">
-                <Text className="text-xs text-ui-fg-subtle font-mono truncate max-w-xs">
-                  {url}
-                </Text>
-              </div>
-              {canNavigate && (
-                <div className="ml-2 px-2 py-1 bg-ui-bg-base-pressed rounded-md">
-                  <Text className="text-xs text-ui-fg-muted">
-                    {currentIndex + 1} of {urls.length}
-                  </Text>
-                </div>
-              )}
-            </div>
-
-            <div className="flex items-center gap-1">
-              {canNavigate && (
-                <>
-                  <Button
-                    variant="transparent"
-                    size="small"
-                    onClick={() => {
-                      // This would need to be handled by parent component
-                      // For now, just a placeholder
-                    }}
-                    disabled={currentIndex === 0}
-                    className="p-1 h-8 w-8"
-                  >
-                    <ChevronLeft className="h-4 w-4" />
-                  </Button>
-                  <Button
-                    variant="transparent"
-                    size="small"
-                    onClick={() => {
-                      // This would need to be handled by parent component
-                      // For now, just a placeholder
-                    }}
-                    disabled={currentIndex === urls.length - 1}
-                    className="p-1 h-8 w-8"
-                  >
-                    <ChevronRight className="h-4 w-4" />
-                  </Button>
-                </>
-              )}
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleRefresh}
-                className="p-1 h-8 w-8"
-              >
-                <ArrowPath className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleOpenInNewTab}
-                className="p-1 h-8 w-8"
-              >
-                <Share className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "mobile" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("mobile")}
-                className="p-1 h-8 w-8"
-              >
-                <Smartphone className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "desktop" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("desktop")}
-                className="p-1 h-8 w-8"
-              >
-                <ComputerDesktop className="h-4 w-4" />
-              </Button>
-            </div>
-          </div>
-
-          {/* Iframe Container */}
-          <div className="p-4 bg-ui-bg-base">
-            <div
-              className={cn(
-                "mx-auto transition-all duration-300 ease-in-out",
-                getIframeWidth(),
-              )}
-            >
-              <iframe
-                key={key}
-                ref={iframeRef}
-                src={url}
-                className="w-full h-96 rounded-lg border border-ui-border-base"
-                title="URL Preview"
-                sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
-              />
-            </div>
-          </div>
-        </div>
-      </div>
-    );
-  },
-);
-URLPreview.displayName = "URLPreview";
-
 // Enhanced ReactMarkdown component with URL detection and navigation
-const EnhancedMarkdown = memo(
-  ({
-    content,
-    useSmoothText = false,
-  }: {
-    content: string;
-    useSmoothText?: boolean;
-  }) => {
-    const currentUrlIndex = useState(0);
-    const [visibleText] = useSmoothText
-      ? useSmoothTextHook(content)
-      : [content];
+const EnhancedMarkdown = memo(({ content }: { content: string }) => {
+  const currentUrlIndex = useState(0);
+  const visibleText = content;
 
-    // Regex to match the specific URL pattern (extract unique URLs)
-    const urlRegex = /https:\/\/\d+-[a-f0-9-]+\.tavor\.app?/g;
-    const urls = visibleText.match(urlRegex) || [];
+  const urlRegex = /https:\/\/\d+-[a-f0-9-]+\.tavor\.app?/g;
+  const urls = visibleText.match(urlRegex) || [];
 
-    // Get unique URLs to avoid duplicates
-    const uniqueUrls = [...new Set(urls)];
+  const uniqueUrls = [...new Set(urls)];
 
-    return (
-      <>
-        {/* Render the full markdown content as-is */}
-        <ReactMarkdown
-          remarkPlugins={[remarkGfm]}
-          components={{
-            p: ({ node, ...props }) => <Text {...props} />,
-            pre: CustomCodeBlock,
-            code: ({ node, className, children, ...props }) => {
-              const inline = !className?.includes("language-");
-              if (inline) {
-                return (
-                  <code
-                    {...props}
-                    className="not-prose rounded bg-ui-bg-base-pressed px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-ui-fg-subtle"
-                  >
-                    {children}
-                  </code>
-                );
-              }
-              return <code className={className}>{children}</code>;
-            },
-          }}
-        >
-          {visibleText}
-        </ReactMarkdown>
+  return (
+    <>
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        components={{
+          p: ({ node, ...props }) => <Text {...props} />,
+          pre: CustomCodeBlock,
+          code: ({ node, className, children, ...props }) => {
+            const inline = !className?.includes("language-");
+            if (inline) {
+              return (
+                <code
+                  {...props}
+                  className="not-prose rounded bg-ui-bg-base-pressed px-[0.4rem] py-[0.2rem] font-mono text-sm font-semibold text-ui-fg-subtle"
+                >
+                  {children}
+                </code>
+              );
+            }
+            return <code className={className}>{children}</code>;
+          },
+        }}
+      >
+        {visibleText}
+      </ReactMarkdown>
 
-        {/* Add URL preview for the current selected URL */}
-        {uniqueUrls.length > 0 && (
-          <URLPreviewWithNavigation
-            urls={uniqueUrls}
-            currentIndex={currentUrlIndex[0]}
-          />
-        )}
-      </>
-    );
-  },
-);
+      {uniqueUrls.length > 0 && (
+        <URLPreviewWithNavigation
+          urls={uniqueUrls}
+          currentIndex={currentUrlIndex[0]}
+        />
+      )}
+    </>
+  );
+});
 EnhancedMarkdown.displayName = "EnhancedMarkdown";
 
 // URL Preview Component with proper navigation handling
@@ -430,63 +281,69 @@ const URLPreviewWithNavigation = memo(
       return viewMode === "mobile" ? "w-80" : "w-full";
     };
 
-    // const canNavigate = urls.length > 1;
-
     return (
       <div className="not-prose my-6">
         <div className="rounded-xl border border-ui-border-base bg-ui-bg-base shadow-sm overflow-hidden">
           {/* Header */}
           <div className="flex items-center justify-between p-4 border-b border-ui-border-base bg-ui-bg-subtle">
-            <div className="flex items-center gap-2">
-              {/* <div className="w-3 h-3 rounded-full bg-ui-tag-red-icon"></div> */}
-              {/* <div className="w-3 h-3 rounded-full bg-ui-tag-orange-icon"></div> */}
-              {/* <div className="w-3 h-3 rounded-full bg-ui-tag-green-icon"></div> */}
-              <div className="ml-2 px-3 py-1 bg-ui-bg-base rounded-md">
-                <Text className="text-xs text-ui-fg-subtle font-mono truncate max-w-xs">
-                  {currentUrl}
-                </Text>
-              </div>
-            </div>
+            <div className="flex items-center gap-2"></div>
 
             <div className="flex items-center gap-1">
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleOpenInNewTab}
-                className="p-1 h-8 w-8"
-              >
-                <Share className="h-4 w-4" />
-              </Button>
-              <Button
-                variant="transparent"
-                size="small"
-                onClick={handleRefresh}
-                className="p-1 h-8 w-8"
-              >
-                <ArrowPath className="h-4 w-4" />
-              </Button>
-
-              <Button
-                variant={viewMode === "mobile" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("mobile")}
-                className="p-1 h-8 w-8"
-              >
-                <Smartphone className="h-4 w-4" />
-              </Button>
-              <Button
-                variant={viewMode === "desktop" ? "primary" : "transparent"}
-                size="small"
-                onClick={() => setViewMode("desktop")}
-                className="p-1 h-8 w-8"
-              >
-                <ComputerDesktop className="h-4 w-4" />
-              </Button>
+              <Copy content={currentUrl}>
+                <Button
+                  variant="transparent"
+                  size="small"
+                  onClick={handleOpenInNewTab}
+                  className="p-1 h-8 w-8"
+                >
+                  <Link className="h-4 w-4" />
+                </Button>
+              </Copy>
+              <Tooltip content="Open link in a new tab">
+                <Button
+                  variant="transparent"
+                  size="small"
+                  onClick={handleOpenInNewTab}
+                  className="p-1 h-8 w-8"
+                >
+                  <Share className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+              <Tooltip content="Refresh">
+                <Button
+                  variant="transparent"
+                  size="small"
+                  onClick={handleRefresh}
+                  className="p-1 h-8 w-8"
+                >
+                  <ArrowPath className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+              <Tooltip content="Mobile view">
+                <Button
+                  variant={viewMode === "mobile" ? "primary" : "transparent"}
+                  size="small"
+                  onClick={() => setViewMode("mobile")}
+                  className="p-1 h-8 w-8"
+                >
+                  <Smartphone className="h-4 w-4" />
+                </Button>
+              </Tooltip>
+              <Tooltip content="Desktop view">
+                <Button
+                  variant={viewMode === "desktop" ? "primary" : "transparent"}
+                  size="small"
+                  onClick={() => setViewMode("desktop")}
+                  className="p-1 h-8 w-8"
+                >
+                  <ComputerDesktop className="h-4 w-4" />
+                </Button>
+              </Tooltip>
             </div>
           </div>
 
           {/* Iframe Container */}
-          <div className="p-4 bg-ui-bg-base">
+          <div className="bg-ui-bg-base">
             <div
               className={cn(
                 "mx-auto transition-all duration-300 ease-in-out",
@@ -497,7 +354,7 @@ const URLPreviewWithNavigation = memo(
                 key={`${key}-${currentIndex}`}
                 ref={iframeRef}
                 src={currentUrl}
-                className="w-full h-96 rounded-lg border border-ui-border-base"
+                className="w-full h-[40rem] rounded-lg"
                 title="URL Preview"
                 sandbox="allow-scripts allow-same-origin allow-forms allow-popups allow-popups-to-escape-sandbox"
               />
@@ -550,9 +407,6 @@ const ReasoningStatus = memo(
                 <span className="text-sm text-ui-fg-muted">
                   See the thinking process
                 </span>
-                {/* <span className="text-xs text-ui-fg-muted select-none"> */}
-                {/*   Click to {isExpanded ? "hide" : "view"} reasoning */}
-                {/* </span> */}
               </div>
             </div>
 
@@ -639,12 +493,9 @@ ReasoningStatus.displayName = "ReasoningStatus";
 function prettyPrintJson(data: unknown) {
   if (typeof data === "string") {
     try {
-      // Try to parse the string as JSON
       const parsed = JSON.parse(data);
-      // If parsing succeeds, pretty-print it
       return JSON.stringify(parsed, null, 2);
     } catch {
-      // If parsing fails, just return the original string
       return data.trim();
     }
   }
@@ -698,11 +549,7 @@ export function BotMessage({
             return <ToolStatus key={`part-${index}`} part={part} />;
           } else if (part.type === "text") {
             return (
-              <EnhancedMarkdown
-                key={`part-${index}`}
-                content={part.text}
-                useSmoothText={true}
-              />
+              <EnhancedMarkdown key={`part-${index}`} content={part.text} />
             );
           } else if (part.type === "reasoning") {
             return <ReasoningStatus key={`part-${index}`} part={part} />;
@@ -714,7 +561,6 @@ export function BotMessage({
   }
 
   // Fallback to rendering the message content if no parts
-  const [visibleText] = useSmoothTextHook(message.content);
   return (
     <div
       className={cn(
@@ -726,7 +572,7 @@ export function BotMessage({
         className,
       )}
     >
-      <EnhancedMarkdown content={visibleText} />
+      <EnhancedMarkdown content={message.content} />
     </div>
   );
 }
