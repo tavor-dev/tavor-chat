@@ -44,6 +44,7 @@
     "@tavor/sdk": "^1.1.0",
     "@types/react-syntax-highlighter": "^15.5.13",
     "@xixixao/uploadstuff": "^0.0.5",
+    "ai": "^4.3.16",
     "class-variance-authority": "^0.7.1",
     "convex": "^1.24.8",
     "convex-helpers": "^0.1.93",
