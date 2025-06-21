@@ -81,7 +81,7 @@ const areArraysEqual = (a: string[], b: string[]) => {
 /**
  * This component is a silent worker. It fetches data from Convex,
  * processes it, and syncs it into our Jotai atom store.
- * It renders nothing itself.
+ * It now includes a queue to ensure sequential rendering.
  */
 const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
   const [cachedMessages, setCachedMessages] = useState<
@@ -103,9 +103,35 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
   const setIsGenerating = useSetAtom(isGeneratingAtom);
   const setHitMaxSteps = useSetAtom(hitMaxStepsAtom);
 
-  useEffect(() => {
-    setIsGenerating(!!thread?.generating);
-  }, [thread?.generating, setIsGenerating]);
+  const queue = useRef<UIMessageWithFiles[][]>([]);
+  const isProcessing = useRef(false);
+
+  const processQueue = useCallback(() => {
+    if (queue.current.length === 0) {
+      isProcessing.current = false;
+      return;
+    }
+
+    const uiMessages = queue.current.shift()!;
+
+    // Update the message IDs list
+    const newIds = uiMessages.map((m) => m.id as Id<"messages">);
+    setMessageIds((prevIds) => {
+      if (areArraysEqual(prevIds, newIds)) {
+        return prevIds;
+      }
+      return newIds;
+    });
+
+    // Update individual messages
+    for (const msg of uiMessages) {
+      updateMessage(msg);
+    }
+
+    // Schedule the next processing step with a small delay to pace the rendering.
+    // This is the key change to "nerf" the speed and make it feel linear.
+    setTimeout(processQueue, 40);
+  }, [setMessageIds, updateMessage]);
 
   useEffect(() => {
     if (!messages.isLoading && messages.results) {
@@ -128,23 +154,26 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
       };
     });
 
-    const newIds = uiMessages.map((m) => m.id as Id<"messages">);
-    setMessageIds((prevIds) => {
-      if (areArraysEqual(prevIds, newIds)) {
-        return prevIds;
-      }
-      return newIds;
-    });
+    // Add the new state to the queue instead of updating directly
+    queue.current.push(uiMessages);
 
-    uiMessages.forEach((msg) => updateMessage(msg));
+    // If the processor is not running, start it
+    if (!isProcessing.current) {
+      isProcessing.current = true;
+      // Start processing immediately, the timeout will handle the rest
+      processQueue();
+    }
   }, [
     messages.isLoading,
     messages.results,
     cachedMessages,
     threadId,
-    setMessageIds,
-    updateMessage,
+    processQueue,
   ]);
+
+  useEffect(() => {
+    setIsGenerating(!!thread?.generating);
+  }, [thread?.generating, setIsGenerating]);
 
   const maxStepsReached = useMaxStepsReached(
     messages.results,
@@ -155,6 +184,9 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
   }, [maxStepsReached, setHitMaxSteps]);
 
   useEffect(() => {
+    // Clear the queue and state when the thread changes
+    queue.current = [];
+    isProcessing.current = false;
     setCachedMessages(getCachedThreadMessages(threadId));
     setMessageIds([]);
   }, [threadId, setMessageIds]);
@@ -213,7 +245,7 @@ const MessageList = () => {
       {hitMaxSteps && (
         <div className="chat-section max-w-3xl mx-auto mb-8 px-4 flex items-center gap-2 text-sm text-ui-fg-base">
           ⚠️ Halted after the maximum tool steps. Type
-          <kbd className="rounded bg-gray-400 px-1">continue</kbd> to keep
+          <kbd className="rounded bg-gray-400 px-1">Continue</kbd> to keep
           going.
         </div>
       )}
