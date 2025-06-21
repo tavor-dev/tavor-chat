@@ -5,10 +5,11 @@ import { api } from "@cvx/_generated/api";
 import { useQuery } from "@tanstack/react-query";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useCallback, useState, useRef, useEffect } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import { Id } from "@cvx/_generated/dataModel";
 import { toast } from "@medusajs/ui";
 import ExamplePrompts from "@/components/ExamplePrompts";
+import { getDefaultModel, type ModelId } from "@/lib/models";
 
 export const Route = createFileRoute("/_app/_auth/")({
   component: NewChatComponent,
@@ -16,6 +17,17 @@ export const Route = createFileRoute("/_app/_auth/")({
 
 function NewChatComponent() {
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
+
+  const userPlan = user?.subscription?.planKey || "free";
+  const selectedModelId = (user?.selectedModel ??
+    getDefaultModel(userPlan).id) as ModelId;
+
+  const exampleEnabledModels: ModelId[] = [
+    "o4-mini",
+    "claude-4-sonnet",
+    "gemini-2-5-pro",
+  ];
+  const areExamplesEnabled = exampleEnabledModels.includes(selectedModelId);
 
   const navigate = useNavigate({ from: "/" });
   const createThread = useMutation(api.threads.create);
@@ -111,6 +123,7 @@ function NewChatComponent() {
           <div className="flex-1 flex justify-center px-4 sm:px-8 pb-4 mt-0 md:mt-12">
             <ExamplePrompts
               onPromptSelect={(prompt) => handleSubmit(prompt, [])}
+              disabled={!areExamplesEnabled}
             />
           </div>
         </div>
