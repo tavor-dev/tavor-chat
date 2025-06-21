@@ -29,6 +29,8 @@ import TextareaAutosize, {
   type TextareaHeightChangeMeta,
 } from "react-textarea-autosize";
 import { Id } from "@cvx/_generated/dataModel";
+import { useAtomValue } from "jotai";
+import { isGeneratingAtom } from "@/lib/state/chatAtoms";
 
 const MAX_FILES = 3;
 const MAX_IMAGE_SIZE_MB = 2;
@@ -116,6 +118,7 @@ export function ChatPanel({
   inputRef: inputRefProp, // <-- get from props
 }: ChatPanelProps) {
   const stopGeneration = useMutation(api.messages.stopGeneration);
+  const isGenerating = useAtomValue(isGeneratingAtom);
 
   const handleStop = useCallback(() => {
     stopGeneration({ threadId });
@@ -135,8 +138,6 @@ export function ChatPanel({
   );
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
   const updateThread = useMutation(api.threads.update);
-
-  const isGenerating = thread?.generating;
 
   const userPlan = user?.subscription?.planKey || "free";
 
