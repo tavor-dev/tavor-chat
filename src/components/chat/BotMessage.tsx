@@ -19,6 +19,8 @@ import remarkGfm from "remark-gfm";
 import { UIMessageWithFiles } from "./Chat";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useAtom } from "jotai";
+import { reasoningStatusFamily } from "@/lib/state/chatAtoms";
 
 /**
  * A custom component that uses react-syntax-highlighter.
@@ -370,10 +372,17 @@ URLPreviewWithNavigation.displayName = "URLPreviewWithNavigation";
 const ReasoningStatus = memo(
   ({
     part,
+    messageId,
+    partId,
   }: {
     part: Extract<UIMessageWithFiles["parts"][0], { type: "reasoning" }>;
+    messageId: string;
+    partId: number;
   }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    const reasoningId = `${messageId}-${partId}`;
+    const [isExpanded, setIsExpanded] = useAtom(
+      reasoningStatusFamily(reasoningId),
+    );
     const reasoning = part.reasoning;
 
     if (!reasoning?.trim()) return null;
@@ -552,7 +561,14 @@ export function BotMessage({
               <EnhancedMarkdown key={`part-${index}`} content={part.text} />
             );
           } else if (part.type === "reasoning") {
-            return <ReasoningStatus key={`part-${index}`} part={part} />;
+            return (
+              <ReasoningStatus
+                key={`part-${index}`}
+                part={part}
+                messageId={message.key}
+                partId={index}
+              />
+            );
           }
           return null;
         })}

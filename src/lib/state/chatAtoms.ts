@@ -20,6 +20,10 @@ export const messageFamily = atomFamily(
   (a, b) => a === b,
 );
 
+export const reasoningStatusFamily = atomFamily((_id: string) =>
+  atom<boolean>(false),
+);
+
 /**
  * A write-only atom to update a message in the family,
  * but only if its content has actually changed.
