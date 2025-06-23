@@ -704,4 +704,3 @@ function AppSidebar() {
     </Sidebar>
   );
 }
-
