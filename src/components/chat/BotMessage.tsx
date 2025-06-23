@@ -295,7 +295,6 @@ const URLPreviewWithNavigation = memo(
                 <Button
                   variant="transparent"
                   size="small"
-                  onClick={handleOpenInNewTab}
                   className="p-1 h-8 w-8"
                 >
                   <Link className="h-4 w-4" />

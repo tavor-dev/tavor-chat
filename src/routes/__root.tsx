@@ -20,8 +20,8 @@ const TanStackRouterDevtools =
       );
 
 // const GridOverlay = () => (
-//   <div
 //     style={{
+//   <div
 //       pointerEvents: "none",
 //       position: "fixed",
 //       top: 0,
@@ -50,7 +50,7 @@ export const Route = createRootRouteWithContext<{
       "Tavor chat") as string;
 
     return (
-      <div className="min-h-screen flex flex-col">
+      <div className="flex flex-col">
         {/* {process.env.NODE_ENV === "development" && <GridOverlay />} */}
         <Outlet />
         <Helmet>

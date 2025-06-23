@@ -206,11 +206,23 @@ export const timeoutStream = internalMutation({
       console.warn("Stream not found", args.streamId);
       return;
     }
+
+    // Mark the stream as finished
     await ctx.db.patch(args.streamId, {
       state: {
         kind: "finished",
         endedAt: Date.now(),
       },
     });
+
+    // Also update the thread state to prevent it from getting stuck
+    await ctx.db.patch(stream.threadId, {
+      generating: false,
+      cancelRequested: false,
+    });
+
+    console.log(
+      `Stream ${args.streamId} timed out, thread ${stream.threadId} state reset`,
+    );
   },
 });

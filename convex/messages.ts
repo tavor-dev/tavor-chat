@@ -146,6 +146,16 @@ export const stopGeneration = mutation({
       await ctx.db.patch(streamId, {
         state: { kind: "canceled", canceledAt: Date.now() },
       });
+    } else {
+      // No active streams found - this might be a stuck thread
+      // Force reset the generating state
+      console.log(
+        `No active streams found for thread ${threadId}, forcing reset`,
+      );
+      await ctx.db.patch(threadId, {
+        generating: false,
+        cancelRequested: false,
+      });
     }
 
     return null;

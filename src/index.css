@@ -106,3 +106,75 @@ img {
 /*   background-image: linear-gradient(90deg, var(--muted-grid) 1px, transparent 0), */
 /*     linear-gradient(180deg, var(--muted-grid) 1px, transparent 0); */
 /* } */
+
+/* Mobile Safari viewport fixes */
+/* :root { */
+/*   –viewport-height: 100vh; */
+/* } */
+/**/
+/* /* Use dynamic viewport units when available */
+*/
+/* @supports (height: 100dvh) { */
+/*   :root { */
+/*     –viewport-height: 100dvh; */
+/*   } */
+/* } */
+
+/* Remove the 100svh support as it can cause issues with keyboards */
+/* @supports (height: 100svh) {
+:root {
+–viewport-height: 100svh;
+}
+} */
+
+/* Prevent iOS Safari zoom on input focus */
+input[type="“text”"],
+input[type="“email”"],
+input[type="“password”"],
+textarea,
+select {
+  font-size: 16px !important;
+  transform: translateZ(0);
+}
+
+/* Fix the core issue: don’t fix body height on mobile */
+html {
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  height: 100%;
+}
+
+/* Ensure body does not scroll */
+body {
+  overflow: hidden;
+  overscroll-behavior: none;
+  -webkit-overflow-scrolling: touch;
+  min-height: 100vh;
+  min-height: 100dvh;
+  width: 100%;
+}
+
+/* Ensure root does not scroll */
+#root {
+  min-height: 100vh;
+  min-height: 100dvh;
+  overflow: hidden;
+}
+
+/* Chat container styles */
+.chat-main-container {
+  overflow: hidden;
+}
+
+.chat-scroll-container {
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+/* Remove redundant iOS-specific rules and rely on 100dvh */
+@supports (-webkit-touch-callout: none) {
+  /* No need for additional height adjustments; handled by 100dvh */
+  .chat-scroll-container {
+    -webkit-overflow-scrolling: touch;
+  }
+}

@@ -142,6 +142,7 @@ function AuthLayout() {
 
   return (
     <AppContext.Provider value={{ openRenameDrawer }}>
+      <Toaster />
       <AppSidebar />
       <div className="fixed left-1.5 z-10 p-1 top-2">
         <SidebarTrigger className="ml-0" />
@@ -149,7 +150,6 @@ function AuthLayout() {
       <SidebarInset className="border-ui-bg-base md:peer-data-[variant=inset]:peer-data-[state=collapsed]:m-0 md:peer-data-[variant=inset]:peer-data-[state=collapsed]:rounded-none transition-all">
         <Outlet />
       </SidebarInset>
-      <Toaster />
       <RenameDrawer
         thread={threadToRename}
         onClose={closeRenameDrawer}
@@ -166,10 +166,7 @@ function RenameDrawer({
 }: {
   thread: Thread | null;
   onClose: () => void;
-  onRename: (
-    threadId: Id<"threads">,
-    newTitle: string,
-  ) => Promise<boolean>;
+  onRename: (threadId: Id<"threads">, newTitle: string) => Promise<boolean>;
 }) {
   const [newTitle, setNewTitle] = useState("");
   const [isRenaming, setIsRenaming] = useState(false);
