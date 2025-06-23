@@ -27,6 +27,7 @@ import type * as chat_engine_users from "../chat_engine/users.js";
 import type * as chat_engine_validators from "../chat_engine/validators.js";
 import type * as chat_engine_vector_index from "../chat_engine/vector/index.js";
 import type * as chat_engine_vector_tables from "../chat_engine/vector/tables.js";
+import type * as crons from "../crons.js";
 import type * as email_index from "../email/index.js";
 import type * as email_templates_subscriptionEmail from "../email/templates/subscriptionEmail.js";
 import type * as env from "../env.js";
@@ -71,6 +72,7 @@ declare const fullApi: ApiFromModules<{
   "chat_engine/validators": typeof chat_engine_validators;
   "chat_engine/vector/index": typeof chat_engine_vector_index;
   "chat_engine/vector/tables": typeof chat_engine_vector_tables;
+  crons: typeof crons;
   "email/index": typeof email_index;
   "email/templates/subscriptionEmail": typeof email_templates_subscriptionEmail;
   env: typeof env;

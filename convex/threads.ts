@@ -245,3 +245,51 @@ export const maybeUpdateThreadTitle = internalAction({
     }
   },
 });
+
+/**
+ * Internal mutation to clean up stuck threads
+ * Finds threads that are marked as generating but have no active streams
+ */
+export const cleanupStuckThreads = internalMutation({
+  args: {},
+  handler: async (ctx) => {
+    // Find all threads marked as generating
+    const generatingThreads = await ctx.db
+      .query("threads")
+      .filter((q) => q.eq(q.field("generating"), true))
+      .collect();
+
+    let cleanedCount = 0;
+
+    for (const thread of generatingThreads) {
+      // Check if this thread has any active streaming messages
+      const activeStreams = await ctx.db
+        .query("streamingMessages")
+        .withIndex("threadId_state_order_stepOrder", (q) =>
+          q.eq("threadId", thread._id).eq("state.kind", "streaming"),
+        )
+        .take(1);
+
+      if (activeStreams.length === 0) {
+        // No active streams - this thread is stuck
+        const timeSinceUpdate = Date.now() - thread._creationTime;
+
+        // Only clean up if the thread has been stuck for more than 1 minute
+        if (timeSinceUpdate > 60000) {
+          console.log(`Cleaning up stuck thread ${thread._id}`);
+          await ctx.db.patch(thread._id, {
+            generating: false,
+            cancelRequested: false,
+          });
+          cleanedCount++;
+        }
+      }
+    }
+
+    if (cleanedCount > 0) {
+      console.log(`Cleaned up ${cleanedCount} stuck threads`);
+    }
+
+    return { cleanedCount };
+  },
+});
