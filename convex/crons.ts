@@ -10,4 +10,13 @@ crons.interval(
   internal.threads.cleanupStuckThreads,
 );
 
+// Run cleanup every hour to delete orphaned files
+// Files with refcount=0 that haven't been touched in 24+ hours
+crons.interval(
+  "cleanup orphaned files",
+  { hours: 1 },
+  internal.chat_engine.files.cleanupOrphanedFiles,
+  {},
+);
+
 export default crons;
