@@ -1,9 +1,16 @@
 import { paginator } from "convex-helpers/server/pagination";
 import type { Id } from "@cvx/_generated/dataModel";
-import { mutation, type MutationCtx, query } from "@cvx/_generated/server";
+import {
+  mutation,
+  type MutationCtx,
+  query,
+  internalMutation,
+  internalQuery,
+} from "@cvx/_generated/server";
 import schema, { v } from "@cvx/schema";
 import { paginationOptsValidator } from "convex/server";
 import type { Infer } from "convex/values";
+import { api, internal } from "@cvx/_generated/api";
 
 const addFileArgs = v.object({
   storageId: v.string(),
@@ -126,7 +133,7 @@ export async function copyFileHandler(
  * You can inspect the `lastTouchedAt` field to see how recently it was used.
  * I'd recommend not deleting anything touched in the last 24 hours.
  */
-export const getFilesToDelete = query({
+export const getFilesToDelete = internalQuery({
   args: {
     paginationOpts: paginationOptsValidator,
   },
@@ -170,4 +177,56 @@ export const deleteFiles = mutation({
     );
   },
   returns: v.null(),
+});
+
+/**
+ * Internal action to clean up orphaned files.
+ * Deletes files that have:
+ * - refcount = 0 (no references)
+ * - lastTouchedAt older than 24 hours
+ *
+ * This is meant to be called by a cron job.
+ */
+export const cleanupOrphanedFiles = internalMutation({
+  args: { cursor: v.optional(v.string()) },
+  handler: async (ctx, args) => {
+    const THRESHOLD_MS = 1000 * 60 * 60 * 24;
+
+    const files = await ctx.runQuery(
+      internal.chat_engine.files.getFilesToDelete,
+      {
+        paginationOpts: {
+          cursor: args.cursor ?? null,
+          numItems: 100,
+        },
+      },
+    );
+    // Only delete files that haven't been touched in the last 24 hours
+    const toDelete = files.page.filter(
+      (f) => f.lastTouchedAt < Date.now() - THRESHOLD_MS,
+    );
+    if (toDelete.length > 0) {
+      console.debug(`Deleting ${toDelete.length} files...`);
+    }
+    await Promise.all(
+      toDelete.map((f) => ctx.storage.delete(f.storageId as Id<"_storage">)),
+    );
+    // Also mark them as deleted in the component.
+    // This is in a transaction (mutation), so there's no races.
+    await ctx.runMutation(api.chat_engine.files.deleteFiles, {
+      fileIds: toDelete.map((f) => f._id),
+    });
+    if (!files.isDone) {
+      console.debug(
+        `Deleted ${toDelete.length} files but not done yet, continuing...`,
+      );
+      await ctx.scheduler.runAfter(
+        0,
+        internal.chat_engine.files.cleanupOrphanedFiles,
+        {
+          cursor: files.continueCursor,
+        },
+      );
+    }
+  },
 });
