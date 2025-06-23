@@ -6,7 +6,7 @@
   "scripts": {
     "start": "npm run dev",
     "dev": "npm-run-all --parallel dev:frontend dev:backend",
-    "dev:frontend": "vite",
+    "dev:frontend": "vite --host",
     "dev:backend": "convex dev",
     "predev": "convex dev --run init --until-success",
     "build": "tsc -b && vite build",

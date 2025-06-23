@@ -3,7 +3,7 @@ import {
   getCachedThreadMessages,
 } from "@/lib/threadCache";
 import { toUIMessages, type UIMessage } from "@/lib/agent/toUIMessages";
-import { cn } from "@/lib/utils";
+// import { cn } from "@/lib/utils";
 import { optimisticallySendMessage, useThreadMessages } from "@/lib/agent";
 import { Doc, type Id } from "@cvx/_generated/dataModel";
 import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
@@ -261,9 +261,67 @@ function ChatInternal({ threadId }: { threadId: Id<"threads"> }) {
   const userHasScrolledUp = useRef(false);
   const [showUpgradeModal, setShowUpgradeModal] = useState(false);
   const [inputHeight, setInputHeight] = useState(0);
+  const [_viewportHeight, setViewportHeight] = useState(0);
 
   const messageIds = useAtomValue(messageIdsAtom);
 
+  // Improved viewport handling for Safari keyboard
+  useEffect(() => {
+    const updateViewportHeight = () => {
+      // Use visualViewport when available (better for keyboard handling)
+      let vh = window.innerHeight;
+
+      if (window.visualViewport) {
+        vh = window.visualViewport.height;
+      }
+
+      setViewportHeight(vh);
+
+      // Set CSS custom property
+      document.documentElement.style.setProperty(
+        "--viewport-height",
+        `${vh}px`,
+      );
+      document.documentElement.style.setProperty(
+        "--input-height",
+        `${inputHeight}px`,
+      );
+    };
+
+    updateViewportHeight();
+
+    // Use visualViewport events when available
+    if (window.visualViewport) {
+      window.visualViewport.addEventListener("resize", updateViewportHeight);
+      // Also listen for scroll events on visual viewport
+      window.visualViewport.addEventListener("scroll", updateViewportHeight);
+    } else {
+      // Fallback for browsers without visualViewport
+      window.addEventListener("resize", updateViewportHeight);
+      window.addEventListener("orientationchange", () => {
+        // Delay to ensure orientation change is complete
+        setTimeout(updateViewportHeight, 100);
+      });
+    }
+
+    return () => {
+      if (window.visualViewport) {
+        window.visualViewport.removeEventListener(
+          "resize",
+          updateViewportHeight,
+        );
+        window.visualViewport.removeEventListener(
+          "scroll",
+          updateViewportHeight,
+        );
+      } else {
+        window.removeEventListener("resize", updateViewportHeight);
+        window.removeEventListener("orientationchange", updateViewportHeight);
+      }
+    };
+  }, [inputHeight]);
+
+  // Rest of your component code remains the same...
   const scrollToBottom = useCallback(
     (behavior: "smooth" | "instant" = "instant") => {
       const container = scrollContainerRef.current;
@@ -319,7 +377,7 @@ function ChatInternal({ threadId }: { threadId: Id<"threads"> }) {
         threadId,
         prompt,
         files: filesForBackend,
-      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+        // eslint-disable-next-line @typescript-eslint/no-explicit-any
       }).catch((error: any) => {
         const errorMessage =
           typeof error.data === "string"
@@ -343,35 +401,41 @@ function ChatInternal({ threadId }: { threadId: Id<"threads"> }) {
 
   return (
     <>
-      <Toaster />
       <UpgradeModal
         isOpen={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
       />
-      {/* key={threadId} ensures the sync component is re-mounted on thread change */}
       <SyncToJotai key={threadId} threadId={threadId} />
-      <div
-        id="scroll-container"
-        ref={scrollContainerRef}
-        role="list"
-        aria-roledescription="chat messages"
-        className={cn(
-          "w-full pt-14 absolute overflow-y-scroll h-screen inset-0",
-          messageIds.length > 0 ? "flex-1" : "",
-        )}
-        style={{
-          paddingBottom: inputHeight + 76,
-        }}
-      >
-        <MessageList />
+
+      {/* Updated chat container with better mobile handling */}
+      <div className="grid grid-rows-[1fr_auto] w-full h-[90dvh] chat-main-container">
+        <Toaster />
+        {/* Messages scroll container */}
+        <div
+          id="scroll-container"
+          ref={scrollContainerRef}
+          role="list"
+          aria-roledescription="chat messages"
+          className="overflow-auto chat-scroll-container"
+          style={{
+            // paddingLeft: "env(safe-area-inset-left)",
+            // paddingRight: "env(safe-area-inset-right)",
+            paddingBottom: "40px",
+          }}
+        >
+          <MessageList />
+        </div>
+
+        {/* Chat input panel with improved positioning */}
+
+        <ChatPanel
+          handleSubmit={handleSubmit}
+          onInputHeightChange={setInputHeight}
+          showScrollToBottomButton={showScrollDownButton}
+          onScrollToBottom={handleScrollToBottomClick}
+          threadId={threadId}
+        />
       </div>
-      <ChatPanel
-        handleSubmit={handleSubmit}
-        onInputHeightChange={setInputHeight}
-        showScrollToBottomButton={showScrollDownButton}
-        onScrollToBottom={handleScrollToBottomClick}
-        threadId={threadId}
-      />
     </>
   );
 }
