@@ -37,15 +37,24 @@ export const setupTavorTools = ({ threadId }: { threadId: Id<"threads"> }) => {
     executeCommand: createTool({
       description: `Execute bash commands in a sandboxed environment.
 
-Each chat thread generates an ephemeral sandbox to run the command, if you want to run multiple commands, chain them or write a script that you execute.
+You have exclusive access to an ephemeral sandbox that runs your command with:
+- **OS**: Ubuntu (24.04 stable)
+- **User**: root (full system privileges)
+- **Resources**: 2 GB RAM, 10 GB SSD, 1 vCPU
+- **Pre-installed**: git, python3, pip, npm, bun, curl, wget, vim, nano
+- **May need installation**: ss, lsof (install when network diagnostics needed), or anything else useful
 
 The sandbox may get killed as it only lasts a few hours, so files you create may be temporary, but should still last the current session.
 
-IMPORTANT: for commands that should run in the background (i.e. webservers etc), run them separately with background: true
+IMPORTANT: for commands that should run in the background (i.e. webservers etc), run them separately with background: true.
 
-Note: Command output is limited to ${MAX_OUTPUT_LENGTH} characters to prevent overwhelming responses.
+For long-running processes, you need to run them in the background or use a small timeout, otherwise running a long-running task even with "nohup .. &" without "background: true" will never end.
 
-Returns JSON with: { output: string, exitCode: number, success: boolean, background: boolean }`,
+Note: Command output is limited to the last ${MAX_OUTPUT_LENGTH} characters to prevent overwhelming responses. Use pagers or grep to find output in a longer text if necessary.
+
+If you expose web ports in the background, you can then generate a preview URL for the same port to allow the user to see the output.
+
+For that, ensure the port is accessible (on 0.0.0.0 not just localhost) and server is running (i.e. with curl, etc) before sending the preview URL to the user`,
       args: z.object({
         command: z.string().describe("The command to execute inside sandbox"),
         background: z
@@ -66,7 +75,7 @@ Returns JSON with: { output: string, exitCode: number, success: boolean, backgro
     }),
     getPreviewUrl: createTool({
       description:
-        "Generated a publicly-visible HTTPS URL that maps to the specified port inside the sandbox.",
+        "Returns a publicly-visible HTTPS URL that maps to the specified port inside the sandbox.",
       args: z.object({
         port: z.number().describe("The port inside the sandbox to look at"),
       }),
