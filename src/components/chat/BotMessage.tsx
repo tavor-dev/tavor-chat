@@ -20,7 +20,7 @@ import { UIMessageWithFiles } from "./Chat";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useAtom } from "jotai";
-import { reasoningStatusFamily } from "@/lib/state/chatAtoms";
+import { reasoningStatusFamily, toolStatusFamily } from "@/lib/state/chatAtoms";
 
 /**
  * A custom component that uses react-syntax-highlighter.
@@ -83,10 +83,17 @@ CustomCodeBlock.displayName = "CustomCodeBlock";
 const ToolStatus = memo(
   ({
     part,
+    messageId,
+    partId,
   }: {
     part: Extract<UIMessageWithFiles["parts"][0], { type: "tool-invocation" }>;
+    messageId: string;
+    partId: number;
   }) => {
-    const [isExpanded, setIsExpanded] = useState(false);
+    // Create a unique ID for this tool invocation
+    const toolId = `${messageId}-${partId}`;
+    const [isExpanded, setIsExpanded] = useAtom(toolStatusFamily(toolId));
+
     const invocation = part.toolInvocation;
     const isExecuting = invocation.state === "call";
     const isCompleted = invocation.state === "result";
@@ -554,7 +561,14 @@ export function BotMessage({
       >
         {message.parts.map((part, index) => {
           if (part.type === "tool-invocation") {
-            return <ToolStatus key={`part-${index}`} part={part} />;
+            return (
+              <ToolStatus
+                key={`part-${index}`}
+                part={part}
+                messageId={message.key}
+                partId={index}
+              />
+            );
           } else if (part.type === "text") {
             return (
               <EnhancedMarkdown key={`part-${index}`} content={part.text} />

@@ -25,6 +25,14 @@ export const reasoningStatusFamily = atomFamily((_id: string) =>
 );
 
 /**
+ * An atom family for tool status expanded/collapsed state.
+ * Each tool invocation gets its own state that persists during streaming.
+ */
+export const toolStatusFamily = atomFamily((_id: string) =>
+  atom<boolean>(false),
+);
+
+/**
  * A write-only atom to update a message in the family,
  * but only if its content has actually changed.
  * We use JSON.stringify for a pragmatic deep comparison.
