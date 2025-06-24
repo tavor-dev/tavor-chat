@@ -206,7 +206,10 @@ export const ensureBox = internalAction({
       await ctx.runMutation(internal.tavor.clearBox, { threadId });
     }
 
-    const box = await tavor.createBox({ timeout: DEFAULT_BOX_TIMEOUT });
+    const box = await tavor.createBox({
+      timeout: DEFAULT_BOX_TIMEOUT,
+      mib_ram: 2048,
+    });
     await box.waitUntilReady();
 
     await ctx.runMutation(internal.tavor.setBox, {
