@@ -66,6 +66,7 @@ export class DeltaStreamer {
   #latestWrite: number = 0;
   #ongoingWrite: Promise<void> | undefined;
   #cursor: number = 0;
+  #flushTimer: NodeJS.Timeout | undefined;
   public abortController: AbortController;
 
   constructor(
@@ -103,6 +104,13 @@ export class DeltaStreamer {
         this.abortController.abort();
       });
     }
+    // Clean up timer on abort
+    this.abortController.signal.addEventListener("abort", () => {
+      if (this.#flushTimer) {
+        clearTimeout(this.#flushTimer);
+        this.#flushTimer = undefined;
+      }
+    });
   }
   public async addParts(parts: TextStreamPart[]) {
     if (this.abortController.signal.aborted) {
@@ -122,11 +130,32 @@ export class DeltaStreamer {
       );
     }
     this.#nextParts.push(...parts);
-    if (
-      !this.#ongoingWrite &&
-      Date.now() - this.#latestWrite >= this.options.throttleMs
-    ) {
-      this.#ongoingWrite = this.#sendDelta();
+
+    // Clear any existing timer since we have new parts
+    if (this.#flushTimer) {
+      clearTimeout(this.#flushTimer);
+      this.#flushTimer = undefined;
+    }
+
+    // Only start a new send if there's no ongoing write
+    if (!this.#ongoingWrite) {
+      const timeSinceLastWrite = Date.now() - this.#latestWrite;
+      if (timeSinceLastWrite >= this.options.throttleMs) {
+        // Send immediately if enough time has passed
+        this.#ongoingWrite = this.#sendDelta();
+      } else {
+        // Schedule a flush after the remaining throttle time
+        const remainingTime = this.options.throttleMs - timeSinceLastWrite;
+        this.#flushTimer = setTimeout(
+          () => {
+            this.#flushTimer = undefined;
+            if (!this.#ongoingWrite && this.#nextParts.length > 0) {
+              this.#ongoingWrite = this.#sendDelta();
+            }
+          },
+          Math.max(0, remainingTime),
+        );
+      }
     }
   }
 
@@ -149,15 +178,16 @@ export class DeltaStreamer {
       throw e;
     }
     // Now that we've sent the delta, check if we need to send another one.
-    if (
-      this.#nextParts.length > 0 &&
-      Date.now() - this.#latestWrite >= this.options.throttleMs
-    ) {
-      // We send again immediately with the accumulated deltas.
-      this.#ongoingWrite = this.#sendDelta();
-    } else {
-      this.#ongoingWrite = undefined;
+    if (this.#nextParts.length > 0) {
+      // Schedule the next send after throttleMs
+      this.#flushTimer = setTimeout(() => {
+        this.#flushTimer = undefined;
+        if (this.#nextParts.length > 0) {
+          this.#ongoingWrite = this.#sendDelta();
+        }
+      }, this.options.throttleMs);
     }
+    this.#ongoingWrite = undefined;
   }
 
   #createDelta(): StreamDelta {
@@ -178,6 +208,12 @@ export class DeltaStreamer {
   }
 
   public async finish(messages: MessageDoc[]) {
+    // Clear any pending flush timer
+    if (this.#flushTimer) {
+      clearTimeout(this.#flushTimer);
+      this.#flushTimer = undefined;
+    }
+
     if (this.#ongoingWrite) {
       await this.#ongoingWrite;
       this.#ongoingWrite = undefined;
