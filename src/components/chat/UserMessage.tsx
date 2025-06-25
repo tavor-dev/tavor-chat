@@ -1,4 +1,4 @@
-import { useSmoothText } from "@/lib/agent";
+import { useSmoothText, type UIMessage } from "@/lib/agent";
 import { Button, Textarea } from "@medusajs/ui";
 import { useCallback, useState } from "react";
 import { MessageActions } from "./MessageActions";
@@ -6,7 +6,6 @@ import { useMutation } from "convex/react";
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
 import { PaperClip } from "@medusajs/icons";
-import { type UIMessage } from "@/lib/agent/toUIMessages";
 import { type FileUIPart } from "@cvx/chat_engine/mapping";
 
 type UserMessageProps = {
