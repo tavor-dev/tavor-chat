@@ -3,7 +3,6 @@ import {
   getCachedThreadMessages,
 } from "@/lib/threadCache";
 import { toUIMessages, type UIMessage } from "@/lib/agent/toUIMessages";
-// import { cn } from "@/lib/utils";
 import { optimisticallySendMessage, useThreadMessages } from "@/lib/agent";
 import { Doc, type Id } from "@cvx/_generated/dataModel";
 import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
@@ -17,7 +16,7 @@ import { useNavigate } from "@tanstack/react-router";
 import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { useMaxStepsReached } from "@/hooks/use-max-steps-reached";
-import { Provider as JotaiProvider, useSetAtom, useAtomValue } from "jotai";
+import { useSetAtom, useAtomValue } from "jotai";
 import {
   hitMaxStepsAtom,
   isGeneratingAtom,
@@ -78,7 +77,7 @@ const areArraysEqual = (a: string[], b: string[]) => {
  * processes it, and syncs it into our Jotai atom store.
  * It now includes a queue to ensure sequential rendering.
  */
-const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
+const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
   const [cachedMessages, setCachedMessages] = useState<
     Doc<"messages">[] | null
   >(() => getCachedThreadMessages(threadId));
@@ -86,7 +85,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
   const messages = useThreadMessages(
     api.messages.getByThreadId,
     { threadId },
-    { initialNumItems: 50000, stream: true },
+    { initialNumItems: 50000, stream: true }, // hack to eliminate pagination for now
   );
 
   const { data: thread } = useQuery(
@@ -109,7 +108,6 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
 
     const uiMessages = queue.current.shift()!;
 
-    // Update the message IDs list
     const newIds = uiMessages.map((m) => m.id as Id<"messages">);
     setMessageIds((prevIds) => {
       if (areArraysEqual(prevIds, newIds)) {
@@ -178,7 +176,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
   }, [threadId, setMessageIds]);
 
   return null;
-};
+});
 
 /**
  * Renders a single message. It's memoized and subscribes to its own
@@ -241,7 +239,7 @@ const MessageList = () => {
 
 // --- Main Chat Component ---
 
-function ChatInternal({ threadId }: { threadId: Id<"threads"> }) {
+export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [showScrollDownButton, setShowScrollDownButton] = useState(false);
   const userHasScrolledUp = useRef(false);
@@ -332,7 +330,9 @@ function ChatInternal({ threadId }: { threadId: Id<"threads"> }) {
       setShowScrollDownButton(!isAtBottom);
     };
 
-    scrollContainer.addEventListener("scroll", handleScroll, { passive: true });
+    scrollContainer.addEventListener("scroll", handleScroll, {
+      passive: true,
+    });
     return () => scrollContainer.removeEventListener("scroll", handleScroll);
   }, []);
 
@@ -391,7 +391,7 @@ function ChatInternal({ threadId }: { threadId: Id<"threads"> }) {
         isOpen={showUpgradeModal}
         onOpenChange={setShowUpgradeModal}
       />
-      <SyncToJotai key={threadId} threadId={threadId} />
+      {threadId && <SyncToJotai key={threadId} threadId={threadId} />}
 
       {/* Updated chat container with better mobile handling */}
       <div className="grid grid-rows-[1fr_auto] w-full h-[90dvh] chat-main-container">
@@ -424,12 +424,4 @@ function ChatInternal({ threadId }: { threadId: Id<"threads"> }) {
       </div>
     </>
   );
-}
-
-export function Chat({ threadId }: { threadId: Id<"threads"> }) {
-  return (
-    <JotaiProvider>
-      <ChatInternal threadId={threadId} />
-    </JotaiProvider>
-  );
-}
+});
