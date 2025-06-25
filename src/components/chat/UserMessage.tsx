@@ -1,5 +1,5 @@
 import { useSmoothText, type UIMessage } from "@/lib/agent";
-import { Button, Textarea } from "@medusajs/ui";
+import { Button, Textarea, Text } from "@medusajs/ui";
 import { useCallback, useState } from "react";
 import { MessageActions } from "./MessageActions";
 import { useMutation } from "convex/react";

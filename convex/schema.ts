@@ -249,6 +249,17 @@ const schema = defineSchema({
     .index("hash", ["hash"])
     .index("refcount", ["refcount"]),
 
+  gitHubCredentials: defineTable({
+    userId: v.id("users"),
+    githubUserId: v.string(),
+    login: v.string(),
+    encryptedAccessToken: v.string(),
+    encryptedRefreshToken: v.optional(v.string()),
+    scopes: v.array(v.string()),
+  })
+    .index("userId", ["userId"])
+    .index("githubUserId", ["githubUserId"]),
+
   ...vectorTables,
 });
 
