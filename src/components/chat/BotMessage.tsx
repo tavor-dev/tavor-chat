@@ -16,7 +16,7 @@ import { Alert, Text, Button, Copy, Tooltip } from "@medusajs/ui";
 import React, { memo, useState, useRef } from "react";
 import ReactMarkdown from "react-markdown";
 import remarkGfm from "remark-gfm";
-import { UIMessageWithFiles } from "./Chat";
+import type { UIMessage } from "@/lib/agent";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useAtom } from "jotai";
@@ -86,7 +86,7 @@ const ToolStatus = memo(
     messageId,
     partId,
   }: {
-    part: Extract<UIMessageWithFiles["parts"][0], { type: "tool-invocation" }>;
+    part: Extract<UIMessage["parts"][0], { type: "tool-invocation" }>;
     messageId: string;
     partId: number;
   }) => {
@@ -381,7 +381,7 @@ const ReasoningStatus = memo(
     messageId,
     partId,
   }: {
-    part: Extract<UIMessageWithFiles["parts"][0], { type: "reasoning" }>;
+    part: Extract<UIMessage["parts"][0], { type: "reasoning" }>;
     messageId: string;
     partId: number;
   }) => {
@@ -525,7 +525,7 @@ export function BotMessage({
   className,
   isLoading,
 }: {
-  message?: UIMessageWithFiles;
+  message?: UIMessage;
   className?: string;
   isLoading?: boolean;
 }) {

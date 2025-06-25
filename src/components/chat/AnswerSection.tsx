@@ -1,9 +1,9 @@
-import { UIMessageWithFiles } from "./Chat";
+import type { UIMessage } from "@/lib/agent";
 import { BotMessage } from "./BotMessage";
 import { MessageActions } from "./MessageActions";
 
 type AnswerSectionProps = {
-  message?: UIMessageWithFiles;
+  message?: UIMessage;
   isLoading?: boolean;
 };
 

@@ -63,11 +63,6 @@ function UpgradeModal({
   );
 }
 
-export type UIMessageWithFiles = UIMessage & {
-  fileIds?: Id<"files">[];
-  error?: string;
-};
-
 // --- Helper Components for Jotai integration ---
 
 const areArraysEqual = (a: string[], b: string[]) => {
@@ -103,7 +98,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
   const setIsGenerating = useSetAtom(isGeneratingAtom);
   const setHitMaxSteps = useSetAtom(hitMaxStepsAtom);
 
-  const queue = useRef<UIMessageWithFiles[][]>([]);
+  const queue = useRef<UIMessage[][]>([]);
   const isProcessing = useRef(false);
 
   const processQueue = useCallback(() => {
@@ -143,16 +138,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = ({ threadId }) => {
         ? cachedMessages
         : (messages.results ?? []);
 
-    const uiMessages = toUIMessages(serverMessages).map((uiMessage) => {
-      const originalMessage = serverMessages.find(
-        (m) => m._id === uiMessage.id,
-      );
-      return {
-        ...uiMessage,
-        fileIds: originalMessage?.fileIds,
-        error: originalMessage?.error,
-      };
-    });
+    const uiMessages = toUIMessages(serverMessages);
 
     // Add the new state to the queue instead of updating directly
     queue.current.push(uiMessages);

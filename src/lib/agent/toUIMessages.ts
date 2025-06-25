@@ -19,6 +19,7 @@ export type UIMessage = AIUIMessage & {
   order: number;
   stepOrder: number;
   status: "streaming" | MessageStatus;
+  error?: string;
   parts: Array<
     | TextUIPart
     | ReasoningUIPart
@@ -43,6 +44,7 @@ export function toUIMessages(
     if (!coreMessage) continue;
     const common = {
       id: message.id ?? message._id,
+      error: message.error,
       createdAt: new Date(message._creationTime),
       order: message.order,
       stepOrder: message.stepOrder,

@@ -1,7 +1,7 @@
 import { atom } from "jotai";
 import { atomFamily } from "jotai/utils";
 import type { Id } from "@cvx/_generated/dataModel";
-import type { UIMessageWithFiles } from "@/components/chat/Chat";
+import type { UIMessage } from "@/lib/agent";
 
 /**
  * A list of all message IDs in the current thread, in order.
@@ -16,7 +16,7 @@ export const messageIdsAtom = atom<Id<"messages">[]>([]);
  * only the component for that specific message re-renders.
  */
 export const messageFamily = atomFamily(
-  (_id: Id<"messages">) => atom<UIMessageWithFiles | null>(null),
+  (_id: Id<"messages">) => atom<UIMessage | null>(null),
   (a, b) => a === b,
 );
 
@@ -39,7 +39,7 @@ export const toolStatusFamily = atomFamily((_id: string) =>
  */
 export const updateMessageAtom = atom(
   null, // it's a write-only atom
-  (get, set, msg: UIMessageWithFiles) => {
+  (get, set, msg: UIMessage) => {
     const msgId = msg.id as Id<"messages">;
     const existingMsg = get(messageFamily(msgId));
 
