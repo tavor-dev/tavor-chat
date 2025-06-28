@@ -36,6 +36,7 @@ import type * as init from "../init.js";
 import type * as messages from "../messages.js";
 import type * as stripe from "../stripe.js";
 import type * as tavor from "../tavor.js";
+import type * as tavorNode from "../tavorNode.js";
 import type * as threads from "../threads.js";
 
 import type {
@@ -81,6 +82,7 @@ declare const fullApi: ApiFromModules<{
   messages: typeof messages;
   stripe: typeof stripe;
   tavor: typeof tavor;
+  tavorNode: typeof tavorNode;
   threads: typeof threads;
 }>;
 declare const fullApiWithMounts: typeof fullApi;
