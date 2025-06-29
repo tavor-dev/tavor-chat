@@ -297,6 +297,7 @@ export const stream = internalAction({
           promptMessageId,
           providerOptions: addReasoning,
           abortSignal: abortController.signal,
+          toolCallStreaming: true,
         },
         { saveStreamDeltas: true },
       );
