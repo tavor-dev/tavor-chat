@@ -1,12 +1,12 @@
 import { useSmoothText, type UIMessage } from "@/lib/agent";
-import { Button, Textarea, Text } from "@medusajs/ui";
-import { useCallback, useState } from "react";
-import { MessageActions } from "./MessageActions";
-import { useMutation } from "convex/react";
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
-import { PaperClip } from "@medusajs/icons";
 import { type FileUIPart } from "@cvx/chat_engine/mapping";
+import { PaperClip } from "@medusajs/icons";
+import { Button, Textarea } from "@medusajs/ui";
+import { useMutation } from "convex/react";
+import { useCallback, useState } from "react";
+import { MessageActions } from "./MessageActions";
 
 type UserMessageProps = {
   message: UIMessage;
