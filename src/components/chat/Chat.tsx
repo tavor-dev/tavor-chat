@@ -100,6 +100,14 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
   const setIsGenerating = useSetAtom(isGeneratingAtom);
   const setHitMaxSteps = useSetAtom(hitMaxStepsAtom);
 
+  useEffect(() => {
+    return () => {
+      // cleanup on unmount when threadId changes
+      setIsGenerating(false);
+      setHitMaxSteps(false);
+    };
+  }, [threadId]);
+
   const queue = useRef<UIMessage[][]>([]);
   const isProcessing = useRef(false);
 
