@@ -21,6 +21,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { useAtom } from "jotai";
 import { reasoningStatusFamily, toolStatusFamily } from "@/lib/state/chatAtoms";
+import { parsePartialJson } from "@ai-sdk/ui-utils";
 
 /**
  * A custom component that uses react-syntax-highlighter.
@@ -99,11 +100,35 @@ const ToolStatus = memo(
     const isCompleted = invocation.state === "result";
     const hasError = invocation.state === "result" && !invocation.result;
 
-    const command =
-      invocation.toolName === "executeCommand"
-        ? (invocation.args?.command as string)
-        : null;
+    // Safe JSON parsing for args using useMemo
+    // When streaming, args might be a string containing partial JSON
+    // Once fully parsed, args will be an object with the expected schema
+    let parsedArgs = invocation.args;
+    if (typeof parsedArgs === "string") {
+      // If args is a string, it's likely still streaming/incomplete JSON
+      try {
+        const { value } = parsePartialJson(parsedArgs);
+        parsedArgs = value;
+      } catch (e) {
+        console.debug(e);
+      }
+    }
 
+    let command: string | null = null;
+    if (invocation.toolName === "executeCommand") {
+      if (
+        typeof parsedArgs === "object" &&
+        parsedArgs !== null &&
+        "command" in parsedArgs
+      ) {
+        command = String(parsedArgs.command);
+      } else if (typeof parsedArgs === "string") {
+        // Still streaming, might be partial JSON or just the command string
+        command = parsedArgs;
+      } else {
+        command = "(generating...)";
+      }
+    }
     if (!command) return null;
 
     const getStatusIcon = () => {
@@ -154,7 +179,7 @@ const ToolStatus = memo(
           {/* Header */}
           <div
             className="flex items-center gap-3 p-4 cursor-pointer"
-            onClick={hasOutput ? () => setIsExpanded(!isExpanded) : undefined}
+            onClick={() => setIsExpanded(!isExpanded)}
           >
             <div className="flex-shrink-0">{getStatusIcon()}</div>
 
@@ -172,19 +197,16 @@ const ToolStatus = memo(
               </div>
             </div>
 
-            {hasOutput && (
-              <div className="flex-shrink-0">
-                {isExpanded ? (
-                  <ChevronUpMini className="h-4 w-4 text-ui-fg-muted" />
-                ) : (
-                  <ChevronDownMini className="h-4 w-4 text-ui-fg-muted" />
-                )}
-              </div>
-            )}
+            <div className="flex-shrink-0">
+              {isExpanded ? (
+                <ChevronUpMini className="h-4 w-4 text-ui-fg-muted" />
+              ) : (
+                <ChevronDownMini className="h-4 w-4 text-ui-fg-muted" />
+              )}
+            </div>
           </div>
 
-          {/* Expandable Output */}
-          {hasOutput && isExpanded && (
+          {isExpanded && (
             <div className="border-t border-ui-border-base p-4">
               <div className="space-y-4">
                 <div className="bg-ui-bg-base-pressed rounded-lg overflow-hidden border border-ui-border-base">
@@ -200,18 +222,20 @@ const ToolStatus = memo(
                   </SyntaxHighlighter>
                 </div>
 
-                <div className="bg-ui-bg-base-pressed rounded-lg overflow-hidden border border-ui-border-base">
-                  <div className="px-4 py-2 bg-ui-bg-subtle text-sm font-semibold">
-                    Output
+                {hasOutput && (
+                  <div className="bg-ui-bg-base-pressed rounded-lg overflow-hidden border border-ui-border-base">
+                    <div className="px-4 py-2 bg-ui-bg-subtle text-sm font-semibold">
+                      Output
+                    </div>
+                    <SyntaxHighlighter
+                      language="json"
+                      style={vscDarkPlus}
+                      PreTag="div"
+                    >
+                      {prettyPrintJson(invocation.result)}
+                    </SyntaxHighlighter>
                   </div>
-                  <SyntaxHighlighter
-                    language="json"
-                    style={vscDarkPlus}
-                    PreTag="div"
-                  >
-                    {prettyPrintJson(invocation.result)}
-                  </SyntaxHighlighter>
-                </div>
+                )}
               </div>
             </div>
           )}

@@ -6,28 +6,12 @@ import { internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { internalAction, internalMutation } from "./_generated/server";
 import { createTool, ToolCtx } from "./chat_engine/client";
-
-export const DEFAULT_BOX_TIMEOUT = 60 * 60 * 6;
-const MAX_OUTPUT_LENGTH = 1000;
-
-/**
- * Truncate text to a maximum length and add ellipsis if truncated
- * Shows the LAST characters rather than first, as important info is usually at the end
- */
-function truncateOutput(
-  text: string,
-  maxLength: number = MAX_OUTPUT_LENGTH,
-): string {
-  if (text.length <= maxLength) {
-    return text;
-  }
-  return (
-    "[Output truncated - showing last " +
-    maxLength +
-    " characters]\n..." +
-    text.substring(text.length - maxLength)
-  );
-}
+import {
+  DEFAULT_BOX_TIMEOUT,
+  DEFAULT_TIMEOUT_MS,
+  MAX_OUTPUT_LENGTH,
+  MAX_TIMEOUT_MS,
+} from "./tavorNode";
 
 /**
  * AI tools
@@ -41,35 +25,40 @@ You have exclusive access to an ephemeral sandbox that runs your command with:
 - **OS**: Ubuntu (24.04 stable)
 - **User**: root (full system privileges)
 - **Resources**: 2 GB RAM, 10 GB SSD, 1 vCPU
-- **Pre-installed**: git, python3, pip, npm, bun, curl, wget, vim, nano
-- **May need installation**: ss, lsof (install when network diagnostics needed), or anything else useful
+- **Pre-installed**: git, python3, pip, npm, bun, curl, wget, vim, nano, ripgrep
+- You can install other tools on demand as needed
+- The sandbox may get killed as it only lasts a few hours, so files you create may be temporary, but should still last the current session.
 
-The sandbox may get killed as it only lasts a few hours, so files you create may be temporary, but should still last the current session.
+Usage instructions:
 
-IMPORTANT: for commands that should run in the background (i.e. webservers etc), run them separately with background: true.
-
-For long-running processes, you need to run them in the background or use a small timeout, otherwise running a long-running task even with "nohup .. &" without "background: true" will never end.
-
-Note: Command output is limited to the last ${MAX_OUTPUT_LENGTH} characters to prevent overwhelming responses. Use pagers or grep to find output in a longer text if necessary.
-
-If you expose web ports in the background, you can then generate a preview URL for the same port to allow the user to see the output.
-
-For that, ensure the port is accessible (on 0.0.0.0 not just localhost) and server is running (i.e. with curl, etc) before sending the preview URL to the user`,
+- You can specify an optional timeout in milliseconds (up to ${MAX_TIMEOUT_MS}ms / ${MAX_TIMEOUT_MS / 60000} minutes). If not specified, commands will timeout after ${DEFAULT_TIMEOUT_MS}ms (${DEFAULT_TIMEOUT_MS / 60000} minutes).
+- You can run commands in the background (for e.g webservers, long running processes), by specifying the optional background to true, to keep them running.
+- Command output is limited to the last ${MAX_OUTPUT_LENGTH} characters and will be truncated before you receive it.
+- Prioritize ripgrep (as rg is installed) over grep and find.
+- If you run commands exposing ports in the background, ensure the port is accessible on 0.0.0.0 and not just localhost and the server is running (i.e. with curl or netcat) before telling the user about it.
+- You can then generate a preview URL for an exposed web port to allow the user to see the output.
+`,
       args: z.object({
         command: z.string().describe("The command to execute inside sandbox"),
         background: z
-          .boolean()
+          .union([z.boolean(), z.null()])
           .describe(
-            "true if the command should run in the background (don't expect output)",
+            "true if the command should run in the background (don't expect output). Defaults to false.",
+          ),
+        timeoutMs: z
+          .union([z.number(), z.null()])
+          .describe(
+            "Timeout in milliseconds for the command. Defaults to 60000ms (60 seconds), max 300000ms (5 minutes).",
           ),
       }),
-      handler: async (ctx, { command, background }) => {
+      handler: async (ctx, { command, background, timeoutMs }) => {
         await validateToolThread(ctx, threadId);
 
-        return await ctx.runAction(internal.tavor.runCommandInBox, {
+        return await ctx.runAction(internal.tavorNode.runCommandInBox, {
           threadId,
           command,
           background,
+          timeoutMs,
         });
       },
     }),
@@ -111,62 +100,6 @@ async function validateToolThread(ctx: ToolCtx, threadId: Id<"threads">) {
 /**
  * Manage boxes
  */
-export const runCommandInBox = internalAction({
-  args: {
-    threadId: v.id("threads"),
-    command: v.string(),
-    background: v.optional(v.boolean()),
-  },
-  returns: v.string(),
-  handler: async (ctx, { threadId, command, background }) => {
-    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
-    invariant(thread, "expected thread to be present");
-
-    const tavorBox = await ctx.runAction(internal.tavor.ensureBox, {
-      threadId,
-    });
-
-    const tavor = new Tavor();
-    const box = await tavor.getBox(tavorBox);
-    await box.refresh();
-
-    if (background) {
-      // Start the command in background
-      // const commandPromise = box.run(command);
-
-      // TODO: kinda hack, ensure command gets scheduled by convex before function shuts down
-      await new Promise((resolve) => {
-        setTimeout(resolve, 3000);
-      });
-
-      return JSON.stringify({
-        output: "Command is running in the background",
-        exit_code: 0,
-        success: true,
-        background: true,
-      });
-    }
-
-    const result = await box.run(command);
-
-    // Create a clean, single output combining stdout and stderr if present
-    let combinedOutput = result.stdout || "";
-    if (result.stderr) {
-      combinedOutput += (combinedOutput ? "\n" : "") + result.stderr;
-    }
-
-    const truncatedOutput = truncateOutput(combinedOutput);
-    const success = result.exitCode === 0;
-
-    return JSON.stringify({
-      output: truncatedOutput,
-      exit_code: result.exitCode,
-      success: success,
-      background: false,
-    });
-  },
-});
-
 export const clearBox = internalMutation({
   args: {
     threadId: v.id("threads"),

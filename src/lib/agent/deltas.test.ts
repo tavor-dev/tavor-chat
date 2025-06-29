@@ -332,4 +332,125 @@ describe("mergeDeltas", () => {
       ]),
     ]);
   });
+
+  it("does not duplicate tool-call args when deltas are re-applied", () => {
+    const streamId = "tool1" as Id<"streamingMessages">;
+    const streamMsg = makeStreamMessage(streamId, 1, 0);
+
+    const deltas = [
+      // 0-1  : start marker
+      makeDelta(streamId, 0, 1, [
+        {
+          type: "tool-call-streaming-start",
+          toolCallId: "call1",
+          toolName: "executeCommand",
+        },
+      ]),
+      // 1-6  : first slice
+      makeDelta(streamId, 1, 6, [
+        {
+          type: "tool-call-delta",
+          toolCallId: "call1",
+          toolName: "executeCommand",
+          argsTextDelta: "echo ",
+        },
+      ]),
+      // 6-13 : second slice
+      makeDelta(streamId, 6, 13, [
+        {
+          type: "tool-call-delta",
+          toolCallId: "call1",
+          toolName: "executeCommand",
+          argsTextDelta: '"hello"',
+        },
+      ]),
+    ];
+
+    // first application
+    let [result, changed] = applyDeltasToStreamMessage(
+      "thread1" as Id<"threads">,
+      streamMsg,
+      undefined,
+      deltas,
+    );
+    expect(changed).toBe(true);
+    expect(result.messages).toHaveLength(1);
+
+    const getArgs = () =>
+      (result.messages[0].message!.content as { args: string }[])[0]
+        .args as string;
+
+    expect(getArgs()).toBe('echo "hello"');
+
+    // re-apply exactly the same deltas
+    [result, changed] = applyDeltasToStreamMessage(
+      "thread1" as Id<"threads">,
+      streamMsg,
+      result, // ← existing stream state
+      deltas,
+    );
+    expect(changed).toBe(false); // nothing new
+    expect(result.messages).toHaveLength(1);
+    expect(getArgs()).toBe('echo "hello"'); // no duplication
+  });
+
+  it("replaces the streaming placeholder with the final tool-call part", () => {
+    const streamId = "tool2" as Id<"streamingMessages">;
+    const streamMessages = [makeStreamMessage(streamId, 1, 0)];
+
+    const deltas = [
+      // streaming start
+      makeDelta(streamId, 0, 1, [
+        {
+          type: "tool-call-streaming-start",
+          toolCallId: "call2",
+          toolName: "executeCommand",
+        },
+      ]),
+      // two slices of args
+      makeDelta(streamId, 1, 6, [
+        {
+          type: "tool-call-delta",
+          toolCallId: "call2",
+          toolName: "executeCommand",
+          argsTextDelta: "echo ",
+        },
+      ]),
+      makeDelta(streamId, 6, 10, [
+        {
+          type: "tool-call-delta",
+          toolCallId: "call2",
+          toolName: "executeCommand",
+          argsTextDelta: '"hi"',
+        },
+      ]),
+      // final, complete tool-call object
+      makeDelta(streamId, 10, 11, [
+        {
+          type: "tool-call",
+          toolCallId: "call2",
+          toolName: "executeCommand",
+          args: { command: 'echo "hi"', background: false },
+        }, // cast because TextStreamPart's generic typing is loose here
+      ]),
+    ];
+
+    const [messages] = mergeDeltas(
+      "thread1" as Id<"threads">,
+      streamMessages,
+      [],
+      deltas,
+    );
+
+    expect(messages).toHaveLength(1);
+
+    const content = messages[0].message!.content as {
+      args: { command: string };
+      type: string;
+    }[];
+    expect(content).toHaveLength(1); // ✅ no duplicate placeholder
+    expect(content[0].type).toBe("tool-call");
+    expect(typeof content[0].args).toBe("object"); // upgraded from string → object
+    expect(content[0].args.command).toBe('echo "hi"');
+  });
 });

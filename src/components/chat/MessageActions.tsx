@@ -1,5 +1,4 @@
-import { Copy } from "@medusajs/ui";
-import { Tooltip, TooltipProvider } from "@medusajs/ui";
+import { Copy, Text, Tooltip, TooltipProvider } from "@medusajs/ui";
 import { ChannelsSolid, ArrowPath, Pencil } from "@medusajs/icons";
 import { useMutation } from "convex/react";
 import { api } from "@cvx/_generated/api";
@@ -28,10 +27,29 @@ export function MessageActions({ message, onEdit }: MessageActionsProps) {
   const handleRegenerate = useCallback(() => {
     regenerate({ messageId: message.id as Id<"messages"> });
   }, [message.id]);
+  
+  // Utility to format a Date as HH:mm (24-hour)
+function formatTimeHM(date: Date) {
+  return date.toLocaleTimeString([], { hour: "2-digit", minute: "2-digit", hour12: false });
+}
+
+function getMessageDate(createdAt: Date | string | number | undefined): Date {
+  if (!createdAt) return new Date();
+  if (createdAt instanceof Date) return createdAt;
+  return new Date(createdAt);
+}
 
   return (
     <div className="flex items-center gap-4 self-end mt-4 mr-2 transition-opacity opacity-0 group-hover/message:opacity-100">
       <TooltipProvider>
+        <Tooltip
+          content={formatTimeHM(getMessageDate(message.createdAt ?? new Date()))}
+        >
+          <Text className="text-xs text-ui-fg-subtle">
+            {formatTimeHM(getMessageDate(message.createdAt ?? new Date()))}
+          </Text>
+        </Tooltip>
+
         <Copy content={message.content} />
 
         <Tooltip content="Edit" onClick={onEdit}>

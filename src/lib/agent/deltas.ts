@@ -187,7 +187,18 @@ export function applyDeltasToStreamMessage(
         break;
       case "tool-call":
         currentMessage.tool = true;
-        contentToAdd = part;
+
+        // If the last content item is the placeholder for the same call,
+        // replace its fields with the final version instead of pushing a new one
+        if (
+          lastContent?.type === "tool-call" &&
+          lastContent.toolCallId === part.toolCallId &&
+          typeof lastContent.args === "string" // <- still streaming
+        ) {
+          Object.assign(lastContent, part); // mutate in place
+        } else {
+          contentToAdd = part; // no placeholder -> push
+        }
         break;
       case "reasoning":
         currentMessage.reasoning =
@@ -229,16 +240,18 @@ export function applyDeltasToStreamMessage(
   return [newStream, true];
 }
 
-function cloneMessageAndContent(
-  message: Message | undefined,
-): Message | undefined {
+function deepCopyParts(parts: unknown) {
+  return Array.isArray(parts)
+    ? parts.map((p) => ({ ...p })) // clone each part object
+    : parts;
+}
+
+function cloneMessageAndContent(message: Message | undefined) {
   return (
     message &&
     ({
       ...message,
-      content: Array.isArray(message.content)
-        ? [...message.content]
-        : message.content,
+      content: deepCopyParts(message.content),
     } as typeof message)
   );
 }

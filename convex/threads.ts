@@ -272,7 +272,19 @@ export const cleanupStuckThreads = internalMutation({
 
       if (activeStreams.length === 0) {
         // No active streams - this thread is stuck
-        const timeSinceUpdate = Date.now() - thread._creationTime;
+        // Get the last message in this thread to check when it was last active
+        const lastMessage = await ctx.db
+          .query("messages")
+          .withIndex("threadId_status_tool_order_stepOrder", (q) =>
+            q.eq("threadId", thread._id),
+          )
+          .order("desc")
+          .first();
+
+        // Use the last message's creation time if available, otherwise fall back to thread creation time
+        const lastActivityTime =
+          lastMessage?._creationTime ?? thread._creationTime;
+        const timeSinceUpdate = Date.now() - lastActivityTime;
 
         // Only clean up if the thread has been stuck for more than 1 minute
         if (timeSinceUpdate > 60000) {

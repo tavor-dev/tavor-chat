@@ -24,7 +24,7 @@
         "@tanstack/react-query": "^5.80.7",
         "@tanstack/react-router": "^1.121.2",
         "@tanstack/zod-form-adapter": "^0.26.4",
-        "@tavor/sdk": "^1.1.0",
+        "@tavor/sdk": "^1.2.0",
         "@types/react-syntax-highlighter": "^15.5.13",
         "@xixixao/uploadstuff": "^0.0.5",
         "ai": "^4.3.16",
@@ -820,7 +820,7 @@
 
     "@tanstack/zod-form-adapter": ["@tanstack/zod-form-adapter@0.26.4", "", { "dependencies": { "@tanstack/form-core": "0.26.4" }, "peerDependencies": { "zod": "^3.x" } }, "sha512-PwI8741VujStxTQd7Z3MxdOuY/IR6QJMtUOwzpCavvl7C6HP8nJXOZjxXRKA5Rss7kl4aIhWqwhbJHdPLmZzpA=="],
 
-    "@tavor/sdk": ["@tavor/sdk@1.1.0", "", { "dependencies": { "axios": "^1.6.0" } }, "sha512-2Vv1gX5XL0q09m8NLj9VXomSlxCw5p4A5W7MPzdU6sw/AblxDlwdDUWtRyDx/KW/ccHIJSdNUqna9RYbX0Z+Hw=="],
+    "@tavor/sdk": ["@tavor/sdk@1.2.0", "", { "dependencies": { "axios": "^1.6.0" } }, "sha512-25UJKDOgMqXcEl+xI8UuGeRuS9gIV8/uZbMAtZQ4vXjvOc4uXQHqkpegXlxkcafL+AhVvpreZjZqBDGBfwgX6A=="],
 
     "@tybys/wasm-util": ["@tybys/wasm-util@0.8.3", "", { "dependencies": { "tslib": "^2.4.0" } }, "sha512-Z96T/L6dUFFxgFJ+pQtkPpne9q7i6kIPYCFnQBHSgSPV9idTsKfIhCss0h5iM9irweZCatkrdeP8yi5uM1eX6Q=="],
 
