@@ -116,7 +116,7 @@ function RouteComponent() {
   const selectedModel = availableModels.find((m) => m.id === selectedModelId);
 
   return (
-    <div className="space-y-8 pt-12 px-6 w-full mb-10">
+    <div className="space-y-8 pt-12 px-6 w-full h-screen overflow-auto">
       <div className="flex justify-between items-center">
         <Heading>Settings</Heading>
       </div>
@@ -125,7 +125,7 @@ function RouteComponent() {
           value={tab}
           onValueChange={handleTabChange}
           orientation="vertical"
-          className="sm:tabs-horizontal tabs-vertical"
+          className="sm:tabs-horizontal tabs-vertical mb-4"
         >
           <Tabs.List className="flex flex-col sm:flex-row">
             <Tabs.Trigger value="account">Account</Tabs.Trigger>
