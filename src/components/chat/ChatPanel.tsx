@@ -14,8 +14,18 @@ import {
   PaperClip,
   SquareRedSolid,
   XMark,
+  ArrowPath,
+  PlaySolid,
+  Github,
 } from "@medusajs/icons";
-import { IconButton, Select, Tooltip, toast } from "@medusajs/ui";
+import {
+  IconButton,
+  Select,
+  Tooltip,
+  toast,
+  StatusBadge,
+  Text,
+} from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useAction, useMutation } from "convex/react";
 import {
@@ -108,6 +118,73 @@ interface ChatPanelProps {
   threadId: Id<"threads">;
   inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
+
+const SelectGitRepo = () => {
+  const currencies = [
+    {
+      value: "s4m1nd/dotfiles",
+
+      label: "s4m1nd/dotfiles",
+    },
+
+    {
+      value: "s4m1nd/infra",
+
+      label: "s4m1nd/infra",
+    },
+
+    {
+      value: "s4m1nd/persops",
+
+      label: "s4m1nd/persops",
+    },
+  ];
+
+  return (
+    <>
+      <div className="w-52">
+        <Select size="small">
+          <Select.Trigger>
+            <Select.Value placeholder="Select a repository" />
+          </Select.Trigger>
+
+          <Select.Content>
+            {currencies.map((item) => (
+              <Select.Item key={item.value} value={item.value}>
+                <Text className="flex items-center gap-2 text-xs">
+                  <Github className="bg-white rounded-full" /> {item.label}
+                </Text>
+              </Select.Item>
+            ))}
+          </Select.Content>
+        </Select>
+      </div>
+    </>
+  );
+};
+
+const SandboxComponent = () => {
+  return (
+    <div className="w-auto size-8 flex p-1 items-center justify-start gap-2">
+      <Tooltip content="Sandbox is running">
+        <StatusBadge color="green">
+          <Text className="text-xs text-ui-fg-muted">Container running</Text>
+        </StatusBadge>
+      </Tooltip>
+      <Tooltip content="Restart container">
+        <IconButton size="xsmall">
+          <ArrowPath />
+        </IconButton>
+      </Tooltip>
+      <Tooltip content="Start / stop container">
+        <IconButton size="xsmall">
+          {/* <SquareRedSolid /> */}
+          <PlaySolid />
+        </IconButton>
+      </Tooltip>
+    </div>
+  );
+};
 
 export function ChatPanel({
   handleSubmit,
@@ -416,6 +493,10 @@ export function ChatPanel({
             </Tooltip>
           </div>
         )}
+        <div className="absolute -top-12 left-0.5 w-auto size-10 flex-dis hidden p-1 items-center justify-start bg-ui-bg-field-component rounded-lg gap-2 border border-ui-tag-neutral-border shadow-md backdrop-blur-sm z-20">
+          <SandboxComponent />
+          <SelectGitRepo />
+        </div>
 
         <div className="flex p-1 rounded-2xl bg-ui-bg-field-component-hover border border-ui-border-base">
           <div className="relative flex flex-col w-full gap-2 bg-ui-bg-field-component rounded-xl border border-ui-border-base z-10">

@@ -1,13 +1,27 @@
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
-import { Heading, Tabs, Text, Avatar, Badge, Container } from "@medusajs/ui";
-import { useQuery } from "@tanstack/react-query";
+import {
+  Heading,
+  Tabs,
+  Text,
+  Avatar,
+  Badge,
+  Container,
+  Textarea,
+  Label,
+  RadioGroup,
+  Button,
+} from "@medusajs/ui";
+import { useMutation, useQuery } from "@tanstack/react-query";
+import { useConvex } from "convex/react";
 import { createFileRoute, useNavigate } from "@tanstack/react-router";
 import { ThemeSwitcher } from "@/ui/theme-switcher";
 import { User, Mail, Calendar, Sparkles } from "lucide-react";
 import { getAvailableModels, getDefaultModel } from "@/lib/models";
 import { Billing } from "@/components/settings/Billing";
 import { UsageStats } from "@/components/settings/UsageStats";
+import { useEffect, useState } from "react";
+import toast from "react-hot-toast";
 
 const VALID_TABS = ["account", "usage", "billing", "theme"] as const;
 type SettingsSearchTab = (typeof VALID_TABS)[number];
@@ -33,9 +47,49 @@ export const Route = createFileRoute("/_app/_auth/settings/_layout")({
 });
 
 function RouteComponent() {
-  const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
+  const convex = useConvex();
+  const { data: user, refetch } = useQuery(
+    convexQuery(api.app.getCurrentUser, {}),
+  );
   const navigate = useNavigate({ from: Route.fullPath });
   const { tab } = Route.useSearch();
+
+  const [customSystemPrompt, setCustomSystemPrompt] = useState("");
+  const [systemPromptMode, setSystemPromptMode] = useState<
+    "enhance" | "replace" | undefined
+  >();
+
+  const updateSettings = useMutation({
+    mutationFn: (args: {
+      customSystemPrompt?: string;
+      systemPromptMode?: "enhance" | "replace";
+    }) => convex.mutation(api.account.updateSystemPromptSettings, args),
+    onSuccess: () => {
+      toast.success("Settings updated successfully!");
+      refetch();
+    },
+    onError: (err: Error) => {
+      toast.error(`Error updating settings: ${err.message}`);
+    },
+  });
+
+  useEffect(() => {
+    if (user) {
+      setCustomSystemPrompt(user.customSystemPrompt ?? "");
+      setSystemPromptMode(user.systemPromptMode);
+    }
+  }, [user]);
+
+  const handleSaveSystemPrompt = () => {
+    updateSettings.mutate({
+      customSystemPrompt,
+      systemPromptMode,
+    });
+  };
+
+  const isSystemPromptDirty =
+    customSystemPrompt !== (user?.customSystemPrompt ?? "") ||
+    systemPromptMode !== user?.systemPromptMode;
 
   const formatDate = (timestamp: number) => {
     return new Date(timestamp).toLocaleDateString("en-US", {
@@ -62,7 +116,7 @@ function RouteComponent() {
   const selectedModel = availableModels.find((m) => m.id === selectedModelId);
 
   return (
-    <div className="space-y-8 pt-12 px-6 w-full mb-10">
+    <div className="space-y-8 pt-12 px-6 w-full h-screen overflow-auto">
       <div className="flex justify-between items-center">
         <Heading>Settings</Heading>
       </div>
@@ -71,7 +125,7 @@ function RouteComponent() {
           value={tab}
           onValueChange={handleTabChange}
           orientation="vertical"
-          className="sm:tabs-horizontal tabs-vertical"
+          className="sm:tabs-horizontal tabs-vertical mb-4"
         >
           <Tabs.List className="flex flex-col sm:flex-row">
             <Tabs.Trigger value="account">Account</Tabs.Trigger>
@@ -82,7 +136,6 @@ function RouteComponent() {
           <div className="mt-2">
             <Tabs.Content value="account" className="mt-6">
               <div className="space-y-8">
-                {/* Profile Information Only */}
                 <div className="grid grid-cols-1 gap-8">
                   <div className="xl:col-span-3">
                     <Heading level="h3" className="mb-4">
@@ -225,6 +278,69 @@ function RouteComponent() {
                           </div>
                         </div>
                       )}
+                    </Container>
+                  </div>
+
+                  <div className="xl:col-span-3">
+                    <Heading level="h3" className="mb-4">
+                      Custom system prompt
+                    </Heading>
+                    <Container className="p-6 space-y-6">
+                      <Text size="small" className="text-ui-fg-muted">
+                        Customize the behavior of the assistant by providing a
+                        custom system prompt. You can either enhance the default
+                        prompt or replace it entirely.
+                      </Text>
+
+                      <div>
+                        <Label htmlFor="custom-prompt">Custom prompt</Label>
+                        <Textarea
+                          id="custom-prompt"
+                          value={customSystemPrompt}
+                          onChange={(e) =>
+                            setCustomSystemPrompt(e.target.value)
+                          }
+                          placeholder="e.g., You are a helpful assistant that always replies in pirate speech."
+                          className="mt-2"
+                          rows={5}
+                        />
+                      </div>
+
+                      <div>
+                        <Label>Mode</Label>
+                        <RadioGroup
+                          value={systemPromptMode ?? ""}
+                          onValueChange={(v) =>
+                            setSystemPromptMode(v as "enhance" | "replace")
+                          }
+                          className="mt-2 flex gap-4"
+                        >
+                          <div className="flex items-center gap-2">
+                            <RadioGroup.Item value="enhance" id="enhance" />
+                            <Label htmlFor="enhance">Enhance</Label>
+                          </div>
+                          <div className="flex items-center gap-2">
+                            <RadioGroup.Item value="replace" id="replace" />
+                            <Label htmlFor="replace">Replace</Label>
+                          </div>
+                        </RadioGroup>
+                        <Text size="small" className="text-ui-fg-subtle mt-1">
+                          'Enhance' adds your prompt to the default. 'Replace'
+                          uses only your prompt.
+                        </Text>
+                      </div>
+
+                      <div className="flex justify-end pt-4 border-t border-ui-border-base">
+                        <Button
+                          onClick={handleSaveSystemPrompt}
+                          disabled={
+                            !isSystemPromptDirty || updateSettings.isPending
+                          }
+                          isLoading={updateSettings.isPending}
+                        >
+                          Save Changes
+                        </Button>
+                      </div>
                     </Container>
                   </div>
                 </div>

@@ -11,6 +11,7 @@ import { api, internal } from "./_generated/api";
 import { Id } from "./_generated/dataModel";
 import { ThreadDoc } from "./schema";
 import { MODEL_CONFIGS, type ModelId } from "../src/lib/models";
+import invariant from "tiny-invariant";
 
 // Free tier limits
 export const FREE_TIER_MESSAGE_LIMIT = 50;
@@ -34,7 +35,16 @@ export async function authorizeThreadAccess(
   ctx: QueryCtx | MutationCtx | ActionCtx,
   threadId: Id<"threads">,
 ): Promise<ThreadDoc> {
-  return await ctx.runQuery(api.threads.getByIdForCurrentUser, { threadId });
+  // Add a guard to ensure the threadId is not an empty string before
+  // passing it to the query. An empty string can be passed from the
+  // client before a route param is fully resolved. This makes the helper robust.
+  invariant(threadId, "authorizeThreadAccess: threadId cannot be empty.");
+
+  const thread = await ctx.runQuery(api.threads.getByIdForCurrentUser, {
+    threadId,
+  });
+
+  return thread;
 }
 
 /**
@@ -99,6 +109,23 @@ export const updateUserPreferences = mutation({
     }
 
     ctx.db.patch(userId, args);
+  },
+});
+
+export const updateSystemPromptSettings = mutation({
+  args: {
+    customSystemPrompt: v.optional(v.string()),
+    systemPromptMode: v.optional(
+      v.union(v.literal("enhance"), v.literal("replace")),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getUserId(ctx);
+
+    await ctx.db.patch(userId, {
+      customSystemPrompt: args.customSystemPrompt,
+      systemPromptMode: args.systemPromptMode,
+    });
   },
 });
 

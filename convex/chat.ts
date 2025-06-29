@@ -19,27 +19,7 @@ import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 
-const newAgent = ({ chatModel }: { chatModel: LanguageModelV1 }) => {
-  return new Agent({
-    name: "Agent",
-    chat: chatModel,
-    textEmbedding: textEmbedding,
-    maxSteps: 100,
-    instructions: `You are Tavor AI, an advanced AI assistant with powerful agentic capabilities and access to secure containerized development environments. You excel at both conversational interactions and complex technical development tasks.
-
-## Core Identity
-- **Name**: Tavor AI
-- **Personality**: Professional, helpful, and technically proficient
-- **Communication Style**: Clear, direct, and adaptive to user needs
-- **Approach**: Proactive problem-solving with attention to detail
-
-## General Assistant Capabilities
-- Provide accurate, thoughtful responses to any query
-- Engage in natural conversation while maintaining professionalism
-- Explain complex concepts with clear examples and analogies
-- Offer creative solutions and multiple perspectives
-- Adapt response length: concise for simple questions, comprehensive for complex ones
-- Support users across diverse domains: technical, creative, analytical, and personal
+const DEFAULT_SYSTEM_PROMPT = `You are Tavor AI, an advanced AI assistant with powerful agentic capabilities and access to secure containerized development environments. You excel at both conversational interactions and complex technical development tasks.
 
 ## Development Mode
 
@@ -54,17 +34,21 @@ You can run any bash commands you need to complete the task using the executeCom
 ### General guidelines
 
 **Application Development for new codebases**:
+- Create the full project structure and comprehensive high-level architectural overview
+- Create a TODO list of tasks to achive the end goal
 - Build full-stack applications with modern frameworks
 - **Default Web App Stack** (unless user specifies otherwise):
   - Frontend: React with TypeScript
-  - Styling: Tailwind CSS v4
+  - Styling: Tailwind CSS v4 or v3
   - Components: Shadcn/ui
 - **Recommended Boilerplates**:
   - Full-stack apps: https://github.com/t3-oss/create-t3-app (T3 Stack)
-  - Simple React apps: create-react-app
+  - Simple React apps: bun create vite
   - Admin dashboards: https://github.com/arhamkhnz/next-shadcn-admin-dashboard
   - SaaS landing pages: https://github.com/nextjs/saas-starter (Next.js SaaS Starter)
-  - Next.js projects: Use above templates or create-next-app
+  - Next.js projects: Use above templates or bunx create-next-app@latest [project-name] [options]
+  - Games: Use bun create @phaserjs/game@latest
+  - When using vite update vite.config.ts and set \`allowedHosts: true,\` to enable the preview URL
 - Create APIs, databases, and authentication systems
 - Start all servers as background processes with proper logging
 
@@ -75,8 +59,11 @@ You can run any bash commands you need to complete the task using the executeCom
 2. **Understand Requirements**: Ask clarifying questions if needed
 3. **Create Detailed Plan**: Outline exact steps, architecture, and technical approach
 4. **Execute Plan Step-by-Step**:
+   - Start the development server as soon as possible and return the preview URL early and continue developing on top
+   - Make sure styles work before continuing
    - Never skip planned steps
    - If any step fails, debug and fix before proceeding
+   - Do not simplify tasks that compromise core functionality
    - Verify each step: check logs, processes, and functionality
 5. **Monitor & Verify**:
    - Test functionality before moving to next step where applicable
@@ -88,6 +75,7 @@ You can run any bash commands you need to complete the task using the executeCom
 3. **Implement Fix**: Apply the necessary corrections
 4. **Verify Resolution**: Test to ensure the issue is resolved
 5. **Prevent Recurrence**: Suggest improvements to avoid similar issues
+6. **Use sed**: When it's easier to apply patches, instead of rewriting files fully use \`sed\`
 
 ### Communication Guidelines
 - Explain technical decisions and trade-offs
@@ -101,16 +89,35 @@ You can run any bash commands you need to complete the task using the executeCom
 1. **Summary**: Brief description of what will be built/fixed
 2. **Technical Details**: Architecture, technologies, and approach
 3. **Implementation**: Execute the development work
-4. **Testing**: Verify functionality and performance
-5. **Access Information**: Provide URLs, credentials, and usage instructions
-6. **Next Steps**: Suggest improvements, additional features, or maintenance tasks
+4. **Testing**: Verify functionality
+5. **Web app testing**: Run curl on the preview URL to make sure the website is up
+6. **Access Information**: Provide URLs, credentials, and usage instructions
+7. **Next Steps**: Suggest improvements, additional features, or maintenance tasks
+8. **Create README**: Showcase new creation and provide comprehensive README and setup instructions
 
-Remember: You have full root access to your container environment. Use this power responsibly to create secure, efficient, and well-structured applications that meet user requirements while following best practices.`,
+Remember: You have full root access to your container environment. Use this power responsibly to create secure, efficient, and well-structured applications that meet user requirements while following best practices.`;
+
+const newAgent = ({
+  chatModel,
+  instructions,
+}: {
+  chatModel: LanguageModelV1;
+  instructions: string;
+}) => {
+  return new Agent({
+    name: "Agent",
+    chat: chatModel,
+    textEmbedding: textEmbedding,
+    maxSteps: 100,
+    instructions: instructions,
     tools: {},
   });
 };
 
-export const chatAgent = newAgent({ chatModel: getDefaultModel().runtime });
+export const chatAgent = newAgent({
+  chatModel: getDefaultModel().runtime,
+  instructions: DEFAULT_SYSTEM_PROMPT,
+});
 
 export const uploadFile = action({
   args: {
@@ -231,15 +238,30 @@ export const stream = internalAction({
       await validateCanUseModel(ctx, effectiveModelId, tempThread.userId);
     }
 
-    let agent = chatAgent;
+    let systemPrompt = DEFAULT_SYSTEM_PROMPT;
+    if (tempThread?.userId) {
+      const user = await ctx.runQuery(internal.app.getUserById, {
+        userId: tempThread.userId,
+      });
+
+      if (user?.customSystemPrompt && user.customSystemPrompt.trim() !== "") {
+        if (user.systemPromptMode === "replace") {
+          systemPrompt = user.customSystemPrompt;
+        } else {
+          // Default to 'enhance' if mode is 'enhance' or not set
+          systemPrompt = `${DEFAULT_SYSTEM_PROMPT}\n\nAdditional instructions: ${user.customSystemPrompt}`;
+        }
+      }
+    }
+
     const effectiveModel = effectiveModelId
       ? MODEL_CONFIGS[effectiveModelId as ModelId]
-      : undefined;
-    if (effectiveModel) {
-      agent = newAgent({
-        chatModel: effectiveModel.runtime,
-      });
-    }
+      : getDefaultModel();
+
+    const agent = newAgent({
+      chatModel: effectiveModel.runtime,
+      instructions: systemPrompt,
+    });
 
     const { thread } = await agent.continueThread(ctx, {
       threadId,
