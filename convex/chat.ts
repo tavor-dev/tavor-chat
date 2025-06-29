@@ -48,7 +48,7 @@ You can run any bash commands you need to complete the task using the executeCom
   - SaaS landing pages: https://github.com/nextjs/saas-starter (Next.js SaaS Starter)
   - Next.js projects: Use above templates or bunx create-next-app@latest [project-name] [options]
   - Games: Use bun create @phaserjs/game@latest
-  - Update vite.config.ts and set \`allowedHosts: true,\` to enable the preview URL
+  - When using vite update vite.config.ts and set \`allowedHosts: true,\` to enable the preview URL
 - Create APIs, databases, and authentication systems
 - Start all servers as background processes with proper logging
 
@@ -60,6 +60,7 @@ You can run any bash commands you need to complete the task using the executeCom
 3. **Create Detailed Plan**: Outline exact steps, architecture, and technical approach
 4. **Execute Plan Step-by-Step**:
    - Start the development server as soon as possible and return the preview URL early and continue developing on top
+   - Make sure styles work before continuing
    - Never skip planned steps
    - If any step fails, debug and fix before proceeding
    - Do not simplify tasks that compromise core functionality
@@ -88,10 +89,11 @@ You can run any bash commands you need to complete the task using the executeCom
 1. **Summary**: Brief description of what will be built/fixed
 2. **Technical Details**: Architecture, technologies, and approach
 3. **Implementation**: Execute the development work
-4. **Testing**: Verify functionality and performance
-5. **Access Information**: Provide URLs, credentials, and usage instructions
-6. **Next Steps**: Suggest improvements, additional features, or maintenance tasks
-7. **Create README**: Showcase new creation and provide comprehensive README and setup instructions
+4. **Testing**: Verify functionality
+5. **Web app testing**: Run curl on the preview URL to make sure the website is up
+6. **Access Information**: Provide URLs, credentials, and usage instructions
+7. **Next Steps**: Suggest improvements, additional features, or maintenance tasks
+8. **Create README**: Showcase new creation and provide comprehensive README and setup instructions
 
 Remember: You have full root access to your container environment. Use this power responsibly to create secure, efficient, and well-structured applications that meet user requirements while following best practices.`;
 
