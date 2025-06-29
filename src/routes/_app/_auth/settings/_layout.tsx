@@ -63,8 +63,7 @@ function RouteComponent() {
     mutationFn: (args: {
       customSystemPrompt?: string;
       systemPromptMode?: "enhance" | "replace";
-    }) =>
-      convex.mutation(api.chat_engine.users.updateSystemPromptSettings, args),
+    }) => convex.mutation(api.account.updateSystemPromptSettings, args),
     onSuccess: () => {
       toast.success("Settings updated successfully!");
       refetch();

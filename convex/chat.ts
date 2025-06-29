@@ -19,7 +19,6 @@ import { AnthropicProviderOptions } from "@ai-sdk/anthropic";
 import { GoogleGenerativeAIProviderOptions } from "@ai-sdk/google";
 import { OpenAIResponsesProviderOptions } from "@ai-sdk/openai";
 
-// MODIFICATION 1: Extract the default system prompt into a constant.
 const DEFAULT_SYSTEM_PROMPT = `You are Tavor AI, an advanced AI assistant with powerful agentic capabilities and access to secure containerized development environments. You excel at both conversational interactions and complex technical development tasks.
 
 ## Development Mode
@@ -39,7 +38,7 @@ You can run any bash commands you need to complete the task using the executeCom
 - Create a TODO list of tasks to achive the end goal
 - Build full-stack applications with modern frameworks
 - **Default Web App Stack** (unless user specifies otherwise):
-  - Frontend: React with TypeScript 
+  - Frontend: React with TypeScript
   - Styling: Tailwind CSS v4 or v3
   - Components: Shadcn/ui
 - **Recommended Boilerplates**:
@@ -96,7 +95,6 @@ You can run any bash commands you need to complete the task using the executeCom
 
 Remember: You have full root access to your container environment. Use this power responsibly to create secure, efficient, and well-structured applications that meet user requirements while following best practices.`;
 
-// MODIFICATION 2: Modify newAgent to accept `instructions` as an argument.
 const newAgent = ({
   chatModel,
   instructions,
@@ -109,14 +107,14 @@ const newAgent = ({
     chat: chatModel,
     textEmbedding: textEmbedding,
     maxSteps: 100,
-    instructions: instructions, // Use the provided instructions
+    instructions: instructions,
     tools: {},
   });
 };
 
 export const chatAgent = newAgent({
   chatModel: getDefaultModel().runtime,
-  instructions: DEFAULT_SYSTEM_PROMPT, // The default agent uses the default prompt
+  instructions: DEFAULT_SYSTEM_PROMPT,
 });
 
 export const uploadFile = action({
@@ -238,11 +236,9 @@ export const stream = internalAction({
       await validateCanUseModel(ctx, effectiveModelId, tempThread.userId);
     }
 
-    // --- MODIFICATION 3: CONSTRUCT THE DYNAMIC SYSTEM PROMPT ---
     let systemPrompt = DEFAULT_SYSTEM_PROMPT;
     if (tempThread?.userId) {
-      // We need to use `runQuery` because we are in an `internalAction`
-      const user = await ctx.runQuery(internal.chat_engine.users.getById, {
+      const user = await ctx.runQuery(internal.app.getUserById, {
         userId: tempThread.userId,
       });
 
@@ -256,7 +252,6 @@ export const stream = internalAction({
       }
     }
 
-    // MODIFICATION 4: Create the agent with our dynamically constructed prompt.
     const effectiveModel = effectiveModelId
       ? MODEL_CONFIGS[effectiveModelId as ModelId]
       : getDefaultModel();
@@ -265,7 +260,6 @@ export const stream = internalAction({
       chatModel: effectiveModel.runtime,
       instructions: systemPrompt,
     });
-    // --- END OF MODIFICATIONS ---
 
     const { thread } = await agent.continueThread(ctx, {
       threadId,

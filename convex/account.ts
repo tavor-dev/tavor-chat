@@ -40,16 +40,9 @@ export async function authorizeThreadAccess(
   // client before a route param is fully resolved. This makes the helper robust.
   invariant(threadId, "authorizeThreadAccess: threadId cannot be empty.");
 
-  // This call is now safe because we've already checked threadId.
   const thread = await ctx.runQuery(api.threads.getByIdForCurrentUser, {
     threadId,
   });
-
-  // The underlying query already checks for ownership, but this makes it explicit.
-  invariant(
-    thread,
-    "Thread not found or you do not have permission to access it.",
-  );
 
   return thread;
 }
@@ -116,6 +109,23 @@ export const updateUserPreferences = mutation({
     }
 
     ctx.db.patch(userId, args);
+  },
+});
+
+export const updateSystemPromptSettings = mutation({
+  args: {
+    customSystemPrompt: v.optional(v.string()),
+    systemPromptMode: v.optional(
+      v.union(v.literal("enhance"), v.literal("replace")),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getUserId(ctx);
+
+    await ctx.db.patch(userId, {
+      customSystemPrompt: args.customSystemPrompt,
+      systemPromptMode: args.systemPromptMode,
+    });
   },
 });
 
