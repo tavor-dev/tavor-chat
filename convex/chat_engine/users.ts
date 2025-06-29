@@ -16,6 +16,34 @@ import {
 } from "@cvx/_generated/server";
 import { deleteMessage } from "./messages";
 import schema, { v } from "@cvx/schema";
+import { getAuthUserId } from "@convex-dev/auth/server";
+
+export const updateSystemPromptSettings = mutation({
+  args: {
+    customSystemPrompt: v.optional(v.string()),
+    systemPromptMode: v.optional(
+      v.union(v.literal("enhance"), v.literal("replace")),
+    ),
+  },
+  handler: async (ctx, args) => {
+    const userId = await getAuthUserId(ctx);
+    if (!userId) {
+      throw new Error("User not authenticated");
+    }
+
+    await ctx.db.patch(userId, {
+      customSystemPrompt: args.customSystemPrompt,
+      systemPromptMode: args.systemPromptMode,
+    });
+  },
+});
+
+export const getById = internalQuery({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    return await ctx.db.get(args.userId);
+  },
+});
 
 // Note: it only searches for users with threads
 export const listUsersWithThreads = query({

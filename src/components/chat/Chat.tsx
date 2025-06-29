@@ -6,6 +6,7 @@ import { toUIMessages, type UIMessage } from "@/lib/agent/toUIMessages";
 import { optimisticallySendMessage, useThreadMessages } from "@/lib/agent";
 import { Doc, type Id } from "@cvx/_generated/dataModel";
 import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
+import { SquareOrangeSolid } from "@medusajs/icons";
 import { useMutation } from "convex/react";
 import { useCallback, useEffect, useRef, useState, memo, type FC } from "react";
 import { api } from "../../../convex/_generated/api";
@@ -17,6 +18,8 @@ import { convexQuery } from "@convex-dev/react-query";
 import { useQuery } from "@tanstack/react-query";
 import { useMaxStepsReached } from "@/hooks/use-max-steps-reached";
 import { useSetAtom, useAtomValue } from "jotai";
+// import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+// import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
 import {
   hitMaxStepsAtom,
   isGeneratingAtom,
@@ -25,6 +28,8 @@ import {
   messageIdsAtom,
   updateMessageAtom,
 } from "@/lib/state/chatAtoms";
+
+
 
 function UpgradeModal({
   isOpen,
@@ -207,7 +212,7 @@ MessageRenderer.displayName = "MessageRenderer";
  * Renders the list of messages by subscribing to the list of message IDs.
  * It doesn't re-render when individual messages change.
  */
-const MessageList = () => {
+const MessageList = ({ onContinue }: { onContinue: () => void }) => {
   const messageIds = useAtomValue(messageIdsAtom);
   const isGenerating = useAtomValue(isGeneratingAtom);
   const hitMaxSteps = useAtomValue(hitMaxStepsAtom);
@@ -227,15 +232,17 @@ const MessageList = () => {
         </div>
       )}
       {hitMaxSteps && (
-        <div className="chat-section max-w-3xl mx-auto mb-8 px-4 flex items-center gap-2 text-sm text-ui-fg-base">
-          ⚠️ Halted after the maximum tool steps. Type
-          <kbd className="rounded bg-gray-400 px-1">Continue</kbd> to keep
-          going.
+        <div className="chat-section max-w-3xl mx-auto mb-14 -mt-4 px-4 flex w-full flex-col gap-4 items-center text-sm text-ui-fg-base">
+          <Text className="flex gap-2 justify-center items-center">
+            <SquareOrangeSolid /> Reached the maximum tool steps.
+          </Text>
+          <Button size="small" onClick={onContinue}>Continue</Button>
         </div>
       )}
     </>
   );
 };
+
 
 // --- Main Chat Component ---
 
@@ -378,6 +385,11 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
     },
     [sendMessage, threadId],
   );
+  
+  const handleContinue = useCallback(() => {
+    handleSubmit("Continue", []);
+  }, [handleSubmit]);
+
 
   const handleScrollToBottomClick = useCallback(() => {
     userHasScrolledUp.current = false;
@@ -409,7 +421,7 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
             paddingBottom: "40px",
           }}
         >
-          <MessageList />
+          <MessageList onContinue={handleContinue} />
         </div>
 
         {/* Chat input panel with improved positioning */}

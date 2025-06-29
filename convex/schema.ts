@@ -71,6 +71,11 @@ const schema = defineSchema({
     isAnonymous: v.optional(v.boolean()),
     customerId: v.optional(v.string()),
     selectedModel: v.optional(v.string()),
+    // System Prompt settings
+    customSystemPrompt: v.optional(v.string()),
+    systemPromptMode: v.optional(
+      v.union(v.literal("enhance"), v.literal("replace")),
+    ),
     // Fields for free tier usage tracking
     messageCount: v.optional(v.number()),
     usageResetTime: v.optional(v.number()),
