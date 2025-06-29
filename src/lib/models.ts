@@ -1,7 +1,11 @@
-import { anthropic } from "@ai-sdk/anthropic";
+import { createAnthropic } from "@ai-sdk/anthropic";
 import { google } from "@ai-sdk/google";
 import { openai } from "@ai-sdk/openai";
 import { type LanguageModelV1 } from "ai";
+
+const anthropic = createAnthropic({
+  headers: { "anthropic-beta": "fine-grained-tool-streaming-2025-05-14" },
+});
 
 export const MODEL_IDS = [
   "gpt-4o-mini",

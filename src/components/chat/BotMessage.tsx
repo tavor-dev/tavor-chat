@@ -125,9 +125,10 @@ const ToolStatus = memo(
       } else if (typeof parsedArgs === "string") {
         // Still streaming, might be partial JSON or just the command string
         command = parsedArgs;
+      } else {
+        command = "(generating...)";
       }
     }
-
     if (!command) return null;
 
     const getStatusIcon = () => {
