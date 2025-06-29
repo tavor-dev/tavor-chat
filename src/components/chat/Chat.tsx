@@ -29,8 +29,6 @@ import {
   updateMessageAtom,
 } from "@/lib/state/chatAtoms";
 
-
-
 function UpgradeModal({
   isOpen,
   onOpenChange,
@@ -231,18 +229,19 @@ const MessageList = ({ onContinue }: { onContinue: () => void }) => {
           <AnswerSection isLoading={true} />
         </div>
       )}
-      {hitMaxSteps && (
+      {hitMaxSteps && !isGenerating && (
         <div className="chat-section max-w-3xl mx-auto mb-14 -mt-4 px-4 flex w-full flex-col gap-4 items-center text-sm text-ui-fg-base">
           <Text className="flex gap-2 justify-center items-center">
             <SquareOrangeSolid /> Reached the maximum tool steps.
           </Text>
-          <Button size="small" onClick={onContinue}>Continue</Button>
+          <Button size="small" onClick={onContinue}>
+            Continue
+          </Button>
         </div>
       )}
     </>
   );
 };
-
 
 // --- Main Chat Component ---
 
@@ -385,11 +384,10 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
     },
     [sendMessage, threadId],
   );
-  
+
   const handleContinue = useCallback(() => {
     handleSubmit("Continue", []);
   }, [handleSubmit]);
-
 
   const handleScrollToBottomClick = useCallback(() => {
     userHasScrolledUp.current = false;
