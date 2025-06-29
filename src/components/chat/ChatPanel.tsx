@@ -1,33 +1,37 @@
+import { useThread } from "@/hooks/use-thread";
 import {
   MODEL_CONFIGS,
   getAvailableModels,
   getDefaultModel,
   type ModelId,
 } from "@/lib/models";
+import { isGeneratingAtom } from "@/lib/state/chatAtoms";
 import { cn } from "@/lib/utils";
 import { convexQuery } from "@convex-dev/react-query";
 import { api } from "@cvx/_generated/api";
+import { Id } from "@cvx/_generated/dataModel";
 import {
   ArrowDown,
+  ArrowPath,
   ArrowUpMini,
   DocumentText,
+  Github,
   PaperClip,
+  PlaySolid,
   SquareRedSolid,
   XMark,
-  ArrowPath,
-  PlaySolid,
-  Github,
 } from "@medusajs/icons";
 import {
   IconButton,
   Select,
-  Tooltip,
-  toast,
   StatusBadge,
   Text,
+  Tooltip,
+  toast,
 } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useAction, useMutation } from "convex/react";
+import { useAtomValue } from "jotai";
 import {
   useCallback,
   useRef,
@@ -38,9 +42,6 @@ import {
 import TextareaAutosize, {
   type TextareaHeightChangeMeta,
 } from "react-textarea-autosize";
-import { Id } from "@cvx/_generated/dataModel";
-import { useAtomValue } from "jotai";
-import { isGeneratingAtom } from "@/lib/state/chatAtoms";
 
 const MAX_FILES = 3;
 const MAX_IMAGE_SIZE_MB = 2;
@@ -210,9 +211,7 @@ export function ChatPanel({
   // const [showFilePreview, setShowFilePreview] = useState<string | null>(null);
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
-  const { data: thread } = useQuery(
-    convexQuery(api.threads.getByIdForCurrentUser, { threadId }),
-  );
+  const thread = useThread(threadId);
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
   const updateThread = useMutation(api.threads.update);
 

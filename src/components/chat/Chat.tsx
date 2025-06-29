@@ -1,25 +1,24 @@
+import { useMaxStepsReached } from "@/hooks/use-max-steps-reached";
+import { optimisticallySendMessage, useThreadMessages } from "@/lib/agent";
+import { toUIMessages, type UIMessage } from "@/lib/agent/toUIMessages";
 import {
   cacheThreadMessages,
   getCachedThreadMessages,
 } from "@/lib/threadCache";
-import { toUIMessages, type UIMessage } from "@/lib/agent/toUIMessages";
-import { optimisticallySendMessage, useThreadMessages } from "@/lib/agent";
 import { Doc, type Id } from "@cvx/_generated/dataModel";
-import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
 import { SquareOrangeSolid } from "@medusajs/icons";
+import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
+import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
-import { useCallback, useEffect, useRef, useState, memo, type FC } from "react";
+import { useAtomValue, useSetAtom } from "jotai";
+import { memo, useCallback, useEffect, useRef, useState, type FC } from "react";
 import { api } from "../../../convex/_generated/api";
 import { AnswerSection } from "./AnswerSection";
 import { ChatPanel, type ProcessedFile } from "./ChatPanel";
 import { UserMessage } from "./UserMessage";
-import { useNavigate } from "@tanstack/react-router";
-import { convexQuery } from "@convex-dev/react-query";
-import { useQuery } from "@tanstack/react-query";
-import { useMaxStepsReached } from "@/hooks/use-max-steps-reached";
-import { useSetAtom, useAtomValue } from "jotai";
 // import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 // import { vscDarkPlus } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { useThread } from "@/hooks/use-thread";
 import {
   hitMaxStepsAtom,
   isGeneratingAtom,
@@ -91,9 +90,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
     { initialNumItems: 50000, stream: true }, // hack to eliminate pagination for now
   );
 
-  const { data: thread } = useQuery(
-    convexQuery(api.threads.getByIdForCurrentUser, { threadId }),
-  );
+  const thread = useThread(threadId);
 
   const setMessageIds = useSetAtom(messageIdsAtom);
   const updateMessage = useSetAtom(updateMessageAtom);
