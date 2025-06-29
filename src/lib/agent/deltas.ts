@@ -229,16 +229,18 @@ export function applyDeltasToStreamMessage(
   return [newStream, true];
 }
 
-function cloneMessageAndContent(
-  message: Message | undefined,
-): Message | undefined {
+function deepCopyParts(parts: unknown) {
+  return Array.isArray(parts)
+    ? parts.map((p) => ({ ...p })) // clone each part object
+    : parts;
+}
+
+function cloneMessageAndContent(message: Message | undefined) {
   return (
     message &&
     ({
       ...message,
-      content: Array.isArray(message.content)
-        ? [...message.content]
-        : message.content,
+      content: deepCopyParts(message.content),
     } as typeof message)
   );
 }
