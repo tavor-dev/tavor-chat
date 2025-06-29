@@ -493,7 +493,7 @@ export function ChatPanel({
             </Tooltip>
           </div>
         )}
-        <div className="absolute -top-12 left-0.5 w-auto size-10 flex p-1 items-center justify-start bg-ui-bg-field-component rounded-lg gap-2 border border-ui-tag-neutral-border shadow-md backdrop-blur-sm z-20">
+        <div className="absolute -top-12 left-0.5 w-auto size-10 flex-dis hidden p-1 items-center justify-start bg-ui-bg-field-component rounded-lg gap-2 border border-ui-tag-neutral-border shadow-md backdrop-blur-sm z-20">
           <SandboxComponent />
           <SelectGitRepo />
         </div>
