@@ -77,6 +77,22 @@ Usage instructions:
         });
       },
     }),
+    forwardPort: createTool({
+      description: `Forwards a TCP port inside the sandbox to a random ip:port on the public internet that will be returned by this tool.
+DO NOT use this for HTTP traffic, use getPreviewUrl instead. Use this for any other TCP traffic you want to forward to the box, like a teamspeak server, exposing a postgresql to the public etc.
+Important: this can expose services to the public internet, double check they are secured with password or similar.`,
+      args: z.object({
+        port: z.number().describe("The TCP port inside the sandbox to expose"),
+      }),
+      handler: async (ctx, { port }) => {
+        await validateToolThread(ctx, threadId);
+
+        return await ctx.runAction(internal.tavor.exposePort, {
+          threadId,
+          port,
+        });
+      },
+    }),
   };
 };
 
@@ -183,5 +199,30 @@ export const getPreviewUrl = internalAction({
     await box.refresh();
 
     return box.getPublicUrl(port);
+  },
+});
+
+export const exposePort = internalAction({
+  args: {
+    threadId: v.id("threads"),
+    port: v.number(),
+  },
+  returns: v.string(),
+  handler: async (ctx, { threadId, port }) => {
+    const thread = await ctx.runQuery(internal.threads.getById, { threadId });
+    invariant(thread, "expected thread to be present");
+
+    if (!thread.tavorBox) {
+      return "Tavor box is not running, run a command to setup a new box and then expose a port if necessary";
+    }
+
+    const tavor = new Tavor();
+
+    const box = await tavor.getBox(thread.tavorBox);
+    await box.refresh();
+
+    const exposedPortData = await box.exposePort(port);
+
+    return `Successfully exposed port ${port}. It can be accessed through proxy.tavor.app:${exposedPortData.proxy_port}`;
   },
 });
