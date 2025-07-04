@@ -29,6 +29,8 @@ import {
   Text,
   Tooltip,
   toast,
+  Button,
+  Prompt,
 } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
 import { useAction, useMutation } from "convex/react";
@@ -179,6 +181,7 @@ const SandboxComponent = ({ threadId }: { threadId: Id<"threads"> }) => {
   const restartBox = useAction(api.tavor.restartTavorBox);
 
   const [isMutating, setIsMutating] = useState(false);
+  const [showStopPrompt, setShowStopPrompt] = useState(false);
 
   const handleStart = async () => {
     setIsMutating(true);
@@ -261,12 +264,36 @@ const SandboxComponent = ({ threadId }: { threadId: Id<"threads"> }) => {
       <Tooltip content={isRunning ? "Stop container" : "Start container"}>
         <IconButton
           size="xsmall"
-          onClick={isRunning ? handleStop : handleStart}
+          onClick={isRunning ? () => setShowStopPrompt(true) : handleStart}
           disabled={isMutating}
         >
           {isRunning ? <SquareRedSolid /> : <PlaySolid />}
         </IconButton>
       </Tooltip>
+      <Prompt open={showStopPrompt} onOpenChange={setShowStopPrompt}>
+        <Prompt.Content>
+          <Prompt.Header>
+            <Prompt.Title>Stop container?</Prompt.Title>
+            <Prompt.Description>
+              Are you sure you want to stop the running container? This will interrupt any ongoing processes.
+            </Prompt.Description>
+          </Prompt.Header>
+          <Prompt.Footer>
+            <Prompt.Cancel>
+              Cancel
+            </Prompt.Cancel>
+            <Prompt.Action
+              onClick={async () => {
+                setShowStopPrompt(false);
+                await handleStop();
+              }}
+              disabled={isMutating}
+            >
+              Stop
+            </Prompt.Action>
+          </Prompt.Footer>
+        </Prompt.Content>
+      </Prompt>
     </div>
   );
 };
