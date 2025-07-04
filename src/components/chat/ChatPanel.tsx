@@ -8,6 +8,7 @@ import {
 import { isGeneratingAtom } from "@/lib/state/chatAtoms";
 import { cn } from "@/lib/utils";
 import { convexQuery } from "@convex-dev/react-query";
+import { useThread } from "@/hooks/use-thread";
 import { api } from "@cvx/_generated/api";
 import { Id } from "@cvx/_generated/dataModel";
 import {
@@ -294,12 +295,7 @@ export function ChatPanel({
   // const [showFilePreview, setShowFilePreview] = useState<string | null>(null);
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
-  const { data: thread } = useQuery(
-    convexQuery(
-      api.threads.getByIdForCurrentUser,
-      threadId ? { threadId } : "skip",
-    ),
-  );
+  const thread = useThread(threadId);
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
   const updateThread = useMutation(api.threads.update);
 
@@ -764,3 +760,4 @@ export function ChatPanel({
     </div>
   );
 }
+
