@@ -4,7 +4,7 @@
 // node runtime here instead of the default Convex one
 
 import { Tavor } from "@tavor/sdk";
-import { v } from "convex/values";
+import { v } from "./schema";
 import invariant from "tiny-invariant";
 import { internal } from "./_generated/api";
 import { internalAction } from "./_generated/server";

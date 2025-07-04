@@ -1,10 +1,10 @@
 import { Tavor } from "@tavor/sdk";
-import { v } from "convex/values";
+import { v } from "./schema";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
-import { internalAction, internalMutation } from "./_generated/server";
+import { type Id } from "./_generated/dataModel";
+import { action, internalAction, internalMutation } from "./_generated/server";
 import { createTool, ToolCtx } from "./chat_engine/client";
 import {
   DEFAULT_BOX_TIMEOUT,
@@ -12,6 +12,8 @@ import {
   MAX_OUTPUT_LENGTH,
   MAX_TIMEOUT_MS,
 } from "./tavorNode";
+import { partial } from "convex-helpers/validators";
+import { authorizeThreadAccess } from "./account";
 
 /**
  * AI tools
@@ -114,6 +116,114 @@ async function validateToolThread(ctx: ToolCtx, threadId: Id<"threads">) {
 }
 
 /**
+ * Internal mutation to claim a thread for a user.
+ * Co-located here to avoid codegen issues.
+ */
+export const _claimThread = internalMutation({
+  args: {
+    threadId: v.id("threads"),
+    patch: v.object(partial(v.doc("threads").fields)),
+  },
+  handler: async (ctx, { threadId, patch }) => {
+    await ctx.db.patch(threadId, patch);
+  },
+});
+
+/**
+ * Box management actions
+ */
+export const getBoxStatus = action({
+  args: { threadId: v.id("threads") },
+  handler: async (ctx, { threadId }) => {
+    const thread = await authorizeThreadAccess(ctx, threadId);
+
+    if (!thread.tavorBox) {
+      return { status: "off" };
+    }
+    try {
+      const tavor = new Tavor();
+      const box = await tavor.getBox(thread.tavorBox);
+      await box.refresh();
+      return { status: box.state }; // 'running', 'stopped', etc.
+    } catch (e) {
+      console.error(e);
+      // Box might not be found if it expired and was cleaned up.
+      await ctx.runMutation(internal.tavor.clearBox, { threadId });
+      return { status: "off" };
+    }
+  },
+});
+
+// Types for action return values
+interface BoxActionResult {
+  success: boolean;
+  message: string;
+}
+
+export const startTavorBox = action({
+  args: {
+    threadId: v.id("threads"),
+  },
+  handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
+    await authorizeThreadAccess(ctx, threadId);
+    const boxId: string = await ctx.runAction(internal.tavor.ensureBox, {
+      threadId,
+    });
+    return { success: true, message: `Box ${boxId} is running.` };
+  },
+});
+
+export const stopTavorBox = action({
+  args: {
+    threadId: v.id("threads"),
+  },
+  handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
+    const thread = await authorizeThreadAccess(ctx, threadId);
+
+    if (thread.tavorBox) {
+      const tavor = new Tavor();
+      try {
+        const box = await tavor.getBox(thread.tavorBox);
+        await box.stop();
+      } catch (error) {
+        console.warn(`Failed to stop box ${thread.tavorBox}:`, error);
+      }
+      await ctx.runMutation(internal.tavor.clearBox, { threadId });
+      return { success: true, message: "Box stopped." };
+    }
+    return { success: false, message: "No box was running for this thread." };
+  },
+});
+
+export const restartTavorBox = action({
+  args: {
+    threadId: v.id("threads"),
+  },
+  handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
+    const thread = await authorizeThreadAccess(ctx, threadId);
+
+    if (thread.tavorBox) {
+      const tavor = new Tavor();
+      try {
+        const box = await tavor.getBox(thread.tavorBox);
+        await box.stop();
+      } catch (error) {
+        console.warn(
+          `Failed to stop box ${thread.tavorBox} during restart:`,
+          error,
+        );
+      }
+      await ctx.runMutation(internal.tavor.clearBox, { threadId });
+    }
+
+    const boxId: string = await ctx.runAction(internal.tavor.ensureBox, {
+      threadId,
+    });
+    return { success: true, message: `Box restarted. New box is ${boxId}.` };
+  },
+});
+
+/**
  * Manage boxes
  */
 export const clearBox = internalMutation({
@@ -153,12 +263,17 @@ export const ensureBox = internalAction({
     const tavor = new Tavor();
 
     if (thread.tavorBox) {
-      const box = await tavor.getBox(thread.tavorBox);
-      await box.refresh();
+      try {
+        const box = await tavor.getBox(thread.tavorBox);
+        await box.refresh();
 
-      if (box.state === "running") {
-        // return early with the already-existing box
-        return box.id;
+        if (box.state === "running") {
+          // return early with the already-existing box
+          return box.id;
+        }
+      } catch (e) {
+        // Box probably doesn't exist anymore
+        console.log("Could not get existing box, creating a new one");
       }
 
       await ctx.runMutation(internal.tavor.clearBox, { threadId });

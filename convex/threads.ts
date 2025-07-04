@@ -179,6 +179,16 @@ export const update = mutation({
   },
 });
 
+export const _update = internalMutation({
+  args: {
+    threadId: v.id("threads"),
+    patch: v.object(partial(v.doc("threads").fields)),
+  },
+  handler: async (ctx, { threadId, patch }) => {
+    await ctx.db.patch(threadId, patch);
+  },
+});
+
 /**
  * Delete a thread
  */
