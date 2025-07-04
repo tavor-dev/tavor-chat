@@ -258,7 +258,7 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
   const [inputHeight, setInputHeight] = useState(0);
   const [_viewportHeight, setViewportHeight] = useState(0);
 
-  const messageIds = useAtomValue(messageIdsAtom);
+  // const messageIds = useAtomValue(messageIdsAtom);
 
   // Improved viewport handling for Safari keyboard
   useEffect(() => {
