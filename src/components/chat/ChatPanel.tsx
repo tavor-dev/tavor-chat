@@ -1,5 +1,4 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
-import { useThread } from "@/hooks/use-thread";
 import {
   MODEL_CONFIGS,
   getAvailableModels,
@@ -295,7 +294,12 @@ export function ChatPanel({
   // const [showFilePreview, setShowFilePreview] = useState<string | null>(null);
 
   const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
-  const thread = useThread(threadId);
+  const { data: thread } = useQuery(
+    convexQuery(
+      api.threads.getByIdForCurrentUser,
+      threadId ? { threadId } : "skip",
+    ),
+  );
   const updateUserPreferences = useMutation(api.account.updateUserPreferences);
   const updateThread = useMutation(api.threads.update);
 
@@ -576,10 +580,12 @@ export function ChatPanel({
             </Tooltip>
           </div>
         )}
-        <div className="absolute -top-12 left-0.5 w-auto flex p-1 items-center justify-start bg-ui-bg-field-component rounded-lg gap-2 border border-ui-tag-neutral-border shadow-md backdrop-blur-sm z-20">
-          <SandboxComponent threadId={threadId} />
-          {/* <SelectGitRepo /> */}
-        </div>
+        {threadId && (
+          <div className="absolute -top-12 left-0.5 w-auto flex p-1 items-center justify-start bg-ui-bg-field-component rounded-lg gap-2 border border-ui-tag-neutral-border shadow-md backdrop-blur-sm z-20">
+            <SandboxComponent threadId={threadId} />
+            {/* <SelectGitRepo /> */}
+          </div>
+        )}
 
         <div className="flex p-1 rounded-2xl bg-ui-bg-field-component-hover border border-ui-border-base">
           <div className="relative flex flex-col w-full gap-2 bg-ui-bg-field-component rounded-xl border border-ui-border-base z-10">
@@ -758,4 +764,3 @@ export function ChatPanel({
     </div>
   );
 }
-
