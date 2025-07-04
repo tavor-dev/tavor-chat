@@ -3,7 +3,7 @@ import { v } from "./schema"; // <-- THE FIX IS HERE
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { internal } from "./_generated/api";
-import { type Doc, type Id } from "./_generated/dataModel";
+import { type Id } from "./_generated/dataModel";
 import { action, internalAction, internalMutation } from "./_generated/server";
 import { createTool, ToolCtx } from "./chat_engine/client";
 import {
@@ -12,8 +12,9 @@ import {
   MAX_OUTPUT_LENGTH,
   MAX_TIMEOUT_MS,
 } from "./tavorNode";
-import type { ActionCtx } from "./_generated/server";
+// import type { ActionCtx } from "./_generated/server";
 import { partial } from "convex-helpers/validators";
+import { authorizeThreadAccess } from "./account";
 
 /**
  * AI tools
@@ -134,53 +135,53 @@ export const _claimThread = internalMutation({
  * authenticated user. This prevents authorization errors when a user signs in
  * after starting a thread anonymously.
  */
-async function authorizeAndGetThread(
-  ctx: ActionCtx,
-  threadId: Id<"threads">,
-): Promise<Doc<"threads">> {
-  const identity = await ctx.auth.getUserIdentity();
-  if (!identity) {
-    throw new Error("Unauthenticated");
-  }
-
-  const thread = await ctx.runQuery(internal.threads.getById, { threadId });
-  if (!thread) {
-    throw new Error("Thread not found");
-  }
-
-  let needsClaim = false;
-  if (thread.userId && thread.userId !== identity.subject) {
-    const owner = await ctx.runQuery(internal.app.getUserById, {
-      userId: thread.userId,
-    });
-    // An authenticated user can only claim a thread from an anonymous user.
-    if (!owner?.email) {
-      throw new Error("Unauthorized");
-    }
-    needsClaim = true;
-  } else if (!thread.userId) {
-    // Thread is unowned, claim it for the current user.
-    needsClaim = true;
-  }
-
-  if (needsClaim) {
-    await ctx.runMutation(internal.tavor._claimThread, {
-      threadId,
-      patch: { userId: identity.subject.split("|")[0] as Id<"users"> },
-    });
-    // After claiming, we must refetch the thread to return the updated document.
-    const newThread = await ctx.runQuery(internal.threads.getById, {
-      threadId,
-    });
-    if (!newThread) {
-      throw new Error("Thread disappeared after claiming ownership.");
-    }
-    return newThread;
-  }
-
-  // Return the original thread doc if no claim was needed.
-  return thread;
-}
+// async function authorizeAndGetThread(
+//   ctx: ActionCtx,
+//   threadId: Id<"threads">,
+// ): Promise<Doc<"threads">> {
+//   const identity = await ctx.auth.getUserIdentity();
+//   if (!identity) {
+//     throw new Error("Unauthenticated");
+//   }
+//
+//   const thread = await ctx.runQuery(internal.threads.getById, { threadId });
+//   if (!thread) {
+//     throw new Error("Thread not found");
+//   }
+//
+//   let needsClaim = false;
+//   if (thread.userId && thread.userId !== identity.subject) {
+//     const owner = await ctx.runQuery(internal.app.getUserById, {
+//       userId: thread.userId,
+//     });
+//     // An authenticated user can only claim a thread from an anonymous user.
+//     if (!owner?.email) {
+//       throw new Error("Unauthorized");
+//     }
+//     needsClaim = true;
+//   } else if (!thread.userId) {
+//     // Thread is unowned, claim it for the current user.
+//     needsClaim = true;
+//   }
+//
+//   if (needsClaim) {
+//     await ctx.runMutation(internal.tavor._claimThread, {
+//       threadId,
+//       patch: { userId: identity.subject.split("|")[0] as Id<"users"> },
+//     });
+//     // After claiming, we must refetch the thread to return the updated document.
+//     const newThread = await ctx.runQuery(internal.threads.getById, {
+//       threadId,
+//     });
+//     if (!newThread) {
+//       throw new Error("Thread disappeared after claiming ownership.");
+//     }
+//     return newThread;
+//   }
+//
+//   // Return the original thread doc if no claim was needed.
+//   return thread;
+// }
 
 /**
  * Box management actions
@@ -188,7 +189,7 @@ async function authorizeAndGetThread(
 export const getBoxStatus = action({
   args: { threadId: v.id("threads") },
   handler: async (ctx, { threadId }) => {
-    const thread = await authorizeAndGetThread(ctx, threadId);
+    const thread = await authorizeThreadAccess(ctx, threadId);
 
     if (!thread.tavorBox) {
       return { status: "off" };
@@ -218,7 +219,7 @@ export const startTavorBox = action({
     threadId: v.id("threads"),
   },
   handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
-    await authorizeAndGetThread(ctx, threadId);
+    await authorizeThreadAccess(ctx, threadId);
     const boxId: string = await ctx.runAction(internal.tavor.ensureBox, {
       threadId,
     });
@@ -231,7 +232,7 @@ export const stopTavorBox = action({
     threadId: v.id("threads"),
   },
   handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
-    const thread = await authorizeAndGetThread(ctx, threadId);
+    const thread = await authorizeThreadAccess(ctx, threadId);
 
     if (thread.tavorBox) {
       const tavor = new Tavor();
@@ -253,7 +254,7 @@ export const restartTavorBox = action({
     threadId: v.id("threads"),
   },
   handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
-    const thread = await authorizeAndGetThread(ctx, threadId);
+    const thread = await authorizeThreadAccess(ctx, threadId);
 
     if (thread.tavorBox) {
       const tavor = new Tavor();
@@ -394,4 +395,3 @@ export const exposePort = internalAction({
     return `Successfully exposed port ${port}. It can be accessed through proxy.tavor.app:${exposedPortData.proxy_port}`;
   },
 });
-
