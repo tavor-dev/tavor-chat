@@ -1,5 +1,5 @@
 import { Tavor } from "@tavor/sdk";
-import { v } from "./schema"; // <-- THE FIX IS HERE
+import { v } from "./schema";
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { internal } from "./_generated/api";
@@ -12,7 +12,6 @@ import {
   MAX_OUTPUT_LENGTH,
   MAX_TIMEOUT_MS,
 } from "./tavorNode";
-// import type { ActionCtx } from "./_generated/server";
 import { partial } from "convex-helpers/validators";
 import { authorizeThreadAccess } from "./account";
 
@@ -129,59 +128,6 @@ export const _claimThread = internalMutation({
     await ctx.db.patch(threadId, patch);
   },
 });
-
-/**
- * Checks for thread ownership and migrates anonymous threads to the current
- * authenticated user. This prevents authorization errors when a user signs in
- * after starting a thread anonymously.
- */
-// async function authorizeAndGetThread(
-//   ctx: ActionCtx,
-//   threadId: Id<"threads">,
-// ): Promise<Doc<"threads">> {
-//   const identity = await ctx.auth.getUserIdentity();
-//   if (!identity) {
-//     throw new Error("Unauthenticated");
-//   }
-//
-//   const thread = await ctx.runQuery(internal.threads.getById, { threadId });
-//   if (!thread) {
-//     throw new Error("Thread not found");
-//   }
-//
-//   let needsClaim = false;
-//   if (thread.userId && thread.userId !== identity.subject) {
-//     const owner = await ctx.runQuery(internal.app.getUserById, {
-//       userId: thread.userId,
-//     });
-//     // An authenticated user can only claim a thread from an anonymous user.
-//     if (!owner?.email) {
-//       throw new Error("Unauthorized");
-//     }
-//     needsClaim = true;
-//   } else if (!thread.userId) {
-//     // Thread is unowned, claim it for the current user.
-//     needsClaim = true;
-//   }
-//
-//   if (needsClaim) {
-//     await ctx.runMutation(internal.tavor._claimThread, {
-//       threadId,
-//       patch: { userId: identity.subject.split("|")[0] as Id<"users"> },
-//     });
-//     // After claiming, we must refetch the thread to return the updated document.
-//     const newThread = await ctx.runQuery(internal.threads.getById, {
-//       threadId,
-//     });
-//     if (!newThread) {
-//       throw new Error("Thread disappeared after claiming ownership.");
-//     }
-//     return newThread;
-//   }
-//
-//   // Return the original thread doc if no claim was needed.
-//   return thread;
-// }
 
 /**
  * Box management actions
