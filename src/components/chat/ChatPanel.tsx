@@ -29,7 +29,7 @@ import {
   Text,
   Tooltip,
   toast,
-  Button,
+  // Button,
   Prompt,
 } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
@@ -275,13 +275,12 @@ const SandboxComponent = ({ threadId }: { threadId: Id<"threads"> }) => {
           <Prompt.Header>
             <Prompt.Title>Stop container?</Prompt.Title>
             <Prompt.Description>
-              Are you sure you want to stop the running container? This will interrupt any ongoing processes.
+              Are you sure you want to stop the running container? This will
+              interrupt any ongoing processes.
             </Prompt.Description>
           </Prompt.Header>
           <Prompt.Footer>
-            <Prompt.Cancel>
-              Cancel
-            </Prompt.Cancel>
+            <Prompt.Cancel>Cancel</Prompt.Cancel>
             <Prompt.Action
               onClick={async () => {
                 setShowStopPrompt(false);
@@ -787,4 +786,3 @@ export function ChatPanel({
     </div>
   );
 }
-
