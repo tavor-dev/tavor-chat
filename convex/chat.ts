@@ -1,6 +1,6 @@
 import { Agent, getFile, storeFile } from "@cvx/chat_engine/client";
 import { type LanguageModelV1 } from "ai";
-import { v } from "convex/values";
+import { v } from "./schema";
 import {
   MODEL_CONFIGS,
   type ModelId,

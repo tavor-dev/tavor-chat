@@ -1,10 +1,10 @@
 import { Tavor } from "@tavor/sdk";
-import { v } from "convex/values";
+import { v } from "./schema"; // <-- THE FIX IS HERE
 import invariant from "tiny-invariant";
 import { z } from "zod";
 import { internal } from "./_generated/api";
-import { Id } from "./_generated/dataModel";
-import { internalAction, internalMutation } from "./_generated/server";
+import { type Doc, type Id } from "./_generated/dataModel";
+import { action, internalAction, internalMutation } from "./_generated/server";
 import { createTool, ToolCtx } from "./chat_engine/client";
 import {
   DEFAULT_BOX_TIMEOUT,
@@ -12,6 +12,8 @@ import {
   MAX_OUTPUT_LENGTH,
   MAX_TIMEOUT_MS,
 } from "./tavorNode";
+import type { ActionCtx } from "./_generated/server";
+import { partial } from "convex-helpers/validators";
 
 /**
  * AI tools
@@ -114,6 +116,167 @@ async function validateToolThread(ctx: ToolCtx, threadId: Id<"threads">) {
 }
 
 /**
+ * Internal mutation to claim a thread for a user.
+ * Co-located here to avoid codegen issues.
+ */
+export const _claimThread = internalMutation({
+  args: {
+    threadId: v.id("threads"),
+    patch: v.object(partial(v.doc("threads").fields)),
+  },
+  handler: async (ctx, { threadId, patch }) => {
+    await ctx.db.patch(threadId, patch);
+  },
+});
+
+/**
+ * Checks for thread ownership and migrates anonymous threads to the current
+ * authenticated user. This prevents authorization errors when a user signs in
+ * after starting a thread anonymously.
+ */
+async function authorizeAndGetThread(
+  ctx: ActionCtx,
+  threadId: Id<"threads">,
+): Promise<Doc<"threads">> {
+  const identity = await ctx.auth.getUserIdentity();
+  if (!identity) {
+    throw new Error("Unauthenticated");
+  }
+
+  const thread = await ctx.runQuery(internal.threads.getById, { threadId });
+  if (!thread) {
+    throw new Error("Thread not found");
+  }
+
+  let needsClaim = false;
+  if (thread.userId && thread.userId !== identity.subject) {
+    const owner = await ctx.runQuery(internal.app.getUserById, {
+      userId: thread.userId,
+    });
+    // An authenticated user can only claim a thread from an anonymous user.
+    if (!owner?.email) {
+      throw new Error("Unauthorized");
+    }
+    needsClaim = true;
+  } else if (!thread.userId) {
+    // Thread is unowned, claim it for the current user.
+    needsClaim = true;
+  }
+
+  if (needsClaim) {
+    await ctx.runMutation(internal.tavor._claimThread, {
+      threadId,
+      patch: { userId: identity.subject.split("|")[0] as Id<"users"> },
+    });
+    // After claiming, we must refetch the thread to return the updated document.
+    const newThread = await ctx.runQuery(internal.threads.getById, {
+      threadId,
+    });
+    if (!newThread) {
+      throw new Error("Thread disappeared after claiming ownership.");
+    }
+    return newThread;
+  }
+
+  // Return the original thread doc if no claim was needed.
+  return thread;
+}
+
+/**
+ * Box management actions
+ */
+export const getBoxStatus = action({
+  args: { threadId: v.id("threads") },
+  handler: async (ctx, { threadId }) => {
+    const thread = await authorizeAndGetThread(ctx, threadId);
+
+    if (!thread.tavorBox) {
+      return { status: "off" };
+    }
+    try {
+      const tavor = new Tavor();
+      const box = await tavor.getBox(thread.tavorBox);
+      await box.refresh();
+      return { status: box.state }; // 'running', 'stopped', etc.
+    } catch (e) {
+      console.error(e);
+      // Box might not be found if it expired and was cleaned up.
+      await ctx.runMutation(internal.tavor.clearBox, { threadId });
+      return { status: "off" };
+    }
+  },
+});
+
+// Types for action return values
+interface BoxActionResult {
+  success: boolean;
+  message: string;
+}
+
+export const startTavorBox = action({
+  args: {
+    threadId: v.id("threads"),
+  },
+  handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
+    await authorizeAndGetThread(ctx, threadId);
+    const boxId: string = await ctx.runAction(internal.tavor.ensureBox, {
+      threadId,
+    });
+    return { success: true, message: `Box ${boxId} is running.` };
+  },
+});
+
+export const stopTavorBox = action({
+  args: {
+    threadId: v.id("threads"),
+  },
+  handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
+    const thread = await authorizeAndGetThread(ctx, threadId);
+
+    if (thread.tavorBox) {
+      const tavor = new Tavor();
+      try {
+        const box = await tavor.getBox(thread.tavorBox);
+        await box.stop();
+      } catch (error) {
+        console.warn(`Failed to stop box ${thread.tavorBox}:`, error);
+      }
+      await ctx.runMutation(internal.tavor.clearBox, { threadId });
+      return { success: true, message: "Box stopped." };
+    }
+    return { success: false, message: "No box was running for this thread." };
+  },
+});
+
+export const restartTavorBox = action({
+  args: {
+    threadId: v.id("threads"),
+  },
+  handler: async (ctx, { threadId }): Promise<BoxActionResult> => {
+    const thread = await authorizeAndGetThread(ctx, threadId);
+
+    if (thread.tavorBox) {
+      const tavor = new Tavor();
+      try {
+        const box = await tavor.getBox(thread.tavorBox);
+        await box.stop();
+      } catch (error) {
+        console.warn(
+          `Failed to stop box ${thread.tavorBox} during restart:`,
+          error,
+        );
+      }
+      await ctx.runMutation(internal.tavor.clearBox, { threadId });
+    }
+
+    const boxId: string = await ctx.runAction(internal.tavor.ensureBox, {
+      threadId,
+    });
+    return { success: true, message: `Box restarted. New box is ${boxId}.` };
+  },
+});
+
+/**
  * Manage boxes
  */
 export const clearBox = internalMutation({
@@ -153,12 +316,17 @@ export const ensureBox = internalAction({
     const tavor = new Tavor();
 
     if (thread.tavorBox) {
-      const box = await tavor.getBox(thread.tavorBox);
-      await box.refresh();
+      try {
+        const box = await tavor.getBox(thread.tavorBox);
+        await box.refresh();
 
-      if (box.state === "running") {
-        // return early with the already-existing box
-        return box.id;
+        if (box.state === "running") {
+          // return early with the already-existing box
+          return box.id;
+        }
+      } catch (e) {
+        // Box probably doesn't exist anymore
+        console.log("Could not get existing box, creating a new one");
       }
 
       await ctx.runMutation(internal.tavor.clearBox, { threadId });
@@ -226,3 +394,4 @@ export const exposePort = internalAction({
     return `Successfully exposed port ${port}. It can be accessed through proxy.tavor.app:${exposedPortData.proxy_port}`;
   },
 });
+

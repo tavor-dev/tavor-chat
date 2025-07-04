@@ -1,3 +1,4 @@
+/* eslint-disable @typescript-eslint/no-explicit-any */
 import { useThread } from "@/hooks/use-thread";
 import {
   MODEL_CONFIGS,
@@ -15,7 +16,7 @@ import {
   ArrowPath,
   ArrowUpMini,
   DocumentText,
-  Github,
+  // Github,
   PaperClip,
   PlaySolid,
   SquareRedSolid,
@@ -120,67 +121,150 @@ interface ChatPanelProps {
   inputRef?: React.RefObject<HTMLTextAreaElement>;
 }
 
-const SelectGitRepo = () => {
-  const currencies = [
+// const SelectGitRepo = () => {
+//   const currencies = [
+//     {
+//       value: "s4m1nd/dotfiles",
+//
+//       label: "s4m1nd/dotfiles",
+//     },
+//
+//     {
+//       value: "s4m1nd/infra",
+//
+//       label: "s4m1nd/infra",
+//     },
+//
+//     {
+//       value: "s4m1nd/persops",
+//
+//       label: "s4m1nd/persops",
+//     },
+//   ];
+//
+//   return (
+//     <>
+//       <div className="w-52">
+//         <Select size="small">
+//           <Select.Trigger>
+//             <Select.Value placeholder="Select a repository" />
+//           </Select.Trigger>
+//
+//           <Select.Content>
+//             {currencies.map((item) => (
+//               <Select.Item key={item.value} value={item.value}>
+//                 <Text className="flex items-center gap-2 text-xs">
+//                   <Github className="bg-white rounded-full" /> {item.label}
+//                 </Text>
+//               </Select.Item>
+//             ))}
+//           </Select.Content>
+//         </Select>
+//       </div>
+//     </>
+//   );
+// };
+
+const SandboxComponent = ({ threadId }: { threadId: Id<"threads"> }) => {
+  const getBoxStatus = useAction(api.tavor.getBoxStatus);
+  const { data: boxStatusResult, refetch } = useQuery({
+    queryKey: ["boxStatus", threadId],
+    queryFn: () => getBoxStatus({ threadId }),
+    refetchInterval: 10000,
+    enabled: !!threadId,
+  });
+
+  const startBox = useAction(api.tavor.startTavorBox);
+  const stopBox = useAction(api.tavor.stopTavorBox);
+  const restartBox = useAction(api.tavor.restartTavorBox);
+
+  const [isMutating, setIsMutating] = useState(false);
+
+  const handleStart = async () => {
+    setIsMutating(true);
+    try {
+      await startBox({ threadId });
+      toast.success("Sandbox starting...");
+      await refetch();
+    } catch (e: any) {
+      toast.error(`Failed to start sandbox: ${e.message}`);
+      console.error(e);
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const handleStop = async () => {
+    setIsMutating(true);
+    try {
+      await stopBox({ threadId });
+      toast.success("Sandbox stopping...");
+      await refetch();
+    } catch (e: any) {
+      toast.error(`Failed to stop sandbox: ${e.message}`);
+      console.error(e);
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const handleRestart = async () => {
+    setIsMutating(true);
+    try {
+      await restartBox({ threadId });
+      toast.success("Sandbox restarting...");
+      await refetch();
+    } catch (e: any) {
+      toast.error(`Failed to restart sandbox: ${e.message}`);
+      console.error(e);
+    } finally {
+      setIsMutating(false);
+    }
+  };
+
+  const boxStatus = boxStatusResult?.status;
+  const isRunning = boxStatus === "running";
+  const statusText =
     {
-      value: "s4m1nd/dotfiles",
+      running: "Container running",
+      starting: "Container starting",
+      stopping: "Container stopping",
+      stopped: "Container stopped",
+      off: "Container off",
+    }[boxStatus ?? ""] || "Loading...";
 
-      label: "s4m1nd/dotfiles",
-    },
-
+  const statusColor =
     {
-      value: "s4m1nd/infra",
+      running: "green",
+      starting: "orange",
+      stopping: "orange",
+      stopped: "red",
+      off: "grey",
+    }[boxStatus ?? ""] || "grey";
 
-      label: "s4m1nd/infra",
-    },
-
-    {
-      value: "s4m1nd/persops",
-
-      label: "s4m1nd/persops",
-    },
-  ];
-
-  return (
-    <>
-      <div className="w-52">
-        <Select size="small">
-          <Select.Trigger>
-            <Select.Value placeholder="Select a repository" />
-          </Select.Trigger>
-
-          <Select.Content>
-            {currencies.map((item) => (
-              <Select.Item key={item.value} value={item.value}>
-                <Text className="flex items-center gap-2 text-xs">
-                  <Github className="bg-white rounded-full" /> {item.label}
-                </Text>
-              </Select.Item>
-            ))}
-          </Select.Content>
-        </Select>
-      </div>
-    </>
-  );
-};
-
-const SandboxComponent = () => {
   return (
     <div className="w-auto size-8 flex p-1 items-center justify-start gap-2">
-      <Tooltip content="Sandbox is running">
-        <StatusBadge color="green">
-          <Text className="text-xs text-ui-fg-muted">Container running</Text>
+      <Tooltip content={statusText}>
+        <StatusBadge color={statusColor as any}>
+          <Text className="text-xs text-ui-fg-muted">{statusText}</Text>
         </StatusBadge>
       </Tooltip>
       <Tooltip content="Restart container">
-        <IconButton size="xsmall">
+        <IconButton
+          size="xsmall"
+          onClick={handleRestart}
+          disabled={isMutating || !isRunning}
+        >
           <ArrowPath />
         </IconButton>
       </Tooltip>
-      <Tooltip content="Start / stop container">
-        <IconButton size="xsmall">
-          {/* <SquareRedSolid /> */}
-          <PlaySolid />
+      <Tooltip content={isRunning ? "Stop container" : "Start container"}>
+        <IconButton
+          size="xsmall"
+          onClick={isRunning ? handleStop : handleStart}
+          disabled={isMutating}
+        >
+          {isRunning ? <SquareRedSolid /> : <PlaySolid />}
         </IconButton>
       </Tooltip>
     </div>
@@ -457,7 +541,7 @@ export function ChatPanel({
 
   const getFileStatusColor = (file: ProcessedFile) => {
     if (file.isProcessing) return "text-ui-fg-muted";
-    if (file.error) return "text-red-500";
+    if (file.error) return "text-red-400";
     return "text-ui-fg-subtle";
   };
 
@@ -492,9 +576,9 @@ export function ChatPanel({
             </Tooltip>
           </div>
         )}
-        <div className="absolute -top-12 left-0.5 w-auto size-10 flex-dis hidden p-1 items-center justify-start bg-ui-bg-field-component rounded-lg gap-2 border border-ui-tag-neutral-border shadow-md backdrop-blur-sm z-20">
-          <SandboxComponent />
-          <SelectGitRepo />
+        <div className="absolute -top-12 left-0.5 w-auto flex p-1 items-center justify-start bg-ui-bg-field-component rounded-lg gap-2 border border-ui-tag-neutral-border shadow-md backdrop-blur-sm z-20">
+          <SandboxComponent threadId={threadId} />
+          {/* <SelectGitRepo /> */}
         </div>
 
         <div className="flex p-1 rounded-2xl bg-ui-bg-field-component-hover border border-ui-border-base">
@@ -674,3 +758,4 @@ export function ChatPanel({
     </div>
   );
 }
+
