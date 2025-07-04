@@ -336,7 +336,7 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
 
     const handleScroll = () => {
       const { scrollTop, scrollHeight, clientHeight } = scrollContainer;
-      const isAtBottom = scrollHeight - scrollTop - clientHeight < 5;
+      const isAtBottom = scrollHeight - scrollTop - clientHeight < 10;
       userHasScrolledUp.current = !isAtBottom;
       setShowScrollDownButton(!isAtBottom);
     };
@@ -347,13 +347,31 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
     return () => scrollContainer.removeEventListener("scroll", handleScroll);
   }, []);
 
+  // Auto-scroll on new content using a MutationObserver for robustness.
+  // This is more reliable than depending on message count or other state.
   useEffect(() => {
-    if (!userHasScrolledUp.current) {
-      scrollToBottom("instant");
-    } else {
-      setShowScrollDownButton(true);
-    }
-  }, [messageIds.length, scrollToBottom]);
+    const container = scrollContainerRef.current;
+    if (!container) return;
+
+    const observer = new MutationObserver(() => {
+      // Only auto-scroll if the user hasn't manually scrolled up
+      if (!userHasScrolledUp.current) {
+        scrollToBottom("instant");
+      }
+    });
+
+    // Observe changes in the container's children (i.e., new messages, streaming content)
+    observer.observe(container, {
+      childList: true, // For new messages being added
+      subtree: true, // For content streaming into existing messages
+    });
+
+    // Initial scroll to bottom when component mounts or thread changes
+    scrollToBottom("instant");
+
+    // Clean up the observer when the component unmounts or threadId changes
+    return () => observer.disconnect();
+  }, [threadId, scrollToBottom]);
 
   const sendMessage = useMutation(
     api.chat.streamAsynchronously,
