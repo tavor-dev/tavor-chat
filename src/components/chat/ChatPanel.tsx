@@ -77,7 +77,7 @@ const ALLOWED_TEXT_TYPES = [
   "application/x-typescript",
 ];
 
-const ALLOWED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_TEXT_TYPES];
+// const ALLOWED_FILE_TYPES = [...ALLOWED_IMAGE_TYPES, ...ALLOWED_TEXT_TYPES];
 
 // Extension to MIME type mapping for better file type detection
 const EXTENSION_TO_MIME: Record<string, string> = {
