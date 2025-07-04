@@ -717,7 +717,7 @@ export function ChatPanel({
                   type="file"
                   ref={fileInputRef}
                   multiple
-                  accept={ALLOWED_FILE_TYPES.join(",")}
+                  // accept={ALLOWED_FILE_TYPES.join(",")}
                   onChange={(e) => handleFileChange(e.target.files)}
                   className="hidden"
                 />
