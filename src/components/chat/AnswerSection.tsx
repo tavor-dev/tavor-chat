@@ -19,7 +19,7 @@ export function AnswerSection({ message, isLoading }: AnswerSectionProps) {
   if (!message) return null;
 
   return (
-    <div className="p-5">
+    <div className="p-5 mb-[10rem]">
       <BotMessage message={message} />
       {!message.error && <MessageActions message={message} />}
     </div>

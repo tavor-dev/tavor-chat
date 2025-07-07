@@ -301,8 +301,7 @@ function RouteComponent() {
                             setCustomSystemPrompt(e.target.value)
                           }
                           placeholder="e.g., You are a helpful assistant that always replies in pirate speech."
-                          className="mt-2"
-                          rows={5}
+                          className="h-20"
                         />
                       </div>
 

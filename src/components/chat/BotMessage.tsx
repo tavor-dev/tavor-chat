@@ -556,7 +556,10 @@ export function BotMessage({
   if (isLoading) {
     return (
       <div
-        className={cn("flex items-center gap-2 text-ui-fg-subtle", className)}
+        className={cn(
+          "flex items-center gap-2 text-ui-fg-subtle mb-[10rem]",
+          className,
+        )}
       >
         <Spinner className="animate-spin" />
         <Text>Thinking...</Text>

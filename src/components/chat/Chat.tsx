@@ -27,7 +27,6 @@ import {
   messageIdsAtom,
   updateMessageAtom,
 } from "@/lib/state/chatAtoms";
-
 function UpgradeModal({
   isOpen,
   onOpenChange,
@@ -435,7 +434,7 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
           ref={scrollContainerRef}
           role="list"
           aria-roledescription="chat messages"
-          className="overflow-auto chat-scroll-container"
+          className="overflow-auto chat-scroll-container h-screen"
           style={{
             // paddingLeft: "env(safe-area-inset-left)",
             // paddingRight: "env(safe-area-inset-right)",
