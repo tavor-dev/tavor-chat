@@ -7,7 +7,7 @@ import {
 } from "@/lib/threadCache";
 import { Doc, type Id } from "@cvx/_generated/dataModel";
 import { SquareOrangeSolid } from "@medusajs/icons";
-import { Button, Heading, Prompt, Text, Toaster, toast } from "@medusajs/ui";
+import { Button, Heading, Prompt, Text, toast } from "@medusajs/ui";
 import { useNavigate } from "@tanstack/react-router";
 import { useMutation } from "convex/react";
 import { useAtomValue, useSetAtom } from "jotai";
@@ -427,7 +427,6 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
 
       {/* Updated chat container with better mobile handling */}
       <div className="grid grid-rows-[1fr_auto] w-full h-[90dvh] chat-main-container">
-        <Toaster />
         {/* Messages scroll container */}
         <div
           id="scroll-container"
