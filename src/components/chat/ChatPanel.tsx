@@ -574,7 +574,7 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        "bg-ui-bg-field-component-hover w-full group/form-container absolute bottom-0 z-0 px-2 pb-2",
+        "bg-ui-component w-full group/form-container absolute bottom-0 z-0 px-2 pb-2",
       )}
       onDrop={handleDrop}
       onDragOver={handleDragEvents}

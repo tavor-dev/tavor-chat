@@ -99,7 +99,7 @@ function NewChatComponent() {
           {/* Header section */}
           <div className="flex-shrink-0 pt-8 pb-4 px-4 sm:px-8 mt-20 md:mt-40">
             <div className="w-full flex justify-center flex-col items-center gap-4">
-              <Logo />
+              <Logo className="h-12" />
               <h1 className="text-xl sm:text-2xl font-semibold text-ui-fg-base text-center">
                 {(() => {
                   const now = new Date();

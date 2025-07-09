@@ -2,12 +2,12 @@
  * Centralized site configuration, add whatever you need here.
  */
 export default {
-  siteTitle: "Tavor Chat",
-  siteDescription: "Tavor chat.",
-  siteUrl: "https://chat.tavor.dev",
+  siteTitle: "Drova chat",
+  siteDescription: "Drova chat.",
+  siteUrl: "https://chat.drova.dev",
   siteImage: "/images/og-image.png",
   favicon: "/favicon.ico",
-  twitterHandle: "@tavor-dev",
-  email: "contact@tavor.dev",
+  twitterHandle: "@drova-dev",
+  email: "contact@drova.dev",
   address: "",
 };
