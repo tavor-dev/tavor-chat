@@ -44,7 +44,7 @@ export function MessageActions({ message, onEdit }: MessageActionsProps) {
   }
 
   return (
-    <div className="flex items-center gap-4 self-end mt-4 mr-2 transition-opacity opacity-0 group-hover/message:opacity-100 mb-0">
+    <div className="flex items-center gap-4 self-end mt-4 mr-2 transition-opacity opacity-0 group-hover/message:opacity-100">
       <TooltipProvider>
         <Tooltip
           content={formatTimeHM(

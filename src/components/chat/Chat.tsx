@@ -433,7 +433,7 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
           ref={scrollContainerRef}
           role="list"
           aria-roledescription="chat messages"
-          className="overflow-auto chat-scroll-container h-screen"
+          className="overflow-auto chat-scroll-container h-[85dvh]"
           style={{
             // paddingLeft: "env(safe-area-inset-left)",
             // paddingRight: "env(safe-area-inset-right)",
