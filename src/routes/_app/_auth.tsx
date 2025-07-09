@@ -19,7 +19,7 @@ import {
   CreditCard,
   ChartBar,
   CogSixTooth,
-  SidebarLeft
+  SidebarLeft,
 } from "@medusajs/icons";
 import {
   Avatar,
@@ -35,7 +35,7 @@ import {
   Tooltip,
   TooltipProvider,
 } from "@medusajs/ui";
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   createFileRoute,
   Link,
@@ -108,6 +108,34 @@ function AuthLayout() {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const navigate = useNavigate();
   const router = useRouter();
+  const queryClient = useQueryClient();
+
+  // Onboarding logic
+  const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
+  const completeOnboarding = useMutation(
+    api.chat_engine.users.completeOnboarding,
+  );
+  const [showOnboarding, setShowOnboarding] = useState(false);
+
+  useEffect(() => {
+    // Show onboarding if user exists and has not completed it.
+    // The check `user.onboardingCompleted !== true` handles both `false` and `undefined`.
+    if (user && user.onboardingCompleted !== true) {
+      setShowOnboarding(true);
+    }
+  }, [user]);
+
+  const handleCloseOnboarding = () => {
+    setShowOnboarding(false);
+    if (user?._id) {
+      void completeOnboarding({ userId: user._id }).then(() => {
+        // Invalidate the query to refetch the user and their onboarding status.
+        void queryClient.invalidateQueries({
+          queryKey: convexQuery(api.app.getCurrentUser, {}).queryKey,
+        });
+      });
+    }
+  };
 
   // --- Rename Logic ---
   const openRenameDrawer = (thread: Thread) => {
@@ -184,7 +212,40 @@ function AuthLayout() {
         onClose={closeDeletePrompt}
         onDelete={handleDeleteThread}
       />
+      <OnboardingPopup open={showOnboarding} onClose={handleCloseOnboarding} />
     </AppContext.Provider>
+  );
+}
+
+function OnboardingPopup({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  const { data: user } = useQuery(convexQuery(api.app.getCurrentUser, {}));
+
+  return (
+    <Prompt open={open} onOpenChange={(isOpen) => !isOpen && onClose()}>
+      <Prompt.Content className="z-[600]">
+        <Prompt.Header>
+          <Prompt.Title>Welcome to Tavor chat!</Prompt.Title>
+          <Prompt.Description>
+            Hi {user?.name?.split(" ")[0] || "there"}! We're glad to have you
+            here 👋!
+          </Prompt.Description>
+        </Prompt.Header>
+        <Prompt.Footer>
+          <Prompt.Action
+            className="transition-fg relative inline-flex w-fit items-center justify-center overflow-hidden rounded-md outline-none disabled:bg-ui-bg-disabled disabled:border-ui-border-base disabled:text-ui-fg-disabled disabled:shadow-buttons-neutral disabled:after:hidden after:transition-fg after:absolute after:inset-0 after:content-[''] shadow-buttons-neutral text-ui-fg-on-color after:button-neutral-gradient hover:after:button-neutral-hover-gradient active:after:button-neutral-pressed-gradient focus-visible:shadow-buttons-neutral-focus txt-compact-small-plus gap-x-1.5 px-2 py-1 bg-ui-button-neutral hover:bg-ui-button-neutral-hover active:bg-ui-button-neutral-pressed"
+            onClick={onClose}
+          >
+            Got it, let's start!
+          </Prompt.Action>
+        </Prompt.Footer>
+      </Prompt.Content>
+    </Prompt>
   );
 }
 

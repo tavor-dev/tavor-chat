@@ -59,6 +59,13 @@ export const deleteAllForUserId = action({
   returns: v.null(),
 });
 
+export const completeOnboarding = mutation({
+  args: { userId: v.id("users") },
+  handler: async (ctx, args) => {
+    await ctx.db.patch(args.userId, { onboardingCompleted: true });
+  },
+});
+
 export const deleteAllForUserIdAsync = mutation({
   args: {
     userId: v.id("users"),

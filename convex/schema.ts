@@ -79,6 +79,7 @@ const schema = defineSchema({
     // Fields for free tier usage tracking
     messageCount: v.optional(v.number()),
     usageResetTime: v.optional(v.number()),
+    onboardingCompleted: v.optional(v.boolean()),
   })
     .index("email", ["email"])
     .index("customerId", ["customerId"]),
