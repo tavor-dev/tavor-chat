@@ -617,7 +617,7 @@ function AppSidebarContent() {
             className="flex flex-1 flex-col min-h-0 overflow-hidden"
           >
             {/* Search input */}
-            <div className="mb-4">
+            <div className="mb-4 p-0.5">
               <Input
                 placeholder="Search threads..."
                 value={searchQuery}
@@ -732,7 +732,9 @@ function AppSidebarFooter() {
             )}
           >
             {open && (
-              <span className="truncate">{user?.name || user.email || "User"}</span>
+              <span className="truncate">
+                {user?.name || user.email || "User"}
+              </span>
             )}
             <Avatar
               className="h-6 w-6"
