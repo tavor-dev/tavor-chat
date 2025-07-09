@@ -574,7 +574,7 @@ export function ChatPanel({
   return (
     <div
       className={cn(
-        "bg-ui-component w-full group/form-container absolute bottom-0 z-0 px-2 pb-2",
+        "w-full group/form-container absolute bottom-10 md:bottom-0 z-0 px-2 pb-2 bg-ui-bg-overlay",
       )}
       onDrop={handleDrop}
       onDragOver={handleDragEvents}

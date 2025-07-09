@@ -1,6 +1,6 @@
 "use client";
 import { cn } from "@/lib/utils";
-import React, { useState, createContext, useContext } from "react";
+import React, { useState, createContext, useContext, useEffect } from "react";
 import { AnimatePresence, motion } from "motion/react";
 import { BarsThree, XMark } from "@medusajs/icons";
 
@@ -16,6 +16,8 @@ interface SidebarContextProps {
   animate: boolean;
   isMenuOpen: boolean;
   setMenuOpen: (isOpen: boolean) => void;
+  isPinned: boolean;
+  togglePin: () => void;
 }
 
 const SidebarContext = createContext<SidebarContextProps | undefined>(
@@ -42,13 +44,34 @@ export const SidebarProvider = ({
   animate?: boolean;
 }) => {
   const [openState, setOpenState] = useState(false);
+  const [isPinned, setIsPinned] = useState(false);
   const [openMenuCount, setOpenMenuCount] = useState(0);
 
   const open = openProp !== undefined ? openProp : openState;
   const setOpen = setOpenProp !== undefined ? setOpenProp : setOpenState;
 
+  useEffect(() => {
+    const storedPinState = localStorage.getItem("sidebar-pinned");
+    if (storedPinState) {
+      const pinned = JSON.parse(storedPinState);
+      setIsPinned(pinned);
+      if (pinned) {
+        setOpen(true);
+      }
+    }
+  }, [setOpen]);
+
   const setMenuOpen = (isOpen: boolean) => {
     setOpenMenuCount((count) => Math.max(0, count + (isOpen ? 1 : -1)));
+  };
+
+  const togglePin = () => {
+    const newPinnedState = !isPinned;
+    setIsPinned(newPinnedState);
+    localStorage.setItem("sidebar-pinned", JSON.stringify(newPinnedState));
+    if (newPinnedState) {
+      setOpen(true);
+    }
   };
 
   return (
@@ -59,6 +82,8 @@ export const SidebarProvider = ({
         animate: animate,
         isMenuOpen: openMenuCount > 0,
         setMenuOpen,
+        isPinned,
+        togglePin,
       }}
     >
       {children}
@@ -98,7 +123,7 @@ export const DesktopSidebar = ({
   children,
   ...props
 }: React.ComponentProps<typeof motion.div>) => {
-  const { open, setOpen, animate, isMenuOpen } = useSidebar();
+  const { open, setOpen, animate, isMenuOpen, isPinned } = useSidebar();
   return (
     <motion.div
       className={cn(
@@ -111,7 +136,7 @@ export const DesktopSidebar = ({
       transition={{ duration: 0.2, ease: "easeInOut" }}
       onMouseEnter={() => setOpen(true)}
       onMouseLeave={() => {
-        if (!isMenuOpen) {
+        if (!isMenuOpen && !isPinned) {
           setOpen(false);
         }
       }}

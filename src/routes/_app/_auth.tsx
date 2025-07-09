@@ -19,6 +19,7 @@ import {
   CreditCard,
   ChartBar,
   CogSixTooth,
+  SidebarLeft
 } from "@medusajs/icons";
 import {
   Avatar,
@@ -31,6 +32,7 @@ import {
   Prompt,
   toast,
   Toaster,
+  Tooltip,
   TooltipProvider,
 } from "@medusajs/ui";
 import { useQuery } from "@tanstack/react-query";
@@ -307,7 +309,7 @@ function DeleteConfirmationPrompt({
 }
 
 function AppSidebarContent() {
-  const { open } = useSidebar();
+  const { open, isPinned, togglePin } = useSidebar();
   const navigate = useNavigate();
   const router = useRouter();
 
@@ -591,7 +593,36 @@ function AppSidebarContent() {
 
   return (
     <div className="flex flex-1 flex-col overflow-x-hidden overflow-y-auto">
-      <div className="flex items-center mb-4">{<LogoWithText />}</div>
+      <div className="flex items-center justify-between mb-4">
+        {<LogoWithText />}
+        <AnimatePresence>
+          {open && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.5 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.5 }}
+              transition={{ duration: 0.2 }}
+              className="pr-1 hidden md:block"
+            >
+              <Tooltip content={isPinned ? "Unpin sidebar" : "Pin sidebar"}>
+                <IconButton
+                  size="small"
+                  variant="transparent"
+                  onClick={togglePin}
+                  className="text-ui-fg-muted hover:text-ui-fg-subtle"
+                  aria-label={isPinned ? "Unpin sidebar" : "Pin sidebar"}
+                >
+                  {isPinned ? (
+                    <SidebarLeft className="h-4 w-4 text-ui-fg-base" />
+                  ) : (
+                    <SidebarLeft className="h-4 w-4 text-ui-fg-muted" />
+                  )}
+                </IconButton>
+              </Tooltip>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </div>
 
       <Button
         variant="transparent"
@@ -791,7 +822,7 @@ const LogoWithText = () => {
       <Logo className="h-6" />
       {open && (
         <span className="font-semibold text-black dark:text-white ml-2 whitespace-nowrap select-none">
-          Drova chat
+          Tavor chat
         </span>
       )}
     </div>

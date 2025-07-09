@@ -47,7 +47,7 @@ export const Route = createRootRouteWithContext<{
       .reverse()
       .find((d) => d.__routeContext?.title);
     const title = (matchWithTitle?.__routeContext.title ||
-      "Drova chat") as string;
+      "Tavor chat") as string;
 
     return (
       <div className="flex flex-col">
@@ -91,7 +91,7 @@ export const Route = createRootRouteWithContext<{
           <meta property="og:title" content={title} />
           <meta property="og:image" content="/logo.png" />
           <meta property="og:type" content="website" />
-          <meta property="og:site_name" content="Drova chat" />
+          <meta property="og:site_name" content="Tavor chat" />
           <meta property="og:locale" content="en_US" />
           <meta name="twitter:card" content="summary_large_image" />
           <meta name="twitter:title" content={title} />

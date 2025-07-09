@@ -35,11 +35,11 @@ function AuthComponent() {
       <div className="min-h-screen bg-ui-bg-base flex flex-col items-center justify-center p-4 w-screen">
         {/* Company Logo */}
         <div className="">
-          <div className="flex flex-col items-center text-white">
+          <div className="flex text-ui-fg-base justify-center items-center gap-3">
             <div className="mb-2">
               <Logo className="h-12" />
             </div>
-            <Heading>Drova chat</Heading>
+            <Heading>Tavor chat</Heading>
           </div>
         </div>
 
@@ -75,14 +75,14 @@ function AuthComponent() {
             <Text className="text-gray-500 text-xs">
               By continuing, you agree to our{" "}
               <a
-                href="https://drova.dev/terms"
+                href="https://tavor.dev/terms"
                 className="underline hover:no-underline"
               >
                 Terms of service
               </a>{" "}
               and{" "}
               <a
-                href="https://drova.dev/privacy"
+                href="https://tavor.dev/privacy"
                 className="underline hover:no-underline"
               >
                 Privacy policy

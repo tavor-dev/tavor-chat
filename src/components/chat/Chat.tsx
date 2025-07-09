@@ -426,7 +426,7 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
       {threadId && <SyncToJotai key={threadId} threadId={threadId} />}
 
       {/* Updated chat container with better mobile handling */}
-      <div className="grid grid-rows-[1fr_auto] w-full h-[90dvh] chat-main-container">
+      <div className="relative grid grid-rows-[1fr_auto] w-full h-[100dvh] chat-main-container">
         {/* Messages scroll container */}
         <div
           id="scroll-container"

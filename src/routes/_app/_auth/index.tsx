@@ -92,7 +92,7 @@ function NewChatComponent() {
   );
 
   return (
-    <div className="flex flex-col h-screen min-h-0">
+    <div className="relative flex flex-col h-screen min-h-0">
       {/* Main content area that can scroll */}
       <div className="flex-1 overflow-auto">
         <div className="flex flex-col min-h-full">

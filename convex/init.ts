@@ -170,7 +170,7 @@ export default internalAction(async (ctx) => {
   // Configure Customer Portal.
   await stripe.billingPortal.configurations.create({
     business_profile: {
-      headline: "Drova chat - Customer portal",
+      headline: "Tavor chat - Customer portal",
     },
     features: {
       customer_update: {

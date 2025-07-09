@@ -557,7 +557,7 @@ export function BotMessage({
     return (
       <div
         className={cn(
-          "flex items-center gap-2 text-ui-fg-subtle mb-[10rem]",
+          "flex items-center gap-2 text-ui-fg-subtle mb-[20rem]",
           className,
         )}
       >
