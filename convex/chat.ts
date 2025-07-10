@@ -7,7 +7,7 @@ import {
   getDefaultModel,
   textEmbedding,
 } from "../src/lib/models";
-import { internal } from "./_generated/api";
+import { internal, api } from "./_generated/api";
 import { action, internalAction, mutation } from "./_generated/server";
 import {
   authorizeThreadAccess,
@@ -309,9 +309,12 @@ export const stream = internalAction({
       }
     };
 
-    const checkInterval = setInterval(() => {
-      checkCancellation().catch(console.error);
-    }, 500);
+   const checkInterval = setInterval(
+      () => {
+        checkCancellation().catch(console.error);
+      },
+      500,
+    );
 
     try {
       const result = await thread.streamText(
@@ -324,16 +327,46 @@ export const stream = internalAction({
         { saveStreamDeltas: true },
       );
 
-      const metadata = await thread.getMetadata();
-      const existingTitle = metadata?.title;
-
-      if (!existingTitle || existingTitle === "New chat") {
-        ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
-          threadId,
-        });
-      }
+      // This might not be awaited if the stream is long, so we run it in parallel
+      thread.getMetadata().then((metadata) => {
+        const existingTitle = metadata?.title;
+        if (!existingTitle || existingTitle === "New chat") {
+          ctx.scheduler.runAfter(0, internal.threads.maybeUpdateThreadTitle, {
+            threadId,
+          });
+        }
+      });
 
       await result.consumeStream();
+    } catch (e) {
+      if (e instanceof Error && e.name === "AbortError") {
+        console.log(`Stream for thread ${threadId} was aborted.`);
+      } else {
+        const errorMessage = e instanceof Error ? e.message : String(e);
+        console.error(`Error in stream for thread ${threadId}:`, e);
+        try {
+          const { messages } = await ctx.runMutation(
+            api.chat_engine.messages.addMessages,
+            {
+              threadId,
+              messages: [{ message: { role: "assistant", content: [] } }],
+              pending: true,
+              promptMessageId,
+            },
+          );
+          if (messages.length > 0) {
+            await ctx.runMutation(api.chat_engine.messages.rollbackMessage, {
+              messageId: messages[0]._id,
+              error: errorMessage,
+            });
+          }
+        } catch (errorSavingError) {
+          console.error(
+            "Fatal: could not save error message to chat",
+            errorSavingError,
+          );
+        }
+      }
     } finally {
       clearInterval(checkInterval);
 

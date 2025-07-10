@@ -95,6 +95,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
   const updateMessage = useSetAtom(updateMessageAtom);
   const setIsGenerating = useSetAtom(isGeneratingAtom);
   const setHitMaxSteps = useSetAtom(hitMaxStepsAtom);
+  const seenErrorIds = useRef<Set<Id<"messages">>>(new Set());
 
   useEffect(() => {
     return () => {
@@ -102,7 +103,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
       setIsGenerating(false);
       setHitMaxSteps(false);
     };
-  }, [threadId]);
+  }, [threadId, setIsGenerating, setHitMaxSteps]);
 
   const queue = useRef<UIMessage[][]>([]);
   const isProcessing = useRef(false);
@@ -143,6 +144,16 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
         ? cachedMessages
         : (messages.results ?? []);
 
+    serverMessages.forEach((msg) => {
+      if (
+        msg.status === "failed" &&
+        msg.error &&
+        !seenErrorIds.current.has(msg._id)
+      ) {
+        toast.error("Message generation failed", { description: msg.error });
+        seenErrorIds.current.add(msg._id);
+      }
+    });
     const uiMessages = toUIMessages(serverMessages);
 
     // Add the new state to the queue instead of updating directly
@@ -160,6 +171,7 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
     cachedMessages,
     threadId,
     processQueue,
+    seenErrorIds,
   ]);
 
   useEffect(() => {
@@ -180,7 +192,8 @@ const SyncToJotai: FC<{ threadId: Id<"threads"> }> = memo(({ threadId }) => {
     isProcessing.current = false;
     setCachedMessages(getCachedThreadMessages(threadId));
     setMessageIds([]);
-  }, [threadId, setMessageIds]);
+    seenErrorIds.current.clear();
+  }, [threadId, setMessageIds, setCachedMessages]);
 
   return null;
 });
@@ -395,12 +408,14 @@ export const Chat = memo(({ threadId }: { threadId: Id<"threads"> }) => {
       }).catch((error: any) => {
         const errorMessage =
           typeof error.data === "string"
-            ? error.data
-            : error.data?.message || error.message;
+            ? error.data // Convex error with string data
+            : error.data?.message || // Convex error with object data
+              error.message || // Generic JS error
+              "An unknown error occurred. Please try again.";
         if (errorMessage?.includes("MESSAGE_LIMIT_EXCEEDED")) {
           setShowUpgradeModal(true);
         } else {
-          toast.error("An unexpected error occurred. Please try again later.");
+          toast.error("Error", { description: errorMessage });
         }
       });
     },

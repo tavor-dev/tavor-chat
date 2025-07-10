@@ -570,7 +570,7 @@ export function BotMessage({
   if (!message) return null;
 
   if (message.error) {
-    return <Alert variant="error">An error occurred {message.error}</Alert>;
+    return <Alert variant="error" className="items-center">{message.error}</Alert>;
   }
 
   // If there are parts, render them in order
