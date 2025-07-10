@@ -232,6 +232,18 @@ export const stream = internalAction({
     const tempThread = await ctx.runQuery(internal.threads.getById, {
       threadId,
     });
+    
+    // Check if cancellation was requested before we even started. This handles
+    // the race condition where the user clicks "stop" immediately.
+    if (tempThread?.cancelRequested) {
+      console.log(`Stream for thread ${threadId} was cancelled before starting.`);
+      await ctx.runMutation(internal.threads.updateGeneratingStatus, {
+        threadId,
+        generating: false,
+      });
+      return;
+    }
+
     const effectiveModelId = model || tempThread?.model;
 
     if (effectiveModelId && tempThread && tempThread.userId) {

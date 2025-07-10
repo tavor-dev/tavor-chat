@@ -146,17 +146,19 @@ export const stopGeneration = mutation({
       await ctx.db.patch(streamId, {
         state: { kind: "canceled", canceledAt: Date.now() },
       });
-    } else {
-      // No stream running, so nothing will see `cancelRequested`. Reset it.
-      console.log(
-        `No active streams found for thread ${threadId}, forcing reset`,
-      );
-      await ctx.db.patch(threadId, { cancelRequested: false });
-    }
 
-    // Always set generating to false to make the UI responsive.
-    // The background action will also do this in its `finally` block.
-    await ctx.db.patch(threadId, { generating: false });
+      // Always set generating to false to make the UI responsive.
+      // The background action will also do this in its `finally` block.
+      await ctx.db.patch(threadId, { generating: false });
+    } else {
+      // No stream running yet. We've set cancelRequested: true.
+      // The scheduled `stream` action will see this and abort.
+      // We don't touch `generating` here, we let the `stream` action handle it
+      // in its startup check.
+      console.log(
+        `No active streams found for thread ${threadId}, cancellation will be handled by the scheduled action.`,
+      );
+    }
 
     return null;
   },
