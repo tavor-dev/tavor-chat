@@ -92,6 +92,7 @@ bun convex dev
    - AI provider API keys
    - Stripe keys (for subscriptions)
    - Google OAuth credentials
+   - [Tavor API key](https://tavor.dev/pricing#:~:text=Enterprise%20solutions) (for executing agentic tool calls)
 
 5. Start the development server:
 
